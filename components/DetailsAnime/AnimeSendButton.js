@@ -25,7 +25,7 @@ const ButtonText = styled.Text`
 `;
 
 const StyledIcon = styled(Ionicons)`
-  color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.gray};
   font-size: 24px;
 `;
 

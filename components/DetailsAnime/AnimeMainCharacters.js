@@ -22,7 +22,7 @@ const CharacterCard = styled.View`
 const CharacterImage = styled.Image`
   width: 90px;
   height: 120px;
-  border-radius: 16px;
+  border-radius: 24px;
 `;
 
 const CharacterName = styled.Text`

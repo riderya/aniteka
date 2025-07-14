@@ -23,7 +23,7 @@ const Card = styled.TouchableOpacity`
   background-color: ${({ theme }) => theme.colors.border};
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.card};
-  border-radius: 12px;
+  border-radius: 24px;
   width: 200px;
   height: 110px;
   justify-content: center;
@@ -53,7 +53,7 @@ const ThumbnailWrapper = styled.View`
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 12px;
+  border-radius: 24px;
   overflow: hidden;
 `;
 

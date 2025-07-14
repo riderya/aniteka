@@ -10,7 +10,7 @@ import {
 import axios from 'axios';
 import styled from 'styled-components/native';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import AnimeColumnCard from '../AnimeCards/AnimeColumnCard';
+import AnimeColumnCard from '../Cards/AnimeColumnCard';
 import * as SecureStore from 'expo-secure-store';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -189,20 +189,6 @@ const Description = styled.Text`
   margin-bottom: 8px;
 `;
 
-const UserStatusContainer = styled.View`
-  padding: 6px 12px;
-  background-color: ${({ theme }) => theme.colors.primary}20;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  align-self: flex-start;
-`;
-
-const UserStatusText = styled.Text`
-  color: ${({ theme }) => theme.colors.primary};
-  font-weight: 700;
-  font-size: 16px;
-`;
-
 const ButtonRow = styled.View`
   flex-direction: row;
   gap: 8px;
@@ -232,7 +218,7 @@ const SkeletonItem = () => (
 
 const SkeletonContainer = styled.View`
   width: 140px;
-  margin-right: 12px;
+  margin-right: 20px;
 `;
 
 const SkeletonPoster = styled.View`

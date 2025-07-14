@@ -45,7 +45,7 @@ export default AnimeColumnCard;
 
 const Item = styled.View`
   width: 140px;
-  margin-right: 12px;
+  margin-right: 20px;
 `;
 
 const PosterWrapper = styled.View`
@@ -55,7 +55,7 @@ const PosterWrapper = styled.View`
 const Poster = styled.Image`
   width: 100%;
   height: 190px;
-  border-radius: 16px;
+  border-radius: 24px;
 `;
 
 const Title = styled.Text`
@@ -79,31 +79,34 @@ const TextFooter = styled.Text`
 
 const StatusText = styled.Text`
   position: absolute;
-  text-align: center;
-  bottom: 0px;
-  padding: 4px;
+  bottom: 5px;
+  align-self: center;
+  min-width: 90%;
+  max-width: 90%;
+  padding: 4px 12px;
   font-size: 14px;
   font-weight: 500;
-  width: 100%;
   color: #fff;
-  border-radius: 0px 0px 12px 12px;
+  border-radius: 999px;
+  text-align: center;
   background-color: ${({ status, theme }) => {
-  switch (status) {
-    case 'watching':
-      return `${theme.colors.watching}B3`; // HEX з прозорістю 70%
-    case 'planned':
-      return `${theme.colors.planned}B3`;
-    case 'dropped':
-      return `${theme.colors.dropped}B3`;
-    case 'on_hold':
-      return `${theme.colors.on_hold}B3`;
-    case 'completed':
-      return `${theme.colors.completed}B3`;
-    case 'favourite':
-      return `${theme.colors.favourite}B3`;
-    default:
-      return 'rgba(51, 51, 51, 0.7)';
-  }
-}};
+    switch (status) {
+      case 'watching':
+        return `${theme.colors.watching}B3`; // 70% прозорості
+      case 'planned':
+        return `${theme.colors.planned}B3`;
+      case 'dropped':
+        return `${theme.colors.dropped}B3`;
+      case 'on_hold':
+        return `${theme.colors.on_hold}B3`;
+      case 'completed':
+        return `${theme.colors.completed}B3`;
+      case 'favourite':
+        return `${theme.colors.favourite}B3`;
+      default:
+        return 'rgba(51, 51, 51, 0.7)';
+    }
+  }};
 `;
+
 

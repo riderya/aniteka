@@ -44,9 +44,9 @@ const Card = styled.View`
   width: ${CARD_WIDTH}px;
   background-color: ${({ theme }) => theme.colors.card};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 16px;
+  border-radius: 24px;
   padding: 15px;
-  margin-right: 16px;
+  margin-right: 20px;
   overflow: hidden;
 `;
 
@@ -99,7 +99,7 @@ const Title = styled.Text`
 
 const ImageStyled = styled.Image`
   height: 120px;
-  border-radius: 12px;
+  border-radius: 24px;
   background:  ${({ theme }) => theme.colors.inputBackground};
 `;
 

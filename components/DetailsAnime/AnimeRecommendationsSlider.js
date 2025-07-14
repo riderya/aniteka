@@ -22,7 +22,7 @@ const Card = styled(TouchableOpacity)`
 const Poster = styled.Image`
   width: 100%;
   height: 170px;
-  border-radius: 10px;
+  border-radius: 24px;
   background-color: ${({ theme }) => theme.colors.card};
 `;
 

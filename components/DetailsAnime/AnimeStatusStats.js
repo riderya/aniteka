@@ -14,7 +14,7 @@ const LineGray = styled.View`
 const BarContainer = styled.View`
   flex-direction: row;
   height: 35px;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   margin: 0 12px 12px;
 `;

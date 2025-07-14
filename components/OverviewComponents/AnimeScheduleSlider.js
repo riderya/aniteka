@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components/native';
-import { FlatList } from 'react-native';
+import { FlatList, Text, TouchableOpacity  } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
 
@@ -11,7 +12,7 @@ const Container = styled.View`
 const Card = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 16px;
+  border-radius: 24px;
   flex-direction: row;
   align-items: center;
   padding: 10px;
@@ -22,7 +23,7 @@ const Card = styled.View`
 const AnimeImage = styled.Image`
   width: 65px;
   height: 90px;
-  border-radius: 8px;
+  border-radius: 16px;
 `;
 
 const InfoWrapper = styled.View`
@@ -48,61 +49,65 @@ const Episode = styled.Text`
   margin-top: 6px;
 `;
 
-const AnimeScheduleSlider = ({ navigation }) => {
+const AnimeScheduleSlider = () => {
+  const navigation = useNavigation();
   const [animeList, setAnimeList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Функція для перевірки конкретної дати — 11 липня 2025 року
-  const isSpecificDate = (timestamp, year, month, day) => {
-    const date = new Date(timestamp * 1000);
+
+  const isToday = (timestamp) => {
+    const airingDate = new Date(timestamp * 1000);
+    const now = new Date();
     return (
-      date.getFullYear() === year &&
-      date.getMonth() + 1 === month && // getMonth() починається з 0
-      date.getDate() === day
+      airingDate.getUTCFullYear() === now.getUTCFullYear() &&
+      airingDate.getUTCMonth() === now.getUTCMonth() &&
+      airingDate.getUTCDate() === now.getUTCDate()
     );
   };
 
-useEffect(() => {
-  const fetchSchedule = async () => {
-    try {
-      const response = await axios.post(
-        'https://api.hikka.io/schedule/anime?page=1&size=20',
-        {
-          status: ['ongoing', 'announced'],
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      try {
+        const response = await axios.post(
+          'https://api.hikka.io/schedule/anime?page=1&size=50',
+          {
+            status: ['ongoing', 'announced'],
+            airing_season: [],
+            only_watch: false,
+          }
+        );
 
-      const filteredList = response.data.list
-        .filter((item) => isSpecificDate(item.airing_at, 2025, 7, 11))
-        .slice(6);
+        const todayList = response.data.list.filter(item =>
+          isToday(item.airing_at)
+        );
 
-      setAnimeList(filteredList);
-    } catch (error) {
-      console.error('Помилка при завантаженні розкладу:', error);
-    }
+        setAnimeList(todayList);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSchedule();
+  }, []);
+
+const renderItem = ({ item }) => {
+  const { anime, time_left, episode } = item;
+
+  const totalHours = Math.floor(time_left / 3600);
+  const remainingMinutes = Math.floor((time_left % 3600) / 60);
+  const timeText = `${totalHours} год. ${remainingMinutes} хв.`;
+
+  const handlePress = () => {
+    navigation.navigate('AnimeDetails', { slug: anime.slug });
   };
 
-  fetchSchedule();
-}, []);
-
-
-  const renderItem = ({ item }) => {
-    const { anime, time_left, episode } = item;
-
-    const totalHours = Math.floor(time_left / 3600);
-    const remainingMinutes = Math.floor((time_left % 3600) / 60);
-    const timeText = `${totalHours} год. ${remainingMinutes} хв.`;
-
-    return (
+  return (
+    <TouchableOpacity onPress={handlePress}>
       <Card>
         <AnimeImage source={{ uri: anime.image }} resizeMode="cover" />
         <InfoWrapper>
           <AnimeTitle numberOfLines={1}>
-            {anime.title_ua || anime.title_en || anime.title_ja}
+            {anime.title_ua || anime.title_en || anime.title_ja || 'Без назви'}
           </AnimeTitle>
           <TimeLeft>{timeText}</TimeLeft>
           <Episode>
@@ -110,23 +115,32 @@ useEffect(() => {
           </Episode>
         </InfoWrapper>
       </Card>
-    );
-  };
+    </TouchableOpacity>
+  );
+};
 
   return (
     <Container>
       <RowLineHeader
-        title="Календар"
+        title="Сьогоднішній календар"
         onPress={() => navigation.navigate('AnimeCharactersScreen')}
       />
-      <FlatList
-        data={animeList}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={renderItem}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingLeft: 12 }}
-      />
+      {loading ? (
+        <Text style={{ color: 'gray', marginLeft: 12 }}>Завантаження...</Text>
+      ) : animeList.length === 0 ? (
+        <Text style={{ color: 'gray', marginLeft: 12 }}>
+          На жаль, сьогодні немає аніме в розкладі 😢
+        </Text>
+      ) : (
+        <FlatList
+          data={animeList}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={renderItem}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingLeft: 12 }}
+        />
+      )}
     </Container>
   );
 };

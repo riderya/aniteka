@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, TouchableOpacity } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { ActivityIndicator, Animated, TouchableOpacity, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native';
 import styled from 'styled-components/native'
 import axios from 'axios'
@@ -7,29 +7,24 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import RowLineHeader from './RowLineHeader';
 
-const Container = styled.View`
-`
+const Container = styled.View``
 
 const AnimeCard = styled.View`
   flex-direction: row;
   padding: 0px 12px;
+  margin-top: 10px;
 `
 
 const AnimeImage = styled.Image`
   width: 55px;
   height: 75px;
-  border-radius: 10px;
+  border-radius: 14px;
   margin-right: 12px;
   background-color: ${({ theme }) => theme.colors.border};
 `
 
 const Info = styled.View`
   flex: 1;
-`
-
-const Column = styled.View`
-  flex-direction: column;
-  gap: 12px;
 `
 
 const Row = styled.View`
@@ -79,19 +74,32 @@ const LineGray = styled.View`
   background-color: ${({ theme }) => theme.colors.border};
 `
 
-const FranchiseList = ({ slug, onPressItem }) => {
+const FranchiseList = ({ slug }) => {
   const [franchise, setFranchise] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const navigation = useNavigation();
+  const [contentHeight, setContentHeight] = useState(0)
+  const animation = useRef(new Animated.Value(0)).current
+  const navigation = useNavigation()
+
+  const COLLAPSED_COUNT = 3
+  const FALLBACK_ITEM_HEIGHT = 85
 
   useEffect(() => {
     const fetchFranchise = async () => {
+      setLoading(true)
       try {
-        const response = await axios.get(`https://api.hikka.io/anime/${slug}/franchise`)
-        const filtered = response.data.list.filter(item => item.slug !== slug)
+        const response = await axios.get(`https://api.hikka.io/related/anime/${slug}/franchise`)
+        const animeFranchise = response.data.anime || []
+
+        const filtered = animeFranchise
+          .filter(item => item.slug !== slug)
+          .sort((a, b) => (b.year || 0) - (a.year || 0))
+
         setFranchise(filtered)
+      } catch (err) {
+        setError(true)
       } finally {
         setLoading(false)
       }
@@ -99,6 +107,27 @@ const FranchiseList = ({ slug, onPressItem }) => {
 
     fetchFranchise()
   }, [slug])
+
+  useEffect(() => {
+    // Початкова висота після завантаження — згорнутий стан
+    if (franchise.length > 0) {
+      const collapsedHeight = Math.min(franchise.length, COLLAPSED_COUNT) * FALLBACK_ITEM_HEIGHT
+      animation.setValue(collapsedHeight)
+    }
+  }, [franchise])
+
+  const toggleExpansion = () => {
+    const collapsedHeight = Math.min(franchise.length, COLLAPSED_COUNT) * FALLBACK_ITEM_HEIGHT
+    const toValue = expanded ? collapsedHeight : contentHeight
+
+    Animated.timing(animation, {
+      toValue,
+      duration: 500,
+      useNativeDriver: false,
+    }).start()
+
+    setExpanded(!expanded)
+  }
 
   if (loading) {
     return (
@@ -110,43 +139,45 @@ const FranchiseList = ({ slug, onPressItem }) => {
 
   if (error || franchise.length === 0) return null
 
-  const visibleItems = expanded ? franchise : franchise.slice(0, 3)
-
   return (
     <Container>
-      <RowLineHeader
-        title="Пов’язане"
-      />
+      <RowLineHeader title="Пов’язане" />
 
-      <Column>
-      {visibleItems.map((item) => (
-  <TouchableOpacity
-    key={item.slug}
-    onPress={() =>
-      navigation.navigate('AnimeDetails', { slug: item.slug })
-    }
-  >
-    <AnimeCard>
-      <AnimeImage source={{ uri: item.image }} />
-      <Info>
-        <Title numberOfLines={2}>
-          {item.title_ua || item.title_en || '?'}
-        </Title>
-        <Row>
-          <SubText>{item.year || '?'} рік</SubText>
-          <StyledIcon name="circle" />
-          <SubText>{item.score || '?'}</SubText>
-          <IconStar name="star" />
-        </Row>
-      </Info>
-    </AnimeCard>
-  </TouchableOpacity>
-))}
+      <Animated.View style={{ overflow: 'hidden', height: animation }}>
+        <View
+          onLayout={(e) => {
+            const height = e.nativeEvent.layout.height
+            setContentHeight(height)
+          }}
+        >
+          {franchise.map((item) => (
+            <TouchableOpacity
+              key={item.slug}
+              onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
+            >
+              <AnimeCard>
+                <AnimeImage source={{ uri: item.image }} />
+                <Info>
+                  <Title numberOfLines={2}>
+                    {item.title_ua || item.title_en || '?'}
+                  </Title>
+                  <Row>
+                    <SubText>{item.year || '?'} рік</SubText>
+                    <StyledIcon name="circle" />
+                    <SubText>{item.score || '?'}</SubText>
+                    <IconStar name="star" />
+                    <StyledIcon name="circle" />
+                    <SubText>{item.episodes_released || '?'}/{item.episodes_total || '?'} еп</SubText>
+                  </Row>
+                </Info>
+              </AnimeCard>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Animated.View>
 
-        </Column>
-
-      {franchise.length > 3 && (
-        <ToggleButton onPress={() => setExpanded(!expanded)}>
+      {franchise.length > COLLAPSED_COUNT && (
+        <ToggleButton onPress={toggleExpansion}>
           <ToggleText>{expanded ? 'Згорнути...' : 'Показати більше...'}</ToggleText>
         </ToggleButton>
       )}

@@ -1,6 +1,7 @@
 import React from 'react';
 import styled, { useTheme } from 'styled-components/native';
 import { AntDesign, MaterialIcons, Entypo, Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 const buttonsData = [
   { key: 'popular', label: 'Популярні', iconName: 'star', iconLib: AntDesign },
@@ -13,11 +14,20 @@ const buttonsData = [
 
 const OverviewButtons = () => {
   const theme = useTheme();
+  const navigation = useNavigation();
+
+  const handlePress = (key) => {
+    if (key === 'filter') {
+      navigation.navigate('AnimeFilterScreen'); // 🔁 назва екрана у Stack.Navigator
+    }
+
+    // Інші переходи можна додати тут
+  };
 
   return (
     <Container>
       {buttonsData.map(({ key, label, iconName, iconLib: Icon }) => (
-        <Button key={key} activeOpacity={0.7}>
+        <Button key={key} activeOpacity={0.7} onPress={() => handlePress(key)}>
           <IconWrapper>
             <Icon name={iconName} size={20} color={theme.colors.text} />
           </IconWrapper>

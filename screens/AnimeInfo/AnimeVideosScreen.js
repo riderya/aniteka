@@ -51,18 +51,19 @@ const BlurOverlay = styled(BlurView)`
   z-index: 10;
 `;
 
-const HeaderWrapper = styled.View``;
+const HeaderWrapper = styled.View`
+  padding: 12px;
+`;
 
 const HeaderRow = styled.View`
   flex-direction: row;
   align-items: center;
-  padding: 10px 0px;
-  border-bottom-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
+  /* border-bottom-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border}; */
 `;
 
 const BackButton = styled.TouchableOpacity`
-  padding: 8px;
+  padding: 4px;
 `;
 
 const HeaderTitle = styled.Text`
@@ -77,7 +78,7 @@ const FilterRow = styled.View`
   flex-direction: row;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 10px;
+  margin-top: 12px
 `;
 
 const FilterButton = styled.TouchableOpacity`
@@ -141,7 +142,7 @@ const VideoType = styled.Text`
 
 const StyledIcon = styled(Ionicons)`
   color: ${({ theme }) => theme.colors.gray};
-  font-size: 24px;
+  font-size: 28px;
 `;
 
 // === ГОЛОВНИЙ КОМПОНЕНТ ===

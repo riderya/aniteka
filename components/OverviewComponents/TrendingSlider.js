@@ -159,9 +159,9 @@ const ErrorText = styled.Text`
 
 const Card = styled.View`
   width: ${CARD_WIDTH}px;
-  margin-right: 12px;
+  margin-right: 20px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 14px;
+  border-radius: 24px;
   overflow: hidden;
   height: ${CARD_HEIGHT}px;
   flex-direction: row;

@@ -13,6 +13,7 @@ import AnimePeopleDetailsScreen from '../screens/AnimePeopleDetailsScreen';
 import AnimeCommentsDetailsScreen from '../screens/AnimeCommentsDetailsScreen';
 import CompanyDetailScreen from '../screens/CompanyDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import AnimeFilterScreen from '../screens/AnimeFilterScreen';
 
 const RootStack = createStackNavigator();
 
@@ -33,6 +34,7 @@ export default function RootNavigator() {
       <RootStack.Screen name="AnimeCommentsDetailsScreen" component={AnimeCommentsDetailsScreen} />
       <RootStack.Screen name="CompanyDetailScreen" component={CompanyDetailScreen} />
       <RootStack.Screen name="ProfileScreen" component={ProfileScreen} />
+      <RootStack.Screen name="AnimeFilterScreen" component={AnimeFilterScreen} />
     </RootStack.Navigator>
   );
 }

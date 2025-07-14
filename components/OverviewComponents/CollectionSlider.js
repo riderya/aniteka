@@ -27,9 +27,9 @@ const Container = styled.View`
 
 const CollectionCard = styled.View`
   width: ${CARD_WIDTH}px;
-  border-radius: 16px;
+  border-radius: 24px;
   overflow: hidden;
-  margin-right: 15px;
+  margin-right: 20px;
 `;
 
 const CardWrapper = styled.View`
@@ -44,7 +44,7 @@ const FolderBackground = styled.View`
   height: ${IMAGE_HEIGHT + 30}px;
   background-color: ${({ theme }) => theme.colors.inputBackground};
   z-index: 0;
-  border-radius: 16px;
+  border-radius: 24px;
 `;
 
 const AnimeStack = styled.View`
@@ -57,7 +57,7 @@ const AnimeStack = styled.View`
 const SecondImage = styled.Image`
   width: 100%;
   height: ${IMAGE_HEIGHT}px;
-  border-radius: 14px;
+  border-radius: 24px;
   position: absolute;
   top: 10px;
   z-index: 1;
@@ -67,7 +67,7 @@ const SecondImage = styled.Image`
 const FirstImage = styled.Image`
   width: 100%;
   height: ${IMAGE_HEIGHT}px;
-  border-radius: 14px;
+  border-radius: 24px;
   position: absolute;
   top: 20px;
   z-index: 2;

@@ -1,22 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
 import Entypo from '@expo/vector-icons/Entypo';
+import { useNavigation } from '@react-navigation/native';
 
 const Container = styled.View`
   margin-top: 25px;
   flex-direction: column;
-  gap: 12px;
+  padding: 0 12px;
+`;
+
+const Column = styled.View`
+  flex-direction: column;
+  gap: 20px;
 `;
 
 const CommentCard = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: 24px;
+  padding: 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  margin: auto 12px;
 `;
 
 const Row = styled.View`
@@ -46,13 +51,14 @@ const CommentText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   margin-top: 10px;
   font-size: 14px;
-  line-height: 20;
+  line-height: 20px;
 `;
 
 const TagsRow = styled.View`
   flex-direction: row;
   gap: 12px;
   margin-top: 12px;
+  align-items: center;
 `;
 
 const LikeScore = styled.Text`
@@ -72,10 +78,10 @@ const RowScore = styled.View`
 
 const LinkTag = styled.Text`
   color: ${({ theme }) => theme.colors.primary};
-  font-size: 13px;
+  font-size: 12px;
   padding: 5px 0px;
   font-weight: 500;
-  width: 77.7%;
+  max-width: 260px;
 `;
 
 const TypeTag = styled.Text`
@@ -89,6 +95,7 @@ const TypeTag = styled.Text`
 
 const LatestComments = () => {
   const [comments, setComments] = useState([]);
+  const navigation = useNavigation();
 
   const commentType = {
     collection: 'Колекція',
@@ -97,35 +104,42 @@ const LatestComments = () => {
     anime: 'Аніме',
     manga: 'Манґа',
     novel: 'Ранобе',
-  }
+  };
 
   const timeAgo = (created) => {
-  const secondsAgo = Math.floor(Date.now() / 1000) - created;
-
-  if (secondsAgo < 60) return `щойно`;
-  if (secondsAgo < 3600) return `близько ${Math.floor(secondsAgo / 60)} хвилин тому`;
-  if (secondsAgo < 86400) return `близько ${Math.floor(secondsAgo / 3600)} годин тому`;
-  return `близько ${Math.floor(secondsAgo / 86400)} днів тому`;
-};
-
+    const secondsAgo = Math.floor(Date.now() / 1000) - created;
+    if (secondsAgo < 60) return `щойно`;
+    if (secondsAgo < 3600) return `близько ${Math.floor(secondsAgo / 60)} хв тому`;
+    if (secondsAgo < 86400) return `близько ${Math.floor(secondsAgo / 3600)} год тому`;
+    return `близько ${Math.floor(secondsAgo / 86400)} днів тому`;
+  };
 
   useEffect(() => {
     const fetchComments = async () => {
+      try {
         const response = await axios.get('https://api.hikka.io/comments/latest');
         setComments(response.data);
+      } catch (error) {
+        console.error('Помилка при завантаженні коментарів:', error);
+      }
     };
 
     fetchComments();
   }, []);
 
+  const handleNavigate = (item) => {
+    if (item.content_type === 'anime' && item.preview?.slug) {
+      navigation.navigate('AnimeDetails', { slug: item.preview.slug });
+    }
+  };
 
   return (
-      <Container>
+    <Container>
       <RowLineHeader
         title="Коментарі"
         onPress={() => navigation.navigate('AnimeCharactersScreen')}
       />
-
+      <Column>
         {comments.map((item, index) => {
           const avatar = item.author?.avatar || 'https://ui-avatars.com/api/?name=?';
           const username = item.author?.username || 'Користувач';
@@ -141,33 +155,33 @@ const LatestComments = () => {
                   <Timestamp>{time}</Timestamp>
                 </View>
 
-
                 {item.vote_score !== 0 && (
-  <RowScore>
-    <Entypo
-      name={item.vote_score > 0 ? 'arrow-bold-up' : 'arrow-bold-down'}
-      size={16}
-      color={item.vote_score > 0 ? 'green' : 'red'}
-    />
-    <LikeScore style={{ color: item.vote_score > 0 ? 'green' : 'red' }}>
-      {item.vote_score}
-    </LikeScore>
-  </RowScore>
-)}
-
-
+                  <RowScore>
+                    <Entypo
+                      name={item.vote_score > 0 ? 'arrow-bold-up' : 'arrow-bold-down'}
+                      size={16}
+                      color={item.vote_score > 0 ? 'green' : 'red'}
+                    />
+                    <LikeScore style={{ color: item.vote_score > 0 ? 'green' : 'red' }}>
+                      {item.vote_score}
+                    </LikeScore>
+                  </RowScore>
+                )}
               </Row>
 
               <CommentText numberOfLines={10}>{item.text}</CommentText>
 
               <TagsRow>
-              <TypeTag>{commentType[item.content_type]}</TypeTag>
-                <LinkTag numberOfLines={1}>{preview.title}</LinkTag>
+                <TypeTag>{commentType[item.content_type]}</TypeTag>
+                <TouchableOpacity onPress={() => handleNavigate(item)}>
+                  <LinkTag numberOfLines={1}>{preview.title || 'Без назви'}</LinkTag>
+                </TouchableOpacity>
               </TagsRow>
             </CommentCard>
           );
         })}
-      </Container>
+      </Column>
+    </Container>
   );
 };
 

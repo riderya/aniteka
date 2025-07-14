@@ -211,7 +211,7 @@ const AnimeTile = styled(TouchableOpacity)`
 const AnimeImage = styled.Image`
   width: 100%;
   height: ${cardWidth * 1.4}px;
-  border-radius: 8px;
+  border-radius: 24px;
 `;
 const AnimeTitle = styled.Text`
   font-size: 14px;
