@@ -20,20 +20,41 @@ const statusLabels = {
   dropped: 'Закинуто',
 };
 
-const AnimeColumnCard = ({ anime, status, onPress }) => {
+const AnimeColumnCard = ({
+  anime,
+  status,
+  onPress,
+  cardWidth = 140,
+  imageWidth = 140,    // новий пропс для ширини постера
+  imageHeight = 190,
+}) => {
   const { theme } = useTheme();
   
   return (
     <TouchableOpacity onPress={onPress}>
-      <Item>
+      <Item cardWidth={cardWidth}>
         <PosterWrapper>
-          <Poster source={{ uri: anime.image }} resizeMode="cover" />
-          {status && <StatusText status={status}>{statusLabels[status] || status}</StatusText>}
+          <Poster
+            source={{ uri: anime.image }}
+            resizeMode="cover"
+            imageWidth={imageWidth}       // передаємо ширину
+            imageHeight={imageHeight}
+          />
+          {status && (
+            <StatusText status={status}>
+              {statusLabels[status] || status}
+            </StatusText>
+          )}
         </PosterWrapper>
-        <Title numberOfLines={2}>{anime.title_ua || anime.title_en || anime.title_ja || '?'}</Title>
+        <Title numberOfLines={2}>
+          {anime.title_ua || anime.title_en || anime.title_ja || '?'}
+        </Title>
         <RowFooter>
           <TextFooter>{media_Type[anime.media_type]}</TextFooter>
-          <TextFooter>{anime.episodes_released || '?'}/{anime.episodes_total || '?'}еп</TextFooter>
+          <TextFooter>
+            {anime.episodes_released || '?'}/
+            {anime.episodes_total || '?'}еп
+          </TextFooter>
         </RowFooter>
       </Item>
     </TouchableOpacity>
@@ -44,8 +65,8 @@ const AnimeColumnCard = ({ anime, status, onPress }) => {
 export default AnimeColumnCard;
 
 const Item = styled.View`
-  width: 140px;
-  margin-right: 20px;
+  max-width: ${({ cardWidth }) => cardWidth}px;
+  width: 100%;
 `;
 
 const PosterWrapper = styled.View`
@@ -53,8 +74,8 @@ const PosterWrapper = styled.View`
 `;
 
 const Poster = styled.Image`
-  width: 100%;
-  height: 190px;
+  width: ${({ imageWidth }) => imageWidth}px;
+  height: ${({ imageHeight }) => imageHeight}px;
   border-radius: 24px;
 `;
 
@@ -92,7 +113,7 @@ const StatusText = styled.Text`
   background-color: ${({ status, theme }) => {
     switch (status) {
       case 'watching':
-        return `${theme.colors.watching}B3`; // 70% прозорості
+        return `${theme.colors.watching}B3`;
       case 'planned':
         return `${theme.colors.planned}B3`;
       case 'dropped':
@@ -108,5 +129,3 @@ const StatusText = styled.Text`
     }
   }};
 `;
-
-

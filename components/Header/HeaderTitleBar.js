@@ -39,5 +39,5 @@ const HeaderTitle = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: 18px;
   font-weight: bold;
-  margin-left: 8px;
+  margin-left: 12px;
 `;

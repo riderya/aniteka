@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import AnimeFilters from '../components/AnimeFilter/FilterPanel';
 import AnimeResults from '../components/AnimeFilter/AnimeResults';
+import HeaderTitleBar from '../components/Header/HeaderTitleBar';
+import { BlurView } from 'expo-blur';
+import { useTheme } from '../context/ThemeContext';
 
 const API_BASE = 'https://api.hikka.io';
 
@@ -16,16 +19,28 @@ const Container = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
+const BlurOverlay = styled(BlurView)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  border-bottom-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
+`;
+
 const ResultsContainer = styled.View`
   flex: 1;
 `;
 
 const BackButton = styled.TouchableOpacity`
+  position: absolute;
   margin-bottom: 16px;
   padding: 12px;
   background-color: #6c47ff;
   border-radius: 10px;
   align-self: flex-start;
+  z-index: 9;
 `;
 
 const BackButtonText = styled.Text`
@@ -36,6 +51,7 @@ const BackButtonText = styled.Text`
 export default function AnimeFilterScreen() {
   const [allGenres, setAllGenres] = useState([]);
   const [loadingGenres, setLoadingGenres] = useState(true);
+    const { theme, isDark } = useTheme();
 
   const [filters, setFilters] = useState({
     selectedGenres: [],
@@ -65,8 +81,10 @@ export default function AnimeFilterScreen() {
 
   const [animeList, setAnimeList] = useState([]);
   const [loadingAnime, setLoadingAnime] = useState(false);
-
   const [showResults, setShowResults] = useState(false);
+
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     const fetchGenres = async () => {
@@ -128,41 +146,87 @@ export default function AnimeFilterScreen() {
     });
   };
 
-  const fetchAnimeByFilters = async () => {
-    setLoadingAnime(true);
-    closeAllDropdowns();
+  const resetPage = () => {
+    setPage(1);
+    setHasMore(true);
+  };
 
-    try {
-      let { yearFrom, yearTo } = filters;
-      if (yearFrom && yearTo && yearFrom > yearTo) [yearFrom, yearTo] = [yearTo, yearFrom];
+  const fetchAnimeByFilters = useCallback(
+    async (newSearch = false) => {
+      if (!hasMore && !newSearch) return;
 
-      const postData = {
-        genres: filters.selectedGenres,
-        years: [yearFrom || null, yearTo || null],
-        include_multiseason: false,
-        only_translated: false,
-        score: [null, null],
-        media_type: filters.selectedMediaTypes,
-        rating: filters.selectedRatings,
-        status: filters.selectedStatuses,
-        source: filters.selectedSources,
-        season: filters.selectedSeasons,
-        producers: [],
-        studios: filters.selectedStudios,
-        query: null,
-        sort: filters.selectedSort ? [filters.selectedSort] : ['score:desc', 'scored_by:desc'],
-      };
+      if (newSearch) {
+        resetPage();
+        setAnimeList([]);
+      }
 
-      const res = await axios.post(`${API_BASE}/anime`, postData);
-      setAnimeList(res.data.list || []);
-      setShowResults(true);
-    } catch (e) {
-      console.error('Помилка запиту аніме:', e);
-      setAnimeList([]);
-      alert('Помилка запиту');
-    } finally {
-      setLoadingAnime(false);
-    }
+      setLoadingAnime(true);
+      closeAllDropdowns();
+
+      try {
+        let { yearFrom, yearTo } = filters;
+        if (yearFrom && yearTo && yearFrom > yearTo) [yearFrom, yearTo] = [yearTo, yearFrom];
+
+        const postData = {
+          genres: filters.selectedGenres,
+          years: [yearFrom || null, yearTo || null],
+          include_multiseason: false,
+          only_translated: false,
+          score: [null, null],
+          media_type: filters.selectedMediaTypes,
+          rating: filters.selectedRatings,
+          status: filters.selectedStatuses,
+          source: filters.selectedSources,
+          season: filters.selectedSeasons,
+          producers: [],
+          studios: filters.selectedStudios,
+          query: null,
+          sort: filters.selectedSort ? [filters.selectedSort] : ['score:desc', 'scored_by:desc'],
+        };
+
+        const res = await axios.post(
+          `${API_BASE}/anime?page=${newSearch ? 1 : page}&size=20`,
+          postData
+        );
+        const newList = res.data.list || [];
+
+        if (newSearch) {
+          setAnimeList(newList);
+          setShowResults(true);
+        } else {
+          setAnimeList((prev) => [...prev, ...newList]);
+        }
+
+        if (newList.length < 20) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+      } catch (e) {
+        console.error('Помилка запиту аніме:', e);
+        if (newSearch) setAnimeList([]);
+        alert('Помилка запиту');
+      } finally {
+        setLoadingAnime(false);
+      }
+    },
+    [filters, page, hasMore]
+  );
+
+  // При зміні сторінки підвантажуємо нові дані
+  useEffect(() => {
+    if (page === 1) return;
+    fetchAnimeByFilters();
+  }, [page, fetchAnimeByFilters]);
+
+  const applyFilters = () => {
+    resetPage();
+    fetchAnimeByFilters(true);
+  };
+
+  const loadMore = () => {
+    if (loadingAnime || !hasMore) return;
+    setPage((prev) => prev + 1);
   };
 
   const resetFilters = () => {
@@ -180,6 +244,8 @@ export default function AnimeFilterScreen() {
     });
     setAnimeList([]);
     setShowResults(false);
+    setPage(1);
+    setHasMore(true);
   };
 
   if (loadingGenres) {
@@ -205,16 +271,25 @@ export default function AnimeFilterScreen() {
           dropdownStates={dropdownStates}
           setDropdownStates={setDropdownStates}
           yearsList={yearsList}
-          applyFilters={fetchAnimeByFilters}
+          applyFilters={applyFilters}
           resetFilters={resetFilters}
         />
       ) : (
         <ResultsContainer>
+
           <BackButton onPress={() => setShowResults(false)}>
             <BackButtonText>Назад до фільтрів</BackButtonText>
           </BackButton>
 
-          <AnimeResults animeList={animeList} loadingAnime={loadingAnime} />
+      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+        <HeaderTitleBar title="Фільтр" />
+      </BlurOverlay>
+
+          <AnimeResults
+            animeList={animeList}
+            loadingAnime={loadingAnime}
+            onEndReached={loadMore}
+          />
         </ResultsContainer>
       )}
     </Container>
