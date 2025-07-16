@@ -1,6 +1,7 @@
 // TopDetail.js
+import { TouchableOpacity } from 'react-native';
 import React, { useState } from 'react';
-import { Alert, TouchableOpacity, View, StyleSheet, Modal } from 'react-native';
+import { Alert, View, StyleSheet, Modal } from 'react-native';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import styled from 'styled-components/native';
 import * as Clipboard from 'expo-clipboard';
@@ -274,12 +275,23 @@ const TopDetail = ({ anime }) => {
   </InfoRow>
 )}
 
-            <InfoRow>
-              <InfoBold>Жанри:</InfoBold>
-              {anime.genres.map((genre, index) => (
-                <GenreName key={index}>{genre.name_ua}</GenreName>
-              ))}
-            </InfoRow>
+<InfoRow>
+  <InfoBold>Жанри:</InfoBold>
+  {anime.genres.map((genre) => (
+    <TouchableOpacity
+      key={genre.slug}
+      onPress={() =>
+        navigation.navigate('AnimeFilterScreen', {
+          initialGenre: genre.slug,
+        })
+      }
+    >
+      <GenreName>{genre.name_ua}</GenreName>
+    </TouchableOpacity>
+  ))}
+</InfoRow>
+
+
           </InfoContent>
         </Block>
 
