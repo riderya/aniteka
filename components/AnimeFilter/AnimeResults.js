@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
-import { FlatList } from 'react-native';
+import { FlatList, useWindowDimensions, Image } from 'react-native';
 
 const Container = styled.View`
   flex: 1;
@@ -12,60 +12,75 @@ const LoadingIndicator = styled.ActivityIndicator`
   margin-top: 20px;
 `;
 
+const EmptyContainer = styled.View`
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  padding-top: 150px;
+`;
+
+const EmptyImage = styled.Image`
+  width: 150px;
+  height: 150px;
+  margin-bottom: 0px;
+`;
+
 const EmptyText = styled.Text`
-  color: #fff;
+  color: #aaa;
+  font-size: 16px;
   text-align: center;
-  margin-top: 20px;
 `;
 
-const Row = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
+const CardWrapper = styled.View`
+  align-items: center;
   margin-bottom: 25px;
-  padding: 0px 12px;
 `;
-
-const CardWrapper = styled.View``;
-
 
 export default function AnimeResults({ animeList, loadingAnime, onEndReached }) {
   const navigation = useNavigation();
+  const { width } = useWindowDimensions();
+  const cardWidth = 115;
+  const spacing = 12;
+  const numColumns = Math.floor(width / (cardWidth + spacing));
 
   if (loadingAnime && animeList.length === 0) {
     return <LoadingIndicator size="large" color="#6c47ff" />;
   }
 
   if (!loadingAnime && animeList.length === 0) {
-    return <EmptyText>На жаль, аніме не знайдено</EmptyText>;
+    return (
+      <EmptyContainer>
+        <EmptyImage source={require('../../assets/image/noSearchImage.png')} resizeMode="contain" />
+        <EmptyText>На жаль, аніме не знайдено</EmptyText>
+      </EmptyContainer>
+    );
   }
 
-  const renderRow = ({ item: group, index }) => (
-    <Row key={index}>
-      {group.map((item) => (
-        <CardWrapper key={item.slug}>
-          <AnimeColumnCard
-            anime={item}
-            onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
-            cardWidth={115}
-            imageWidth={115} 
-            imageHeight={165}
-          />
-        </CardWrapper>
-      ))}
-    </Row>
+  const renderItem = ({ item }) => (
+    <CardWrapper style={{ width: cardWidth }}>
+      <AnimeColumnCard
+        anime={item}
+        onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
+        cardWidth={cardWidth}
+        imageWidth={cardWidth}
+        imageHeight={165}
+      />
+    </CardWrapper>
   );
-
-  const groupedData = [];
-  for (let i = 0; i < animeList.length; i += 3) {
-    groupedData.push(animeList.slice(i, i + 3));
-  }
 
   return (
     <Container>
       <FlatList
-        data={groupedData}
-        renderItem={renderRow}
-        keyExtractor={(_, index) => index.toString()}
+        data={animeList}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.slug}
+        numColumns={numColumns}
+        contentContainerStyle={{ paddingTop: 115, paddingHorizontal: 6 }}
+        columnWrapperStyle={{
+          justifyContent: 'space-between',
+          paddingHorizontal: 6,
+        }}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
         ListFooterComponent={

@@ -71,7 +71,6 @@ const sortOptions = [
   { slug: "media_type:desc", label: "За типом" },
 ];
 
-// Styled components
 
 const ModalOverlay = styled.TouchableOpacity`
   flex: 1;
@@ -111,10 +110,10 @@ const ModalTitle = styled.Text`
 `;
 
 const ModalOption = styled.TouchableOpacity`
-  padding-vertical: ${(props) => props.vertical || 8}px;
+  padding: ${(props) => props.vertical || 8}px;
   padding: 12px;
-  background-color: ${(props) =>
-  props.selected ? props.theme.colors.primary : props.theme.colors.inputBackground};
+  /* background-color: ${(props) =>
+  props.selected ? props.theme.colors.primary : props.theme.colors.inputBackground}; */
   margin: 4px 0px;
   border-radius: 12px;
   flex-direction: ${(props) => (props.row ? 'row' : 'column')};
@@ -122,30 +121,30 @@ const ModalOption = styled.TouchableOpacity`
   align-items: ${(props) => (props.center ? 'center' : 'flex-start')};
 `;
 
-
 const ModalOptionText = styled.Text`
-  color: ${(props) => (props.selected ? props.theme.colors.background : props.theme.colors.gray)};
+  color: ${(props) => (props.selected ? props.theme.colors.primary : props.theme.colors.gray)};
   font-weight: ${(props) => (props.bold ? 'bold' : 'normal')};
-  font-size: ${(props) => props.fontSize || 14}px;
-`;
-
-const Checkmark = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-weight: bold;
+  font-size: 14px;
 `;
 
 const FilterButton = styled.TouchableOpacity`
-  height: 55px;
   align-items: flex-start;
   justify-content: center;
   border-width: 1px;
-  border-color: ${({ theme }) => theme.colors.borderInput};
+  border-color: ${({ theme }) => theme.colors.border};
   padding: 12px;
   border-radius: 12px;
+  background-color: ${({ selected, theme }) =>
+    selected ? theme.colors.inputBackground : 'transparent'};
 `;
 
 const FilterButtonText = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
+  padding: ${({ selected }) => (selected ? '4px 12px' : '4px 0px')};
+  color: ${({ selected, theme }) =>
+    selected ? theme.colors.background : theme.colors.text};
+  background-color: ${({ selected, theme }) =>
+    selected ? theme.colors.primary : 'transparent'};
+  border-radius: 8px;
 `;
 
 const BottomButtonsContainer = styled.View`
@@ -204,7 +203,35 @@ const LabelName = styled.Text`
   color: ${({ theme }) => theme.colors.gray};
 `;
 
-// Модалка для багатовибору
+const Checkbox = styled.View`
+  width: 20px;
+  height: 20px;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.borderInput};
+background-color: ${({ selected, theme }) =>
+  selected ? theme.colors.primary : theme.colors.card};
+  border-radius: 6px;
+  margin-right: 12px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const CheckmarkText = styled.Text`
+  color: ${({ theme }) => theme.colors.background};
+  font-size: 14px;
+  font-weight: bold;
+`;
+
+
+const SelectedValuesContainer = styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+
+
+
 const FilterModal = ({
   visible,
   onClose,
@@ -213,35 +240,40 @@ const FilterModal = ({
   toggleOption,
   labelKey = 'label',
   maxHeight = 350,
+  title,
 }) => (
   <Modal visible={visible} transparent animationType="fade">
     <ModalOverlay onPress={onClose} activeOpacity={1}>
       <ModalContainer maxHeight={maxHeight}>
-        {options.map((option) => {
-          const slug = option.slug;
-          const isSelected = selected.includes(slug);
-          const label = option[labelKey] || slug;
+        {title && <ModalTitle>{title}</ModalTitle>}
+        <ScrollView style={{ maxHeight: maxHeight - 50 /* залишаємо місце для тайтла */ }}>
+          {options.map((option) => {
+            const slug = option.slug;
+            const isSelected = selected.includes(slug);
+            const label = option[labelKey] || slug;
 
-          return (
-            <ModalOption
-              key={slug}
-              onPress={() => toggleOption(slug)}
-              selected={isSelected}
-              row
-              spaceBetween
-              center
-            >
-              <ModalOptionText selected={isSelected}>{label}</ModalOptionText>
-              {isSelected && <Checkmark>✓</Checkmark>}
-            </ModalOption>
-          );
-        })}
+            return (
+              <ModalOption
+                key={slug}
+                onPress={() => toggleOption(slug)}
+                selected={isSelected}
+                row
+                center
+              >
+                <Checkbox selected={isSelected}>
+                  <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
+                </Checkbox>
+                <ModalOptionText selected={isSelected}>{label}</ModalOptionText>
+              </ModalOption>
+            );
+          })}
+        </ScrollView>
       </ModalContainer>
     </ModalOverlay>
   </Modal>
 );
 
-// Модалка для вибору одного року
+
 const YearFilterModal = ({
   visible,
   onClose,
@@ -254,8 +286,8 @@ const YearFilterModal = ({
   <Modal visible={visible} transparent animationType="fade">
     <ModalOverlay onPress={onClose} activeOpacity={1}>
       <ModalYearContainer maxHeight={maxHeight}>
-        <ModalTitle>{title}</ModalTitle>
-        <ScrollView>
+        {title && <ModalTitle>{title}</ModalTitle>}
+        <ScrollView style={{ maxHeight: maxHeight - 50 }}>
           {options.map((year) => {
             const isSelected = selectedYear === year;
             return (
@@ -263,7 +295,12 @@ const YearFilterModal = ({
                 key={year}
                 onPress={() => onSelectYear(year)}
                 selected={isSelected}
+                row
+                center
               >
+                <Checkbox selected={isSelected}>
+                  <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
+                </Checkbox>
                 <ModalOptionText selected={isSelected}>{year}</ModalOptionText>
               </ModalOption>
             );
@@ -274,7 +311,7 @@ const YearFilterModal = ({
   </Modal>
 );
 
-// Модалка для вибору одного елемента сортування
+
 const SingleSelectModal = ({
   visible,
   onClose,
@@ -282,33 +319,39 @@ const SingleSelectModal = ({
   selected,
   onSelect,
   maxHeight = 300,
+  title,
 }) => (
   <Modal visible={visible} transparent animationType="fade">
     <ModalOverlay onPress={onClose} activeOpacity={1}>
       <ModalContainer maxHeight={maxHeight}>
-        {options.map(({ slug, label }) => {
-          const isSelected = selected === slug;
-          return (
-            <ModalOption
-              key={slug}
-              onPress={() => {
-                onSelect(slug);
-                onClose();
-              }}
-              selected={isSelected}
-              vertical={12}
-              horizontal={16}
-            >
-              <ModalOptionText selected={isSelected} fontSize={16}>
-                {label}
-              </ModalOptionText>
-            </ModalOption>
-          );
-        })}
+        {title && <ModalTitle>{title}</ModalTitle>}
+        <ScrollView style={{ maxHeight: maxHeight - 50 }}>
+          {options.map(({ slug, label }) => {
+            const isSelected = selected === slug;
+            return (
+              <ModalOption
+                key={slug}
+                onPress={() => {
+                  onSelect(slug);
+                  onClose();
+                }}
+                selected={isSelected}
+                row
+                center
+              >
+                <Checkbox selected={isSelected}>
+                  <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
+                </Checkbox>
+                <ModalOptionText selected={isSelected}>{label}</ModalOptionText>
+              </ModalOption>
+            );
+          })}
+        </ScrollView>
       </ModalContainer>
     </ModalOverlay>
   </Modal>
 );
+
 
 // Функція для відображення вибраних лейблів
 const renderSelectedLabels = (selectedSlugs, options, labelKey = 'label', allGenres = []) => {
@@ -323,7 +366,32 @@ const renderSelectedLabels = (selectedSlugs, options, labelKey = 'label', allGen
         return found ? found[labelKey] || slug : slug;
       }
     })
-    .join(', ');
+    .join('   ')
+};
+
+const renderSelectedLabelsAsTags = (selectedSlugs, options, labelKey = 'label', allGenres = []) => {
+  if (!selectedSlugs.length) return <FilterButtonText>Не вибрано</FilterButtonText>;
+
+  return selectedSlugs.map((slug) => {
+    const found = allGenres.length
+      ? allGenres.find((g) => g.slug === slug)
+      : options.find((o) => o.slug === slug);
+    const label = found ? found[labelKey] || slug : slug;
+
+    return (
+      <FilterButtonText key={slug} selected>
+        {label}
+      </FilterButtonText>
+    );
+  });
+};
+
+
+
+
+const hasSelection = (val) => {
+  if (Array.isArray(val)) return val.length > 0;
+  return Boolean(val);
 };
 
 export default function AnimeFilters({
@@ -365,123 +433,148 @@ export default function AnimeFilters({
         <HeaderTitleBar title='Фільтр' />
       </BlurOverlay>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 100, paddingBottom: 100, paddingLeft: 12, paddingRight: 12 }}>
-        {/* Жанри */}
-        <Column>
-        <LabelName>Жанри</LabelName>
-        <FilterButton
-          onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownGenresVisible: true }))}
-        >
-          <FilterButtonText>
-            {renderSelectedLabels(selectedGenres, [], 'name_ua', allGenres)}
-          </FilterButtonText>
-        </FilterButton>
-        </Column>
+
+
+<Column>
+  <LabelName>Жанри</LabelName>
+  <FilterButton
+    selected={hasSelection(selectedGenres)}
+    onPress={() =>
+      setDropdownStates((prev) => ({
+        ...prev,
+        dropdownGenresVisible: true,
+      }))
+    }
+  >
+    <SelectedValuesContainer>
+      {renderSelectedLabelsAsTags(selectedGenres, [], 'name_ua', allGenres)}
+    </SelectedValuesContainer>
+  </FilterButton>
+</Column>
+
+
 
         {/* Категорії */}
-        <Column>
-        <LabelName>Категорії</LabelName>
-        <FilterButton
-          mb={16}
-          onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownMediaVisible: true }))}
-        >
-          <FilterButtonText>
-            {renderSelectedLabels(selectedMediaTypes, mediaTypeOptions)}
-          </FilterButtonText>
-        </FilterButton>
-        </Column>
+<Column>
+  <LabelName>Категорії</LabelName>
+  <FilterButton
+    selected={hasSelection(selectedMediaTypes)}
+    onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownMediaVisible: true }))}
+  >
+    <SelectedValuesContainer>
+      {renderSelectedLabelsAsTags(selectedMediaTypes, mediaTypeOptions)}
+    </SelectedValuesContainer>
+  </FilterButton>
+</Column>
+
 
         {/* Студії */}
-        <Column>
-        <LabelName>Студії</LabelName>
-        <FilterButton
-          onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownStudiosVisible: true }))}
-        >
-          <FilterButtonText>
-            {renderSelectedLabels(selectedStudios, studioOptions)}
-          </FilterButtonText>
-        </FilterButton>
-        </Column>
+<Column>
+  <LabelName>Студії</LabelName>
+  <FilterButton
+    selected={hasSelection(selectedStudios)}
+    onPress={() =>
+      setDropdownStates((prev) => ({ ...prev, dropdownStudiosVisible: true }))
+    }
+  >
+    <SelectedValuesContainer>
+      {renderSelectedLabelsAsTags(selectedStudios, studioOptions)}
+    </SelectedValuesContainer>
+  </FilterButton>
+</Column>
 
         {/* Джерела */}
         <Column>
-        <LabelName>Джерела</LabelName>
-        <FilterButton
-          onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownSourcesVisible: true }))}
-        >
-          <FilterButtonText>
-            {renderSelectedLabels(selectedSources, sourceOptions)}
-          </FilterButtonText>
-        </FilterButton>
+          <LabelName>Джерела</LabelName>
+          <FilterButton
+            selected={hasSelection(selectedSources)}
+            onPress={() => 
+              setDropdownStates((prev) => ({ ...prev, dropdownSourcesVisible: true }))
+            }
+          >
+            <SelectedValuesContainer>
+              {renderSelectedLabelsAsTags(selectedSources, sourceOptions)}
+            </SelectedValuesContainer>
+          </FilterButton>
         </Column>
 
         {/* Статус */}
         <Column>
-        <LabelName>Статус</LabelName>
-        <FilterButton
-          onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownStatusVisible: true }))}
-        >
-          <FilterButtonText>
-            {renderSelectedLabels(selectedStatuses, statusOptions)}
-          </FilterButtonText>
-        </FilterButton>
+          <LabelName>Статус</LabelName>
+          <FilterButton
+            selected={hasSelection(selectedStatuses)}
+            onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownStatusVisible: true }))}
+          >
+            <SelectedValuesContainer>
+              {renderSelectedLabelsAsTags(selectedStatuses, statusOptions)}
+            </SelectedValuesContainer>
+          </FilterButton>
         </Column>
 
         {/* Сезон */}
         <Column>
-        <LabelName>Сезон</LabelName>
-        <FilterButton
-          onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownSeasonVisible: true }))}
-        >
-          <FilterButtonText>
-            {renderSelectedLabels(selectedSeasons, seasonOptions)}
-          </FilterButtonText>
-        </FilterButton>
+          <LabelName>Сезон</LabelName>
+          <FilterButton
+            selected={hasSelection(selectedSeasons)}
+            onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownSeasonVisible: true }))}
+          >
+            <SelectedValuesContainer>
+              {renderSelectedLabelsAsTags(selectedSeasons, seasonOptions)}
+            </SelectedValuesContainer>
+          </FilterButton>
         </Column>
 
         {/* Рейтинг */}
         <Column>
-        <LabelName>Рейтинг</LabelName>
-        <FilterButton
-          onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownRatingVisible: true }))}
-        >
-          <FilterButtonText>
-            {renderSelectedLabels(selectedRatings, ratingOptions)}
-          </FilterButtonText>
-        </FilterButton>
+          <LabelName>Рейтинг</LabelName>
+          <FilterButton
+            selected={hasSelection(selectedRatings)}
+            onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownRatingVisible: true }))}
+          >
+            <SelectedValuesContainer>
+              {renderSelectedLabelsAsTags(selectedRatings, ratingOptions)}
+            </SelectedValuesContainer>
+          </FilterButton>
         </Column>
 
         {/* Рік від */}
         <Column>
-        <LabelName>Рік виходу</LabelName>
-        <FilterButton
-          onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownYearFromVisible: true }))}
-        >
-          <FilterButtonText>Рік від: {yearFrom || 'не вибрано'}</FilterButtonText>
-        </FilterButton>
+          <LabelName>Рік виходу</LabelName>
+          <FilterButton
+            selected={hasSelection(yearFrom)}
+            onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownYearFromVisible: true }))}
+          >
+            <FilterButtonText selected={hasSelection(yearFrom)}>
+              Рік від: {yearFrom || 'не вибрано'}
+            </FilterButtonText>
+          </FilterButton>
 
-        {/* Рік до */}
-        <FilterButton
-          onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownYearToVisible: true }))}
-        >
-          <FilterButtonText>Рік до: {yearTo || 'не вибрано'}</FilterButtonText>
-        </FilterButton>
+          {/* Рік до */}
+          <FilterButton
+            selected={hasSelection(yearTo)}
+            onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownYearToVisible: true }))}
+          >
+            <FilterButtonText selected={hasSelection(yearTo)}>
+              Рік до: {yearTo || 'не вибрано'}
+            </FilterButtonText>
+          </FilterButton>
         </Column>
 
         {/* Сортування */}
         <Column>
-        <LabelName>Сортування</LabelName>
-        <FilterButton
-          mb={16}
-          onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownSortVisible: true }))}
-        >
-          <FilterButtonText>
-            Сортування: {sortOptions.find((o) => o.slug === selectedSort)?.label || 'Не вибрано'}
-          </FilterButtonText>
-        </FilterButton>
+          <LabelName>Сортування</LabelName>
+          <FilterButton
+            selected={hasSelection(selectedSort)}
+            onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownSortVisible: true }))}
+          >
+            <FilterButtonText selected={hasSelection(selectedSort)}>
+              Сортування: {sortOptions.find((o) => o.slug === selectedSort)?.label || 'Не вибрано'}
+            </FilterButtonText>
+          </FilterButton>
         </Column>
       </ScrollView>
 
-      {/* Фіксовані кнопки знизу */}
+      {/* Кнопки знизу */}
       <BottomButtonsContainer>
         <ResetButton onPress={resetFilters}>
           <ResetButtonText>Скинути</ResetButtonText>
@@ -493,88 +586,97 @@ export default function AnimeFilters({
       </BottomButtonsContainer>
 
       {/* Модалки */}
-      <FilterModal
-        visible={dropdownStates.dropdownGenresVisible}
-        onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownGenresVisible: false }))}
-        options={allGenres}
-        selected={selectedGenres}
-        toggleOption={toggleGenre}
-        labelKey="name_ua"
-      />
+<FilterModal
+  visible={dropdownStates.dropdownGenresVisible}
+  onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownGenresVisible: false }))}
+  options={allGenres}
+  selected={selectedGenres}
+  toggleOption={toggleGenre}
+  labelKey="name_ua"
+  title="Жанри"
+/>
 
-      <FilterModal
-        visible={dropdownStates.dropdownMediaVisible}
-        onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownMediaVisible: false }))}
-        options={mediaTypeOptions}
-        selected={selectedMediaTypes}
-        toggleOption={toggleMediaType}
-      />
+<FilterModal
+  visible={dropdownStates.dropdownMediaVisible}
+  onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownMediaVisible: false }))}
+  options={mediaTypeOptions}
+  selected={selectedMediaTypes}
+  toggleOption={toggleMediaType}
+  title="Категорії"
+/>
 
-      <FilterModal
-        visible={dropdownStates.dropdownStudiosVisible}
-        onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownStudiosVisible: false }))}
-        options={studioOptions}
-        selected={selectedStudios}
-        toggleOption={toggleStudio}
-      />
+<FilterModal
+  visible={dropdownStates.dropdownStudiosVisible}
+  onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownStudiosVisible: false }))}
+  options={studioOptions}
+  selected={selectedStudios}
+  toggleOption={toggleStudio}
+  title="Студії"
+/>
 
-      <FilterModal
-        visible={dropdownStates.dropdownSourcesVisible}
-        onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownSourcesVisible: false }))}
-        options={sourceOptions}
-        selected={selectedSources}
-        toggleOption={toggleSource}
-      />
+<FilterModal
+  visible={dropdownStates.dropdownSourcesVisible}
+  onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownSourcesVisible: false }))}
+  options={sourceOptions}
+  selected={selectedSources}
+  toggleOption={toggleSource}
+  title="Джерела"
+/>
 
-      <FilterModal
-        visible={dropdownStates.dropdownStatusVisible}
-        onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownStatusVisible: false }))}
-        options={statusOptions}
-        selected={selectedStatuses}
-        toggleOption={toggleStatus}
-      />
+<FilterModal
+  visible={dropdownStates.dropdownStatusVisible}
+  onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownStatusVisible: false }))}
+  options={statusOptions}
+  selected={selectedStatuses}
+  toggleOption={toggleStatus}
+  title="Статус"
+/>
 
-      <FilterModal
-        visible={dropdownStates.dropdownSeasonVisible}
-        onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownSeasonVisible: false }))}
-        options={seasonOptions}
-        selected={selectedSeasons}
-        toggleOption={toggleSeason}
-      />
+<FilterModal
+  visible={dropdownStates.dropdownSeasonVisible}
+  onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownSeasonVisible: false }))}
+  options={seasonOptions}
+  selected={selectedSeasons}
+  toggleOption={toggleSeason}
+  title="Сезон"
+/>
 
-      <FilterModal
-        visible={dropdownStates.dropdownRatingVisible}
-        onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownRatingVisible: false }))}
-        options={ratingOptions}
-        selected={selectedRatings}
-        toggleOption={toggleRating}
-      />
+<FilterModal
+  visible={dropdownStates.dropdownRatingVisible}
+  onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownRatingVisible: false }))}
+  options={ratingOptions}
+  selected={selectedRatings}
+  toggleOption={toggleRating}
+  title="Рейтинг"
+/>
 
-      <YearFilterModal
-        visible={dropdownStates.dropdownYearFromVisible}
-        onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownYearFromVisible: false }))}
-        options={yearsList}
-        selectedYear={yearFrom}
-        onSelectYear={selectYearFrom}
-        title="Рік від"
-      />
+<YearFilterModal
+  visible={dropdownStates.dropdownYearFromVisible}
+  onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownYearFromVisible: false }))}
+  options={yearsList}
+  selectedYear={yearFrom}
+  onSelectYear={selectYearFrom}
+  title="Рік від"
+/>
 
-      <YearFilterModal
-        visible={dropdownStates.dropdownYearToVisible}
-        onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownYearToVisible: false }))}
-        options={yearsList}
-        selectedYear={yearTo}
-        onSelectYear={selectYearTo}
-        title="Рік до"
-      />
+<YearFilterModal
+  visible={dropdownStates.dropdownYearToVisible}
+  onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownYearToVisible: false }))}
+  options={yearsList}
+  selectedYear={yearTo}
+  onSelectYear={selectYearTo}
+  title="Рік до"
+/>
 
-      <SingleSelectModal
-        visible={dropdownStates.dropdownSortVisible}
-        onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownSortVisible: false }))}
-        options={sortOptions}
-        selected={selectedSort}
-        onSelect={setSelectedSort}
-      />
+<SingleSelectModal
+  visible={dropdownStates.dropdownSortVisible}
+  onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownSortVisible: false }))}
+  options={sortOptions}
+  selected={selectedSort}
+  onSelect={setSelectedSort}
+  title="Сортування"
+/>
+
     </>
   );
 }

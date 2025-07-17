@@ -10,9 +10,10 @@ import { useTheme } from '../context/ThemeContext';
 const API_BASE = 'https://api.hikka.io';
 
 const yearsList = [];
-for (let y = 1965; y <= new Date().getFullYear(); y++) {
+for (let y = new Date().getFullYear(); y >= 1965; y--) {
   yearsList.push(y);
 }
+
 
 const Container = styled.View`
   flex: 1;
@@ -35,16 +36,19 @@ const ResultsContainer = styled.View`
 
 const BackButton = styled.TouchableOpacity`
   position: absolute;
+  right: 12px;
+  top: 45px;
   margin-bottom: 16px;
-  padding: 12px;
-  background-color: #6c47ff;
-  border-radius: 10px;
+  padding: 12px 24px;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.borderInput};
+  border-radius: 999px;
   align-self: flex-start;
-  z-index: 9;
+  z-index: 99999;
 `;
 
 const BackButtonText = styled.Text`
-  color: #fff;
+  color: ${({ theme }) => theme.colors.text};
   font-weight: bold;
 `;
 
@@ -185,7 +189,7 @@ export default function AnimeFilterScreen() {
         };
 
         const res = await axios.post(
-          `${API_BASE}/anime?page=${newSearch ? 1 : page}&size=20`,
+          `${API_BASE}/anime?page=${newSearch ? 1 : page}&size=21`,
           postData
         );
         const newList = res.data.list || [];
@@ -278,7 +282,7 @@ export default function AnimeFilterScreen() {
         <ResultsContainer>
 
           <BackButton onPress={() => setShowResults(false)}>
-            <BackButtonText>Назад до фільтрів</BackButtonText>
+            <BackButtonText>Змінити</BackButtonText>
           </BackButton>
 
       <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>

@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components/native';
 import { TouchableOpacity } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 const media_Type = {
   tv: 'ТБ-серіал',
@@ -50,11 +51,12 @@ const AnimeColumnCard = ({
           {anime.title_ua || anime.title_en || anime.title_ja || '?'}
         </Title>
         <RowFooter>
-          <TextFooter>{media_Type[anime.media_type]}</TextFooter>
-          <TextFooter>
+            <TextFooter>
             {anime.episodes_released || '?'}/
             {anime.episodes_total || '?'}еп
           </TextFooter>
+          <StyledIcon name="circle" size={4} />
+          <TextFooter>{anime.score}</TextFooter>
         </RowFooter>
       </Item>
     </TouchableOpacity>
@@ -82,14 +84,15 @@ const Poster = styled.Image`
 const Title = styled.Text`
   margin-top: 10px;
   font-size: 14px;
-  width: 100%;
+  width: ${({ cardWidth }) => cardWidth}px;
   color: ${({ theme }) => theme.colors.text};
   font-weight: 600;
 `;
 
 const RowFooter = styled.View`
   flex-direction: row;
-  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
   margin-top: 8px;
 `;
 
@@ -128,4 +131,8 @@ const StatusText = styled.Text`
         return 'rgba(51, 51, 51, 0.7)';
     }
   }};
+`;
+
+const StyledIcon = styled(FontAwesome)`
+  color: ${({ theme }) => theme.colors.gray};
 `;
