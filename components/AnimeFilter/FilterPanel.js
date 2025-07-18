@@ -2,13 +2,7 @@ import React from 'react';
 import styled from 'styled-components/native';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
-import {
-  ScrollView,
-  Modal,
-  TouchableOpacity,
-  View,
-  Text,
-} from 'react-native';
+import { View, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback } from 'react-native';
 import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
 
 const mediaTypeOptions = [
@@ -66,10 +60,14 @@ const ratingOptions = [
 ];
 
 const sortOptions = [
-  { slug: "score:desc", label: "За загальною оцінкою" },
-  { slug: "start_date:desc", label: "За датою релізу" },
-  { slug: "media_type:desc", label: "За типом" },
+  { slug: "score:desc", label: "За загальною оцінкою (спадання)" },
+  { slug: "score:asc", label: "За загальною оцінкою (зростання)" },
+  { slug: "start_date:desc", label: "За датою релізу (спадання)" },
+  { slug: "start_date:asc", label: "За датою релізу (зростання)" },
+  { slug: "media_type:desc", label: "За типом (спадання)" },
+  { slug: "media_type:asc", label: "За типом (зростання)" },
 ];
+
 
 
 const ModalOverlay = styled.TouchableOpacity`
@@ -191,7 +189,14 @@ const ResetButtonText = styled.Text`
   font-weight: bold;
 `;
 
+const Row = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
 const Column = styled.View`
+ flex: 1; 
   flex-direction: column;
   gap: 12px;
   margin-top: 24px;
@@ -202,6 +207,7 @@ const LabelName = styled.Text`
   font-weight: 600;
   color: ${({ theme }) => theme.colors.gray};
 `;
+
 
 const Checkbox = styled.View`
   width: 20px;
@@ -230,8 +236,6 @@ const SelectedValuesContainer = styled.View`
 `;
 
 
-
-
 const FilterModal = ({
   visible,
   onClose,
@@ -242,11 +246,24 @@ const FilterModal = ({
   maxHeight = 350,
   title,
 }) => (
-  <Modal visible={visible} transparent animationType="fade">
-    <ModalOverlay onPress={onClose} activeOpacity={1}>
+<Modal visible={visible} transparent animationType="fade">
+  <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }}>
+    
+    {/* Клік по фону */}
+    <TouchableOpacity
+      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+      activeOpacity={1}
+      onPress={onClose}
+    />
+
+    {/* НЕ обгортай ScrollView в TouchableWithoutFeedback */}
+    <View style={{ overflow: 'hidden', borderRadius: 32 }}>
       <ModalContainer maxHeight={maxHeight}>
         {title && <ModalTitle>{title}</ModalTitle>}
-        <ScrollView style={{ maxHeight: maxHeight - 50 /* залишаємо місце для тайтла */ }}>
+        <ScrollView
+          style={{ maxHeight: maxHeight - 50 }}
+          keyboardShouldPersistTaps="handled"
+        >
           {options.map((option) => {
             const slug = option.slug;
             const isSelected = selected.includes(slug);
@@ -269,8 +286,10 @@ const FilterModal = ({
           })}
         </ScrollView>
       </ModalContainer>
-    </ModalOverlay>
-  </Modal>
+    </View>
+  </View>
+</Modal>
+
 );
 
 
@@ -284,30 +303,42 @@ const YearFilterModal = ({
   maxHeight = 300,
 }) => (
   <Modal visible={visible} transparent animationType="fade">
-    <ModalOverlay onPress={onClose} activeOpacity={1}>
-      <ModalYearContainer maxHeight={maxHeight}>
-        {title && <ModalTitle>{title}</ModalTitle>}
-        <ScrollView style={{ maxHeight: maxHeight - 50 }}>
-          {options.map((year) => {
-            const isSelected = selectedYear === year;
-            return (
-              <ModalOption
-                key={year}
-                onPress={() => onSelectYear(year)}
-                selected={isSelected}
-                row
-                center
-              >
-                <Checkbox selected={isSelected}>
-                  <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
-                </Checkbox>
-                <ModalOptionText selected={isSelected}>{year}</ModalOptionText>
-              </ModalOption>
-            );
-          })}
-        </ScrollView>
-      </ModalYearContainer>
-    </ModalOverlay>
+    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }}>
+      
+      <TouchableOpacity
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        activeOpacity={1}
+        onPress={onClose}
+      />
+
+      <View style={{ overflow: 'hidden', borderRadius: 32 }}>
+        <ModalYearContainer maxHeight={maxHeight}>
+          {title && <ModalTitle>{title}</ModalTitle>}
+          <ScrollView
+            style={{ maxHeight: maxHeight - 50 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {options.map((year) => {
+              const isSelected = selectedYear === year;
+              return (
+                <ModalOption
+                  key={year}
+                  onPress={() => onSelectYear(year)}
+                  selected={isSelected}
+                  row
+                  center
+                >
+                  <Checkbox selected={isSelected}>
+                    <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
+                  </Checkbox>
+                  <ModalOptionText selected={isSelected}>{year}</ModalOptionText>
+                </ModalOption>
+              );
+            })}
+          </ScrollView>
+        </ModalYearContainer>
+      </View>
+    </View>
   </Modal>
 );
 
@@ -322,52 +353,48 @@ const SingleSelectModal = ({
   title,
 }) => (
   <Modal visible={visible} transparent animationType="fade">
-    <ModalOverlay onPress={onClose} activeOpacity={1}>
-      <ModalContainer maxHeight={maxHeight}>
-        {title && <ModalTitle>{title}</ModalTitle>}
-        <ScrollView style={{ maxHeight: maxHeight - 50 }}>
-          {options.map(({ slug, label }) => {
-            const isSelected = selected === slug;
-            return (
-              <ModalOption
-                key={slug}
-                onPress={() => {
-                  onSelect(slug);
-                  onClose();
-                }}
-                selected={isSelected}
-                row
-                center
-              >
-                <Checkbox selected={isSelected}>
-                  <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
-                </Checkbox>
-                <ModalOptionText selected={isSelected}>{label}</ModalOptionText>
-              </ModalOption>
-            );
-          })}
-        </ScrollView>
-      </ModalContainer>
-    </ModalOverlay>
+    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }}>
+      
+      <TouchableOpacity
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        activeOpacity={1}
+        onPress={onClose}
+      />
+
+      <View style={{ overflow: 'hidden', borderRadius: 32 }}>
+        <ModalContainer maxHeight={maxHeight}>
+          {title && <ModalTitle>{title}</ModalTitle>}
+          <ScrollView
+            style={{ maxHeight: maxHeight - 50 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {options.map(({ slug, label }) => {
+              const isSelected = selected === slug;
+              return (
+                <ModalOption
+                  key={slug}
+                  onPress={() => {
+                    onSelect(slug);
+                    onClose();
+                  }}
+                  selected={isSelected}
+                  row
+                  center
+                >
+                  <Checkbox selected={isSelected}>
+                    <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
+                  </Checkbox>
+                  <ModalOptionText selected={isSelected}>{label}</ModalOptionText>
+                </ModalOption>
+              );
+            })}
+          </ScrollView>
+        </ModalContainer>
+      </View>
+    </View>
   </Modal>
 );
 
-
-// Функція для відображення вибраних лейблів
-const renderSelectedLabels = (selectedSlugs, options, labelKey = 'label', allGenres = []) => {
-  if (!selectedSlugs.length) return 'Не вибрано';
-  return selectedSlugs
-    .map((slug) => {
-      if (allGenres.length) {
-        const found = allGenres.find((g) => g.slug === slug);
-        return found ? found[labelKey] || slug : slug;
-      } else {
-        const found = options.find((o) => o.slug === slug);
-        return found ? found[labelKey] || slug : slug;
-      }
-    })
-    .join('   ')
-};
 
 const renderSelectedLabelsAsTags = (selectedSlugs, options, labelKey = 'label', allGenres = []) => {
   if (!selectedSlugs.length) return <FilterButtonText>Не вибрано</FilterButtonText>;
@@ -512,6 +539,7 @@ export default function AnimeFilters({
         </Column>
 
         {/* Сезон */}
+        <Row>
         <Column>
           <LabelName>Сезон</LabelName>
           <FilterButton
@@ -536,29 +564,40 @@ export default function AnimeFilters({
             </SelectedValuesContainer>
           </FilterButton>
         </Column>
+        </Row>
 
-        {/* Рік від */}
-        <Column>
-          <LabelName>Рік виходу</LabelName>
-          <FilterButton
-            selected={hasSelection(yearFrom)}
-            onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownYearFromVisible: true }))}
-          >
-            <FilterButtonText selected={hasSelection(yearFrom)}>
-              Рік від: {yearFrom || 'не вибрано'}
-            </FilterButtonText>
-          </FilterButton>
+       <Row>
+  {/* Рік від */}
+  <Column>
+    <LabelName>Рік виходу</LabelName>
+    <FilterButton
+      selected={hasSelection(yearFrom)}
+      onPress={() =>
+        setDropdownStates((prev) => ({ ...prev, dropdownYearFromVisible: true }))
+      }
+    >
+      <FilterButtonText selected={hasSelection(yearFrom)}>
+        Рік від: {yearFrom || 'не вибрано'}
+      </FilterButtonText>
+    </FilterButton>
+  </Column>
 
-          {/* Рік до */}
-          <FilterButton
-            selected={hasSelection(yearTo)}
-            onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownYearToVisible: true }))}
-          >
-            <FilterButtonText selected={hasSelection(yearTo)}>
-              Рік до: {yearTo || 'не вибрано'}
-            </FilterButtonText>
-          </FilterButton>
-        </Column>
+  {/* Рік до */}
+  <Column>
+    <LabelName style={{ opacity: 0 }}>Прихований</LabelName>
+    <FilterButton
+      selected={hasSelection(yearTo)}
+      onPress={() =>
+        setDropdownStates((prev) => ({ ...prev, dropdownYearToVisible: true }))
+      }
+    >
+      <FilterButtonText selected={hasSelection(yearTo)}>
+        Рік до: {yearTo || 'не вибрано'}
+      </FilterButtonText>
+    </FilterButton>
+  </Column>
+</Row>
+
 
         {/* Сортування */}
         <Column>

@@ -5,6 +5,7 @@ import {
   View,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useRoute } from '@react-navigation/native';
@@ -21,6 +22,7 @@ import { useTheme } from '../context/ThemeContext';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import CommentForm from '../components/CommentForm/CommentForm';
 import CommentCard from '../components/Cards/CommentCard';
+import * as SecureStore from 'expo-secure-store';
 
 dayjs.extend(relativeTime);
 dayjs.locale('uk');
@@ -121,12 +123,23 @@ const AnimeCommentsDetailsScreen = () => {
   const [isFetching, setIsFetching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Поточний користувач (reference) з SecureStore
+  const [currentUserRef, setCurrentUserRef] = useState(null);
+
+  useEffect(() => {
+    const getUserRef = async () => {
+        const ref = await SecureStore.getItemAsync('hikka_user_reference');
+        setCurrentUserRef(ref);
+    };
+    getUserRef();
+  }, []);
+
   const headerHeight = insets.top + 60;
   const shouldTruncate = (text) => text.length > 300;
 
-  const handleDeleteComment = (deletedSlug) => {
-  setComments((prev) => prev.filter((c) => c.slug !== deletedSlug));
-};
+  const handleDeleteComment = (deletedRef) => {
+    setComments((prev) => prev.filter((c) => c.reference !== deletedRef));
+  };
 
   const toggleSortOrder = () => {
     setComments([]);
@@ -228,6 +241,7 @@ const AnimeCommentsDetailsScreen = () => {
       parseTextWithSpoilers={parseTextWithSpoilers}
       shouldTruncate={shouldTruncate}
       onDelete={handleDeleteComment}
+      currentUserRef={currentUserRef}
     />
   );
 

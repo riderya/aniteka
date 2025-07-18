@@ -6,6 +6,7 @@ import AnimeResults from '../components/AnimeFilter/AnimeResults';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
+import * as SecureStore from 'expo-secure-store';
 
 const API_BASE = 'https://api.hikka.io';
 
@@ -155,67 +156,80 @@ export default function AnimeFilterScreen() {
     setHasMore(true);
   };
 
-  const fetchAnimeByFilters = useCallback(
-    async (newSearch = false) => {
-      if (!hasMore && !newSearch) return;
+const fetchAnimeByFilters = useCallback(
+  async (newSearch = false) => {
+    if (!hasMore && !newSearch) return;
+
+    if (newSearch) {
+      resetPage();
+      setAnimeList([]);
+    }
+
+    setLoadingAnime(true);
+    closeAllDropdowns();
+
+    try {
+      const token = await SecureStore.getItemAsync('hikka_token'); // або інший спосіб отримання токена
+
+      let { yearFrom, yearTo } = filters;
+      if (yearFrom && yearTo && yearFrom > yearTo) [yearFrom, yearTo] = [yearTo, yearFrom];
+
+      const sortParams = [];
+      if (filters.selectedSort) {
+        sortParams.push(filters.selectedSort);
+      }
+      if (filters.isSortByScoredBy) {
+        sortParams.push('score:asc');
+      }
+
+      const postData = {
+        genres: filters.selectedGenres,
+        years: [yearFrom || null, yearTo || null],
+        include_multiseason: false,
+        only_translated: false,
+        score: [null, null],
+        media_type: filters.selectedMediaTypes,
+        rating: filters.selectedRatings,
+        status: filters.selectedStatuses,
+        source: filters.selectedSources,
+        season: filters.selectedSeasons,
+        producers: [],
+        studios: filters.selectedStudios,
+        query: null,
+        sort: sortParams,
+      };
+
+      const res = await axios.post(
+        `${API_BASE}/anime?page=${newSearch ? 1 : page}&size=21`,
+        postData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,  // або 'auth': token
+          },
+        }
+      );
+      const newList = res.data.list || [];
 
       if (newSearch) {
-        resetPage();
-        setAnimeList([]);
+        setAnimeList(newList);
+        setShowResults(true);
+      } else {
+        setAnimeList((prev) => [...prev, ...newList]);
       }
 
-      setLoadingAnime(true);
-      closeAllDropdowns();
+      setHasMore(newList.length >= 20);
+    } catch (e) {
+      console.error('Помилка запиту аніме:', e);
+      if (newSearch) setAnimeList([]);
+      alert('Помилка запиту');
+    } finally {
+      setLoadingAnime(false);
+    }
+  },
+  [filters, page, hasMore]
+);
 
-      try {
-        let { yearFrom, yearTo } = filters;
-        if (yearFrom && yearTo && yearFrom > yearTo) [yearFrom, yearTo] = [yearTo, yearFrom];
 
-        const postData = {
-          genres: filters.selectedGenres,
-          years: [yearFrom || null, yearTo || null],
-          include_multiseason: false,
-          only_translated: false,
-          score: [null, null],
-          media_type: filters.selectedMediaTypes,
-          rating: filters.selectedRatings,
-          status: filters.selectedStatuses,
-          source: filters.selectedSources,
-          season: filters.selectedSeasons,
-          producers: [],
-          studios: filters.selectedStudios,
-          query: null,
-          sort: filters.selectedSort ? [filters.selectedSort] : ['score:desc', 'scored_by:desc'],
-        };
-
-        const res = await axios.post(
-          `${API_BASE}/anime?page=${newSearch ? 1 : page}&size=21`,
-          postData
-        );
-        const newList = res.data.list || [];
-
-        if (newSearch) {
-          setAnimeList(newList);
-          setShowResults(true);
-        } else {
-          setAnimeList((prev) => [...prev, ...newList]);
-        }
-
-        if (newList.length < 20) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-      } catch (e) {
-        console.error('Помилка запиту аніме:', e);
-        if (newSearch) setAnimeList([]);
-        alert('Помилка запиту');
-      } finally {
-        setLoadingAnime(false);
-      }
-    },
-    [filters, page, hasMore]
-  );
 
   // При зміні сторінки підвантажуємо нові дані
   useEffect(() => {
@@ -244,7 +258,7 @@ export default function AnimeFilterScreen() {
       selectedRatings: [],
       yearFrom: null,
       yearTo: null,
-      selectedSort: 'score:desc',
+      selectedSort: null,
     });
     setAnimeList([]);
     setShowResults(false);
@@ -259,25 +273,27 @@ export default function AnimeFilterScreen() {
   return (
     <Container>
       {!showResults ? (
-        <AnimeFilters
-          allGenres={allGenres}
-          filters={filters}
-          toggleGenre={toggleGenre}
-          toggleMediaType={toggleMediaType}
-          toggleStudio={toggleStudio}
-          toggleSource={toggleSource}
-          toggleStatus={toggleStatus}
-          toggleSeason={toggleSeason}
-          toggleRating={toggleRating}
-          selectYearFrom={selectYearFrom}
-          selectYearTo={selectYearTo}
-          setSelectedSort={setSelectedSort}
-          dropdownStates={dropdownStates}
-          setDropdownStates={setDropdownStates}
-          yearsList={yearsList}
-          applyFilters={applyFilters}
-          resetFilters={resetFilters}
-        />
+<AnimeFilters
+  allGenres={allGenres}
+  filters={filters}
+  setFilters={setFilters}            // Ось тут
+  toggleGenre={toggleGenre}
+  toggleMediaType={toggleMediaType}
+  toggleStudio={toggleStudio}
+  toggleSource={toggleSource}
+  toggleStatus={toggleStatus}
+  toggleSeason={toggleSeason}
+  toggleRating={toggleRating}
+  selectYearFrom={selectYearFrom}
+  selectYearTo={selectYearTo}
+  setSelectedSort={setSelectedSort}
+  dropdownStates={dropdownStates}
+  setDropdownStates={setDropdownStates}
+  yearsList={yearsList}
+applyFilters={applyFilters}
+resetFilters={resetFilters}
+/>
+
       ) : (
         <ResultsContainer>
 

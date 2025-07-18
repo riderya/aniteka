@@ -179,8 +179,8 @@ const TopDetail = ({ anime }) => {
             <Row>
               <StyledIconInfo name="info" />
               <Column>
-                <Title>{anime.title_ua || 'Назва відсутня'}</Title>
-                <Subtitle>{anime.title_en || 'English title missing'}</Subtitle>
+                <Title>{anime.title_ua || anime.title_ja || 'Назва відсутня'}</Title>
+                <Subtitle>{anime.title_en || anime.title_ja || 'English title missing'}</Subtitle>
               </Column>
             </Row>
           </TouchableOpacity>

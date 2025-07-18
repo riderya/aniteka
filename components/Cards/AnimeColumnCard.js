@@ -4,15 +4,6 @@ import { TouchableOpacity } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-const media_Type = {
-  tv: 'ТБ-серіал',
-  movie: 'Фільм',
-  ova: 'OVA',
-  ona: 'ONA',
-  special: 'Спешл',
-  music: 'Музичне',
-};
-
 const statusLabels = {
   watching: 'Дивлюсь',
   planned: 'В планах',
@@ -21,16 +12,30 @@ const statusLabels = {
   dropped: 'Закинуто',
 };
 
+const statusColors = {
+  watching: '#6c47ff',
+  planned: '#ffaa00',
+  completed: '#00aa00',
+  on_hold: '#ff8800',
+  dropped: '#ff4444',
+};
+
 const AnimeColumnCard = ({
   anime,
-  status,
   onPress,
   cardWidth = 140,
-  imageWidth = 140,    // новий пропс для ширини постера
+  imageWidth = 140,
   imageHeight = 190,
 }) => {
   const { theme } = useTheme();
-  
+
+  console.log('Anime watch array:', anime.watch);
+
+  // Витягуємо унікальні статуси, якщо watch існує і має елементи
+  const statuses = anime.watch && anime.watch.length > 0
+    ? [...new Set(anime.watch.map((w) => w.status))]
+    : [];
+
   return (
     <TouchableOpacity onPress={onPress}>
       <Item cardWidth={cardWidth}>
@@ -38,31 +43,36 @@ const AnimeColumnCard = ({
           <Poster
             source={{ uri: anime.image }}
             resizeMode="cover"
-            imageWidth={imageWidth}       // передаємо ширину
+            imageWidth={imageWidth}
             imageHeight={imageHeight}
           />
-          {status && (
-            <StatusText status={status}>
-              {statusLabels[status] || status}
-            </StatusText>
-          )}
         </PosterWrapper>
+
         <Title numberOfLines={2}>
           {anime.title_ua || anime.title_en || anime.title_ja || '?'}
         </Title>
+
+        <StatusesContainer>
+          {statuses.length > 0 ? (
+            statuses.map((status) => (
+              <StatusBadge key={status} color={statusColors[status] || '#666'}>
+                <StatusText>{statusLabels[status] || status}</StatusText>
+              </StatusBadge>
+            ))
+          ) : null}
+        </StatusesContainer>
+
         <RowFooter>
-            <TextFooter>
-            {anime.episodes_released || '?'}/
-            {anime.episodes_total || '?'}еп
+          <TextFooter>
+            {anime.episodes_released ?? '?'} / {anime.episodes_total ?? '?'} еп
           </TextFooter>
           <StyledIcon name="circle" size={4} />
-          <TextFooter>{anime.score}</TextFooter>
+          <TextFooter>{anime.score ?? '?'}</TextFooter>
         </RowFooter>
       </Item>
     </TouchableOpacity>
   );
 };
-
 
 export default AnimeColumnCard;
 
@@ -89,6 +99,25 @@ const Title = styled.Text`
   font-weight: 600;
 `;
 
+const StatusesContainer = styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  gap: 6px;
+`;
+
+const StatusBadge = styled.View`
+  background-color: ${({ color }) => color};
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-right: 6px;
+`;
+
+const StatusText = styled.Text`
+  color: white;
+  font-size: 12px;
+`;
+
 const RowFooter = styled.View`
   flex-direction: row;
   align-items: center;
@@ -99,38 +128,6 @@ const RowFooter = styled.View`
 const TextFooter = styled.Text`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.gray};
-`;
-
-const StatusText = styled.Text`
-  position: absolute;
-  bottom: 5px;
-  align-self: center;
-  min-width: 90%;
-  max-width: 90%;
-  padding: 4px 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #fff;
-  border-radius: 999px;
-  text-align: center;
-  background-color: ${({ status, theme }) => {
-    switch (status) {
-      case 'watching':
-        return `${theme.colors.watching}B3`;
-      case 'planned':
-        return `${theme.colors.planned}B3`;
-      case 'dropped':
-        return `${theme.colors.dropped}B3`;
-      case 'on_hold':
-        return `${theme.colors.on_hold}B3`;
-      case 'completed':
-        return `${theme.colors.completed}B3`;
-      case 'favourite':
-        return `${theme.colors.favourite}B3`;
-      default:
-        return 'rgba(51, 51, 51, 0.7)';
-    }
-  }};
 `;
 
 const StyledIcon = styled(FontAwesome)`

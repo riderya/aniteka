@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
-import { FlatList, useWindowDimensions, Image } from 'react-native';
+import { FlatList, useWindowDimensions } from 'react-native';
 
 const Container = styled.View`
   flex: 1;
@@ -57,17 +57,19 @@ export default function AnimeResults({ animeList, loadingAnime, onEndReached }) 
     );
   }
 
-  const renderItem = ({ item }) => (
-    <CardWrapper style={{ width: cardWidth }}>
-      <AnimeColumnCard
-        anime={item}
-        onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
-        cardWidth={cardWidth}
-        imageWidth={cardWidth}
-        imageHeight={165}
-      />
-    </CardWrapper>
-  );
+  const renderItem = ({ item }) => {
+    return (
+      <CardWrapper style={{ width: cardWidth }}>
+        <AnimeColumnCard
+          anime={item}
+          onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
+          cardWidth={cardWidth}
+          imageWidth={cardWidth}
+          imageHeight={165}
+        />
+      </CardWrapper>
+    );
+  };
 
   return (
     <Container>
@@ -83,9 +85,7 @@ export default function AnimeResults({ animeList, loadingAnime, onEndReached }) 
         }}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={
-          loadingAnime ? <LoadingIndicator size="small" color="#6c47ff" /> : null
-        }
+        ListFooterComponent={loadingAnime ? <LoadingIndicator size="small" color="#6c47ff" /> : null}
       />
     </Container>
   );

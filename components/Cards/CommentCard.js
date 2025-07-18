@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
+// --- стилі (копіюй з твого коду, не міняв)
 const CommentCardWrapper = styled.View`margin: 12px;`;
 const RowInfo = styled.View`flex-direction: row;`;
 const Avatar = styled.Image`
@@ -72,22 +73,29 @@ const CommentCard = ({
   item,
   index,
   theme,
-  comment, // тип коментаря (наприклад, "comment")
+  comment,
   spoilerOpen,
   setSpoilerOpen,
   expandedComments,
   setExpandedComments,
   parseTextWithSpoilers,
   shouldTruncate,
-  onDelete, // колбек для видалення в батьківському компоненті
+  onDelete,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [voteScore, setVoteScore] = useState(item.vote_score);
   const [userVote, setUserVote] = useState(0);
+  const [currentUserRef, setCurrentUserRef] = useState(null);
 
   const commentSlug = item.slug || item.reference;
 
   useEffect(() => {
+    (async () => {
+      const refRaw = await SecureStore.getItemAsync('hikka_user_reference');
+      const ref = refRaw?.trim();
+      setCurrentUserRef(ref);
+    })();
+
     const fetchVote = async () => {
       if (!commentSlug) return;
       try {
@@ -98,9 +106,7 @@ const CommentCard = ({
         setUserVote(res.data.score);
       } catch (e) {
         if (e.response?.status === 404) {
-          setUserVote(0); // користувач ще не голосував
-        } else {
-          console.warn('Vote fetch error:', e);
+          setUserVote(0);
         }
       }
     };
@@ -113,7 +119,6 @@ const CommentCard = ({
       const token = await SecureStore.getItemAsync('hikka_token');
 
       if (userVote === score) {
-        // Видаляємо голос
         await axios.put(
           `https://api.hikka.io/vote/comment/${commentSlug}`,
           { score: 0 },
@@ -122,7 +127,6 @@ const CommentCard = ({
         setVoteScore((prev) => prev - userVote);
         setUserVote(0);
       } else {
-        // Ставимо новий голос
         await axios.put(
           `https://api.hikka.io/vote/comment/${commentSlug}`,
           { score },
@@ -136,23 +140,21 @@ const CommentCard = ({
     }
   };
 
-const handleDelete = async () => {
-  if (!commentSlug) return;
-  try {
-    const token = await SecureStore.getItemAsync('hikka_token');
-    await axios.delete(`https://api.hikka.io/comments/${commentSlug}`, {
-      headers: { auth: token },
-    });
+  const handleDelete = async () => {
+    if (!commentSlug) return;
+    try {
+      const token = await SecureStore.getItemAsync('hikka_token');
+      await axios.delete(`https://api.hikka.io/comments/${commentSlug}`, {
+        headers: { auth: token },
+      });
 
-    Alert.alert('Готово', 'Коментар видалено.');
-    closeModal();
-    if (onDelete) onDelete(commentSlug); // виклик колбеку з батьківського компонента
-  } catch (e) {
-    console.warn('Помилка при видаленні коментаря:', e);
-    Alert.alert('Помилка', 'Не вдалося видалити коментар.');
-  }
-};
-
+      Alert.alert('Готово', 'Коментар видалено.');
+      closeModal();
+      if (onDelete) onDelete(commentSlug);
+    } catch (e) {
+      Alert.alert('Помилка', 'Не вдалося видалити коментар.');
+    }
+  };
 
   const handleLongPress = () => {
     setModalVisible(true);
@@ -235,7 +237,7 @@ const handleDelete = async () => {
 
   return (
     <>
-    <TouchableOpacity onPress={handleLongPress} activeOpacity={0.9}>
+      <TouchableOpacity onPress={handleLongPress} activeOpacity={0.9}>
         <CommentCardWrapper>
           <RowInfo>
             <Avatar
@@ -316,10 +318,14 @@ const handleDelete = async () => {
               <Ionicons name="copy" size={20} color={theme.colors.gray} style={{ marginRight: 10 }} />
               <ModalButtonText>Скопіювати</ModalButtonText>
             </ModalButton>
-            <ModalButton onPress={handleDelete}>
-              <Ionicons name="trash" size={20} color={theme.colors.gray} style={{ marginRight: 10 }} />
-              <ModalButtonText>Видалити</ModalButtonText>
-            </ModalButton>
+
+            {currentUserRef && currentUserRef === item.author?.reference && (
+              <ModalButton onPress={handleDelete}>
+                <Ionicons name="trash" size={20} color={theme.colors.gray} style={{ marginRight: 10 }} />
+                <ModalButtonText>Видалити</ModalButtonText>
+              </ModalButton>
+            )}
+
             <ModalButton isLast onPress={() => {
               closeModal();
               Alert.alert('Скарга', 'Скаргу надіслано.');

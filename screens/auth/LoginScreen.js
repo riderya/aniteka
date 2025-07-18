@@ -18,18 +18,22 @@ const CLIENT_ID = '55d85f78-487b-4915-8614-b8f6df4a6245';
 const CLIENT_SECRET = 'EPM2WO2I-o816nQNRnEwQbqlElnd46bb-BqUnuwbEe6fnkfLoC3O159gt4g-Vcei1Jr3s4rzw_NAD_YcvlNJpDRz5dtR2nUDbvZF2JZDxmqKlsb9U_jhKYhItN5BcJIq';
 const REDIRECT_URI = 'exp+yummyanimelist://expo-development-client/';
 const TOKEN_KEY = 'hikka_token';
+const USER_REFERENCE_KEY = 'hikka_user_reference';
 
 export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState(null);
   const [userData, setUserData] = useState(null);
   const insets = useSafeAreaInsets();
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
 
   useEffect(() => {
     (async () => {
       const savedToken = await SecureStore.getItemAsync(TOKEN_KEY);
-      console.log('Loaded token from SecureStore:', savedToken);
+      const savedRef = await SecureStore.getItemAsync(USER_REFERENCE_KEY);
+      console.log('Loaded token:', savedToken);
+      console.log('Loaded user reference:', savedRef);
+
       if (savedToken) {
         setToken(savedToken);
         fetchUserData(savedToken);
@@ -43,29 +47,9 @@ export default function LoginScreen({ navigation }) {
     setToken(newToken);
   }
 
-  useEffect(() => {
-    if (!token) return;
-
-    const dataInterval = setInterval(() => {
-      fetchUserData(token);
-    }, 10 * 60 * 1000);
-
-    const tokenTimeout = setTimeout(() => {
-      Alert.alert(
-        '⏰ Сеанс завершено',
-        'Термін дії вашого токена закінчився. Будь ласка, увійдіть повторно.',
-        [{ text: '🔄 OK', onPress: () => logout() }]
-      );
-    }, 29 * 60 * 1000);
-
-    return () => {
-      clearInterval(dataInterval);
-      clearTimeout(tokenTimeout);
-    };
-  }, [token]);
-
   async function logout() {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(USER_REFERENCE_KEY);
     setToken(null);
     setUserData(null);
     Alert.alert('🚪 Вихід', 'Ви успішно вийшли з облікового запису.');
@@ -82,7 +66,13 @@ export default function LoginScreen({ navigation }) {
       if (!response.ok) throw new Error(`Помилка ${response.status}: ${text}`);
 
       const data = JSON.parse(text);
+      console.log('User data fetched:', data);
       setUserData(data);
+
+      if (data.reference) {
+        await SecureStore.setItemAsync(USER_REFERENCE_KEY, data.reference);
+        console.log('Saved user reference:', data.reference);
+      }
     } catch (error) {
       Alert.alert('⚠️ Помилка', error.message || 'Не вдалося отримати дані користувача.');
     } finally {
@@ -122,7 +112,7 @@ export default function LoginScreen({ navigation }) {
 
         if (response.ok && data.secret) {
           await saveToken(data.secret);
-          fetchUserData(data.secret);
+          await fetchUserData(data.secret);
           navigation.navigate('Tabs');
         } else {
           Alert.alert('🚫 Помилка авторизації', data.message || 'Не вдалося отримати токен.');
@@ -145,12 +135,8 @@ export default function LoginScreen({ navigation }) {
         <BackButton />
       </BackButtonWrapper>
       <GradientContainer
-       insets={insets}
-        colors={[
-          theme.colors.primary,
-          theme.colors.primary,
-          theme.colors.background
-        ]}
+        insets={insets}
+        colors={[theme.colors.primary, theme.colors.primary, theme.colors.background]}
         locations={[0, 0, 0.5]}
         start={[0, 0]}
         end={[0, 1]}
@@ -162,8 +148,8 @@ export default function LoginScreen({ navigation }) {
           />
           <Title>Ласкаво просимо до YummyAnimeList!</Title>
           <Description>🎌 Авторизуйтесь, щоб отримати повний доступ до функцій додатка.</Description>
-          <Button onPress={handleLogin}>
-            <ButtonText>Увійти</ButtonText>
+          <Button onPress={handleLogin} disabled={loading}>
+            {loading ? <ActivityIndicator color={theme.colors.background} /> : <ButtonText>Увійти</ButtonText>}
           </Button>
         </ContentContainer>
 
@@ -179,34 +165,27 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-const Container = styled.View`
-  flex: 1;
-`;
-
+const Container = styled.View`flex: 1;`;
 const GradientContainer = styled(LinearGradient)`
   flex: 1;
   padding-top: ${({ insets }) => insets.top}px;
   padding-bottom: ${({ insets }) => insets.bottom}px;
 `;
-
 const ContentContainer = styled.View`
   flex: 1;
   justify-content: center;
   align-items: center;
   padding: 20px;
 `;
-
 const BottomContainer = styled.View`
   padding-bottom: ${({ insets }) => insets.bottom}px;
 `;
-
 const BackButtonWrapper = styled.View`
   position: absolute;
   top: 50px;
   left: 12px;
   z-index: 1;
 `;
-
 const Title = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: 26px;
@@ -214,14 +193,12 @@ const Title = styled.Text`
   text-align: center;
   margin-top: 16px;
 `;
-
 const Description = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: 16px;
   text-align: center;
   margin: 12px 0 24px;
 `;
-
 const Button = styled.TouchableOpacity`
   width: 100%;
   height: 55px;
@@ -230,26 +207,22 @@ const Button = styled.TouchableOpacity`
   align-items: center;
   justify-content: center;
 `;
-
 const ButtonText = styled.Text`
   color: ${({ theme }) => theme.colors.background};
   font-size: 18px;
   font-weight: 600;
 `;
-
 const PartnerRow = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 10px;
 `;
-
 const LogoImage = styled.Image`
   width: 45px;
   height: 45px;
   border-radius: 8px;
 `;
-
 const Handshake = styled.Text`
   font-size: 28px;
 `;
