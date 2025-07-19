@@ -29,8 +29,6 @@ const AnimeColumnCard = ({
 }) => {
   const { theme } = useTheme();
 
-  console.log('Anime watch array:', anime.watch);
-
   // Витягуємо унікальні статуси, якщо watch існує і має елементи
   const statuses = anime.watch && anime.watch.length > 0
     ? [...new Set(anime.watch.map((w) => w.status))]
@@ -110,7 +108,7 @@ const StatusBadge = styled.View`
   background-color: ${({ color }) => color};
   padding: 2px 8px;
   border-radius: 12px;
-  margin-right: 6px;
+
 `;
 
 const StatusText = styled.Text`

@@ -15,7 +15,6 @@ for (let y = new Date().getFullYear(); y >= 1965; y--) {
   yearsList.push(y);
 }
 
-
 const Container = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
@@ -56,7 +55,10 @@ const BackButtonText = styled.Text`
 export default function AnimeFilterScreen() {
   const [allGenres, setAllGenres] = useState([]);
   const [loadingGenres, setLoadingGenres] = useState(true);
-    const { theme, isDark } = useTheme();
+  const { theme, isDark } = useTheme();
+
+  const [authToken, setAuthToken] = useState(null);
+  const [tokenReady, setTokenReady] = useState(false);
 
   const [filters, setFilters] = useState({
     selectedGenres: [],
@@ -91,6 +93,23 @@ export default function AnimeFilterScreen() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
+  // Завантаження токена при старті
+  useEffect(() => {
+    const loadToken = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('hikka_token');
+        console.log('Fetched token:', token);
+        if (token) setAuthToken(token);
+      } catch (e) {
+        console.error('Помилка отримання токена:', e);
+      } finally {
+        setTokenReady(true);
+      }
+    };
+    loadToken();
+  }, []);
+
+  // Завантаження жанрів
   useEffect(() => {
     const fetchGenres = async () => {
       try {
@@ -156,88 +175,87 @@ export default function AnimeFilterScreen() {
     setHasMore(true);
   };
 
-const fetchAnimeByFilters = useCallback(
-  async (newSearch = false) => {
-    if (!hasMore && !newSearch) return;
-
-    if (newSearch) {
-      resetPage();
-      setAnimeList([]);
-    }
-
-    setLoadingAnime(true);
-    closeAllDropdowns();
-
-    try {
-      const token = await SecureStore.getItemAsync('hikka_token'); // або інший спосіб отримання токена
-
-      let { yearFrom, yearTo } = filters;
-      if (yearFrom && yearTo && yearFrom > yearTo) [yearFrom, yearTo] = [yearTo, yearFrom];
-
-      const sortParams = [];
-      if (filters.selectedSort) {
-        sortParams.push(filters.selectedSort);
+  const fetchAnimeByFilters = useCallback(
+    async (newSearch = false) => {
+      if (!tokenReady) return; // чекаємо токен
+      if (!authToken) {
+        console.warn('Токен відсутній, не можемо зробити запит.');
+        return;
       }
-      if (filters.isSortByScoredBy) {
-        sortParams.push('score:asc');
-      }
-
-      const postData = {
-        genres: filters.selectedGenres,
-        years: [yearFrom || null, yearTo || null],
-        include_multiseason: false,
-        only_translated: false,
-        score: [null, null],
-        media_type: filters.selectedMediaTypes,
-        rating: filters.selectedRatings,
-        status: filters.selectedStatuses,
-        source: filters.selectedSources,
-        season: filters.selectedSeasons,
-        producers: [],
-        studios: filters.selectedStudios,
-        query: null,
-        sort: sortParams,
-      };
-
-      const res = await axios.post(
-        `${API_BASE}/anime?page=${newSearch ? 1 : page}&size=21`,
-        postData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,  // або 'auth': token
-          },
-        }
-      );
-      const newList = res.data.list || [];
+      if (!hasMore && !newSearch) return;
 
       if (newSearch) {
-        setAnimeList(newList);
-        setShowResults(true);
-      } else {
-        setAnimeList((prev) => [...prev, ...newList]);
+        resetPage();
+        setAnimeList([]);
       }
 
-      setHasMore(newList.length >= 20);
-    } catch (e) {
-      console.error('Помилка запиту аніме:', e);
-      if (newSearch) setAnimeList([]);
-      alert('Помилка запиту');
-    } finally {
-      setLoadingAnime(false);
-    }
-  },
-  [filters, page, hasMore]
-);
+      setLoadingAnime(true);
+      closeAllDropdowns();
 
+      try {
+        let { yearFrom, yearTo } = filters;
+        if (yearFrom && yearTo && yearFrom > yearTo) [yearFrom, yearTo] = [yearTo, yearFrom];
 
+        const sortParams = [];
+        if (filters.selectedSort) sortParams.push(filters.selectedSort);
+        if (filters.isSortByScoredBy) sortParams.push('score:asc');
 
-  // При зміні сторінки підвантажуємо нові дані
+        const postData = {
+          genres: filters.selectedGenres,
+          years: [yearFrom || null, yearTo || null],
+          include_multiseason: false,
+          only_translated: false,
+          score: [null, null],
+          media_type: filters.selectedMediaTypes,
+          rating: filters.selectedRatings,
+          status: filters.selectedStatuses,
+          source: filters.selectedSources,
+          season: filters.selectedSeasons,
+          producers: [],
+          studios: filters.selectedStudios,
+          query: null,
+          sort: sortParams,
+        };
+
+        const res = await axios.post(
+          `${API_BASE}/anime?page=${newSearch ? 1 : page}&size=21`,
+          postData,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              Cookie: `auth=${authToken}`, // Ось кука з токеном
+            },
+            withCredentials: true, // якщо сервер потребує куків
+          }
+        );
+
+        const newList = res.data.list || [];
+        if (newSearch) {
+          setAnimeList(newList);
+          setShowResults(true);
+        } else {
+          setAnimeList((prev) => [...prev, ...newList]);
+        }
+
+        setHasMore(newList.length >= 20);
+      } catch (e) {
+        console.error('Помилка запиту аніме:', e);
+        if (newSearch) setAnimeList([]);
+        alert('Помилка запиту');
+      } finally {
+        setLoadingAnime(false);
+      }
+    },
+    [filters, page, hasMore, authToken, tokenReady]
+  );
+
   useEffect(() => {
-    if (page === 1) return;
+    if (page === 1 || !tokenReady) return;
     fetchAnimeByFilters();
-  }, [page, fetchAnimeByFilters]);
+  }, [page, fetchAnimeByFilters, tokenReady]);
 
   const applyFilters = () => {
+    if (!tokenReady || !authToken) return;
     resetPage();
     fetchAnimeByFilters(true);
   };
@@ -266,44 +284,42 @@ const fetchAnimeByFilters = useCallback(
     setHasMore(true);
   };
 
-  if (loadingGenres) {
-    return null;
+  if (loadingGenres || !tokenReady) {
+    return null; // або лоадер
   }
 
   return (
     <Container>
       {!showResults ? (
-<AnimeFilters
-  allGenres={allGenres}
-  filters={filters}
-  setFilters={setFilters}            // Ось тут
-  toggleGenre={toggleGenre}
-  toggleMediaType={toggleMediaType}
-  toggleStudio={toggleStudio}
-  toggleSource={toggleSource}
-  toggleStatus={toggleStatus}
-  toggleSeason={toggleSeason}
-  toggleRating={toggleRating}
-  selectYearFrom={selectYearFrom}
-  selectYearTo={selectYearTo}
-  setSelectedSort={setSelectedSort}
-  dropdownStates={dropdownStates}
-  setDropdownStates={setDropdownStates}
-  yearsList={yearsList}
-applyFilters={applyFilters}
-resetFilters={resetFilters}
-/>
-
+        <AnimeFilters
+          allGenres={allGenres}
+          filters={filters}
+          setFilters={setFilters}
+          toggleGenre={toggleGenre}
+          toggleMediaType={toggleMediaType}
+          toggleStudio={toggleStudio}
+          toggleSource={toggleSource}
+          toggleStatus={toggleStatus}
+          toggleSeason={toggleSeason}
+          toggleRating={toggleRating}
+          selectYearFrom={selectYearFrom}
+          selectYearTo={selectYearTo}
+          setSelectedSort={setSelectedSort}
+          dropdownStates={dropdownStates}
+          setDropdownStates={setDropdownStates}
+          yearsList={yearsList}
+          applyFilters={applyFilters}
+          resetFilters={resetFilters}
+        />
       ) : (
         <ResultsContainer>
-
           <BackButton onPress={() => setShowResults(false)}>
             <BackButtonText>Змінити</BackButtonText>
           </BackButton>
 
-      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
-        <HeaderTitleBar title="Фільтр" />
-      </BlurOverlay>
+          <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+            <HeaderTitleBar title="Фільтр" />
+          </BlurOverlay>
 
           <AnimeResults
             animeList={animeList}
