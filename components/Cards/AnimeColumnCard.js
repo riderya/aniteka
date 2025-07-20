@@ -12,13 +12,20 @@ const statusLabels = {
   dropped: 'Закинуто',
 };
 
-const statusColors = {
-  watching: '#6c47ff',
-  planned: '#ffaa00',
-  completed: '#00aa00',
-  on_hold: '#ff8800',
-  dropped: '#ff4444',
+const hexToRgba = (hex, alpha) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
+
+const getStatusColors = (theme) => ({
+  watching: hexToRgba(theme.colors.watching, 0.8),
+  planned: hexToRgba(theme.colors.planned, 0.8),
+  completed: hexToRgba(theme.colors.completed, 0.8),
+  on_hold: hexToRgba(theme.colors.on_hold, 0.8),
+  dropped: hexToRgba(theme.colors.dropped, 0.8),
+});
 
 const AnimeColumnCard = ({
   anime,
@@ -28,8 +35,8 @@ const AnimeColumnCard = ({
   imageHeight = 190,
 }) => {
   const { theme } = useTheme();
+  const statusColors = getStatusColors(theme);
 
-  // Витягуємо унікальні статуси, якщо watch існує і має елементи
   const statuses = anime.watch && anime.watch.length > 0
     ? [...new Set(anime.watch.map((w) => w.status))]
     : [];
@@ -44,25 +51,20 @@ const AnimeColumnCard = ({
             imageWidth={imageWidth}
             imageHeight={imageHeight}
           />
+          {statuses.map((status) => (
+            <StatusBadge key={status} color={statusColors[status] || '#666'}>
+              <StatusText>{statusLabels[status] || status}</StatusText>
+            </StatusBadge>
+          ))}
         </PosterWrapper>
 
-        <Title numberOfLines={2}>
+        <Title numberOfLines={2} cardWidth={cardWidth}>
           {anime.title_ua || anime.title_en || anime.title_ja || '?'}
         </Title>
 
-        <StatusesContainer>
-          {statuses.length > 0 ? (
-            statuses.map((status) => (
-              <StatusBadge key={status} color={statusColors[status] || '#666'}>
-                <StatusText>{statusLabels[status] || status}</StatusText>
-              </StatusBadge>
-            ))
-          ) : null}
-        </StatusesContainer>
-
         <RowFooter>
           <TextFooter>
-            {anime.episodes_released ?? '?'} / {anime.episodes_total ?? '?'} еп
+            {anime.episodes_released ?? '?'} з {anime.episodes_total ?? '?'} еп
           </TextFooter>
           <StyledIcon name="circle" size={4} />
           <TextFooter>{anime.score ?? '?'}</TextFooter>
@@ -73,6 +75,8 @@ const AnimeColumnCard = ({
 };
 
 export default AnimeColumnCard;
+
+// styled components
 
 const Item = styled.View`
   max-width: ${({ cardWidth }) => cardWidth}px;
@@ -97,23 +101,23 @@ const Title = styled.Text`
   font-weight: 600;
 `;
 
-const StatusesContainer = styled.View`
-  flex-direction: row;
-  flex-wrap: wrap;
-  margin-top: 6px;
-  gap: 6px;
-`;
-
 const StatusBadge = styled.View`
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
   background-color: ${({ color }) => color};
-  padding: 2px 8px;
+  padding: 4px;
   border-radius: 12px;
+  justify-content: center;
+  align-items: center;
 
 `;
 
 const StatusText = styled.Text`
   color: white;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 500;
 `;
 
 const RowFooter = styled.View`

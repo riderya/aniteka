@@ -113,7 +113,7 @@ export default function AnimeFilterScreen() {
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/anime/genres`);
+        const res = await axios.get(`${API_BASE}/genres`);
         setAllGenres(res.data.list || []);
       } catch (e) {
         console.error('Помилка завантаження жанрів:', e);

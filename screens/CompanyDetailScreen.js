@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
-  TouchableOpacity,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -11,11 +10,11 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
+import AnimeColumnCard from '../components/Cards/AnimeColumnCard';
 
 const screenWidth = Dimensions.get('window').width;
+const cardMinWidth = 110;
 const cardSpacing = 12;
-const cardsPerRow = 3;
-const cardWidth = (screenWidth - cardSpacing * (cardsPerRow + 1)) / cardsPerRow;
 
 const CompanyDetailScreen = () => {
   const { params } = useRoute();
@@ -32,6 +31,15 @@ const CompanyDetailScreen = () => {
   const { theme, isDark } = useTheme();
 
   const HEADER_HEIGHT = 60 + insets.top;
+
+  // Розрахунок кількості колонок по ширині екрану
+  const numColumns = Math.floor(
+    (screenWidth - cardSpacing) / (cardMinWidth + cardSpacing)
+  );
+
+  // Розрахунок реальної ширини картки, щоб рівно заповнити ширину екрану з відступами
+  const cardWidth =
+    (screenWidth - cardSpacing * (numColumns + 1)) / numColumns;
 
   // Завантажуємо компанію один раз
   const fetchCompany = async () => {
@@ -103,19 +111,28 @@ const CompanyDetailScreen = () => {
     }
   };
 
-  // Рендер одного аніме тайлу
-  const renderItem = ({ item }) => (
-    <AnimeTile
-      activeOpacity={0.7}
-      onPress={() => navigation.navigate('AnimeDetails', { slug: item.anime.slug })}
-      style={{ width: cardWidth, marginBottom: 12, marginRight: cardSpacing }}
-    >
-      <AnimeImage source={{ uri: item.anime.image }} />
-      <AnimeTitle numberOfLines={1}>
-        {item.anime.title_ua || item.anime.title_en || item.anime.title_ja}
-      </AnimeTitle>
-    </AnimeTile>
-  );
+  // Рендер одного аніме через AnimeColumnCard з watch статусом
+  const renderItem = ({ item, index }) => {
+    const watchStatus = item.status || null;
+
+    return (
+      <CardWrapper
+        style={{
+
+          marginRight: (index + 1) % numColumns === 0 ? 0 : cardSpacing,
+        }}
+      >
+        <AnimeColumnCard
+          anime={item.anime}
+          watchStatus={watchStatus}
+          onPress={() => navigation.navigate('AnimeDetails', { slug: item.anime.slug })}
+          cardWidth={cardWidth}
+          imageWidth={cardWidth}
+          imageHeight={165}
+        />
+      </CardWrapper>
+    );
+  };
 
   return (
     <Container>
@@ -124,11 +141,12 @@ const CompanyDetailScreen = () => {
       </BlurOverlay>
 
       <FlatList
+        key={`flatlist-${numColumns}`}
         data={animeList}
         keyExtractor={(item) => item.anime.slug}
         renderItem={renderItem}
-        numColumns={3}
-        columnWrapperStyle={{ justifyContent: 'space-between', marginBottom: cardSpacing }}
+        numColumns={numColumns}
+        columnWrapperStyle={{ justifyContent: 'flex-start' }}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListHeaderComponent={
@@ -139,7 +157,7 @@ const CompanyDetailScreen = () => {
           </>
         }
         contentContainerStyle={{
-          paddingHorizontal: 12,
+          paddingHorizontal: cardSpacing,
           paddingTop: HEADER_HEIGHT,
           paddingBottom: 12 + insets.bottom,
         }}
@@ -204,20 +222,8 @@ const SectionTitle = styled.Text`
   margin: 20px 0 12px 0;
 `;
 
-const AnimeTile = styled(TouchableOpacity)`
-  overflow: hidden;
-`;
-
-const AnimeImage = styled.Image`
-  width: 100%;
-  height: ${cardWidth * 1.4}px;
-  border-radius: 24px;
-`;
-const AnimeTitle = styled.Text`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.text};
-  margin-top: 8px;
+const CardWrapper = styled.View`
+  padding-bottom: 25px;
 `;
 
 const TextError = styled.Text`

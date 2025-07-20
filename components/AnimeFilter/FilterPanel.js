@@ -3,7 +3,9 @@ import styled from 'styled-components/native';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
 import { View, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
+
 
 const mediaTypeOptions = [
   { slug: 'special', label: 'Special' },
@@ -145,7 +147,7 @@ const FilterButtonText = styled.Text`
   border-radius: 8px;
 `;
 
-const BottomButtonsContainer = styled.View`
+const BottomButtonsSafeArea = styled(SafeAreaView)`
   position: absolute;
   bottom: 0;
   left: 0;
@@ -157,6 +159,7 @@ const BottomButtonsContainer = styled.View`
   border-top-width: 1px;
   border-top-color: ${({ theme }) => theme.colors.border};
   padding: 12px;
+  padding-bottom: 0px;
 `;
 
 const ApplyButton = styled.TouchableOpacity`
@@ -614,15 +617,15 @@ export default function AnimeFilters({
       </ScrollView>
 
       {/* Кнопки знизу */}
-      <BottomButtonsContainer>
-        <ResetButton onPress={resetFilters}>
-          <ResetButtonText>Скинути</ResetButtonText>
-        </ResetButton>
-        
-        <ApplyButton onPress={applyFilters}>
-          <ApplyButtonText>Застосувати</ApplyButtonText>
-        </ApplyButton>
-      </BottomButtonsContainer>
+<BottomButtonsSafeArea edges={['bottom']}>
+  <ResetButton onPress={resetFilters}>
+    <ResetButtonText>Скинути</ResetButtonText>
+  </ResetButton>
+
+  <ApplyButton onPress={applyFilters}>
+    <ApplyButtonText>Застосувати</ApplyButtonText>
+  </ApplyButton>
+</BottomButtonsSafeArea>
 
       {/* Модалки */}
 <FilterModal

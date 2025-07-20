@@ -210,7 +210,7 @@ const TopDetail = ({ anime }) => {
               <ButtonText>Дивитися</ButtonText>
             </WatchButton>
 
-            <MoreButton />
+            <MoreButton slug={anime.slug}/>
           </ButtonsRow>
 
           <EpisodesCounter slug={anime.slug} episodes_total={anime.episodes_total}/>

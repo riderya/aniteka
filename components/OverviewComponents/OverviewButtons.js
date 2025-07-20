@@ -2,6 +2,8 @@ import React from 'react';
 import styled, { useTheme } from 'styled-components/native';
 import { AntDesign, MaterialIcons, Entypo, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import { Alert } from 'react-native';
 
 const buttonsData = [
   { key: 'popular', label: 'Популярні', iconName: 'star', iconLib: AntDesign },
@@ -16,13 +18,22 @@ const OverviewButtons = () => {
   const theme = useTheme();
   const navigation = useNavigation();
 
-  const handlePress = (key) => {
-    if (key === 'filter') {
-      navigation.navigate('AnimeFilterScreen'); // 🔁 назва екрана у Stack.Navigator
-    }
+const handlePress = async (key) => {
+  if (key === 'filter') {
+    navigation.navigate('AnimeFilterScreen');
+  } if (key === 'schedule') {
+    navigation.navigate('AnimeScheduleScreen');
+  } else if (key === 'random') {
+      const maxPages = 1000;
+      const randomPage = Math.floor(Math.random() * maxPages) + 1;
+      const response = await axios.post(`https://api.hikka.io/anime?page=${randomPage}&size=1`, {
+      });
+      const animeList = response.data.list;
+      const randomAnime = animeList[0];
+      navigation.navigate('AnimeDetails', { slug: randomAnime.slug });
+  }
+};
 
-    // Інші переходи можна додати тут
-  };
 
   return (
     <Container>

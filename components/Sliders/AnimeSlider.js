@@ -15,12 +15,11 @@ import * as SecureStore from 'expo-secure-store';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refreshTrigger  }) => {
+const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refreshTrigger }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [watchStatuses, setWatchStatuses] = useState({});
   const flatListRef = useRef(null);
   const navigation = useNavigation();
 
@@ -28,9 +27,17 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
     const fetchData = async () => {
       setLoading(true);
       try {
+        const token = await SecureStore.getItemAsync('hikka_token');
+
         const response = await axios.post(api, requestBody, {
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            Cookie: `auth=${token}`,
+          },
+          withCredentials: true,
         });
+
         const list = Array.isArray(response.data.list) ? response.data.list : [];
         setData(list);
         setLoading(false);
@@ -44,37 +51,6 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
       fetchData();
     }
   }, [api, requestBody, refreshTrigger]);
-
-  useEffect(() => {
-    const fetchStatuses = async () => {
-      if (!data.length) return;
-
-      try {
-        const authToken = await SecureStore.getItemAsync('hikka_token');
-        if (!authToken) {
-          return;
-        }
-
-        const statuses = {};
-        await Promise.all(
-          data.map(async (anime) => {
-            try {
-              const response = await axios.get(`https://api.hikka.io/watch/${anime.slug}`, {
-                headers: { auth: authToken },
-              });
-              statuses[anime.slug] = response.data.status;
-            } catch {
-              statuses[anime.slug] = null;
-            }
-          })
-        );
-        setWatchStatuses(statuses);
-      } catch (err) {
-      }
-    };
-
-    fetchStatuses();
-  }, [data]);
 
   const scrollToIndex = (index) => {
     if (flatListRef.current && index >= 0 && index < data.length) {
@@ -104,7 +80,7 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
     );
   }
 
-  if (error) return <TextError>{error} Помилка при завантажені аніме</TextError>;
+  if (error) return <TextError>{error} Помилка при завантаженні аніме</TextError>;
 
   return (
     <Container>
@@ -138,12 +114,13 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
         keyExtractor={(item, index) => `${item.slug || item.id || index}`}
         horizontal
         showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <AnimeColumnCard
-            anime={item}
-            status={watchStatuses[item.slug]}
-            onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
-          />
+        renderItem={({ item, index }) => (
+          <CardWrapper isLast={index === data.length - 1}>
+            <AnimeColumnCard
+              anime={item}
+              onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
+            />
+          </CardWrapper>
         )}
       />
     </Container>
@@ -152,14 +129,18 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
 
 export default AnimeSlider;
 
+// styled components
+
 const Container = styled.View`
   position: relative;
   align-items: center;
 `;
 
-const StyledFlatList = styled.FlatList`
-  padding: 0px 12px;
-`;
+const StyledFlatList = styled.FlatList.attrs(() => ({
+  contentContainerStyle: {
+    paddingHorizontal: 12,
+  },
+}))``;
 
 const HeaderLine = styled.View`
   width: 100%;
@@ -241,4 +222,8 @@ const TextError = styled.Text`
   border-radius: 10px;
   color: ${({ theme }) => theme.colors.error};
   background-color: ${({ theme }) => theme.colors.errorHover};
+`;
+
+const CardWrapper = styled.View`
+  margin-right: ${({ isLast }) => (isLast ? '0px' : '12px')};
 `;

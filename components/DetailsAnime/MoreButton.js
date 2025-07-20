@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Pressable } from 'react-native';
+import { TouchableOpacity, Pressable, Share, Linking } from 'react-native';
 import styled from 'styled-components/native';
 import { Entypo } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -43,12 +43,34 @@ const DropdownText = styled.Text`
   font-size: 14px;
 `;
 
-const MoreButton = () => {
+const MoreButton = ({ slug }) => {
   const [visible, setVisible] = useState(false);
 
   const toggleDropdown = () => setVisible(!visible);
-  const handleOption = (text) => {
-    console.log(`Натиснуто: ${text}`);
+
+  // Потрібно замінити цей URL на динамічний лінк Firebase, який створиш у консолі Firebase
+  // Приклад: https://yummyanimelist.page.link/anime-naruto
+  const firebaseDynamicLink = `https://yummyanimelist.page.link/anime-${slug}`;
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `Дивись це аніме у додатку: ${firebaseDynamicLink}`,
+      });
+    } catch (error) {
+      console.error('Помилка при поділі:', error);
+    }
+    setVisible(false);
+  };
+
+  const handleOpen = () => {
+    // Тут відкриваємо кастомний deep link (якщо додаток встановлений)
+    const deepLinkUrl = `yummyanimelist://anime/${slug}`;
+    Linking.openURL(deepLinkUrl).catch((err) => {
+      console.error('Не вдалося відкрити посилання:', err);
+      // Можна за бажанням відкривати веб-версію, якщо deep link не працює
+      Linking.openURL(firebaseDynamicLink);
+    });
     setVisible(false);
   };
 
@@ -60,17 +82,12 @@ const MoreButton = () => {
 
       {visible && (
         <DropdownMenu>
-          <DropdownItem
-            onPress={() => handleOption('Поділитись')}
-            android_ripple={{ color: '#555' }}
-          >
+          <DropdownItem onPress={handleShare} android_ripple={{ color: '#555' }}>
             <Ionicons name="share-outline" size={20} color="#bbb" />
             <DropdownText>Поділитись</DropdownText>
           </DropdownItem>
-          <DropdownItem
-            onPress={() => handleOption('На головний екран')}
-            android_ripple={{ color: '#555' }}
-          >
+
+          <DropdownItem onPress={handleOpen} android_ripple={{ color: '#555' }}>
             <Ionicons name="home-outline" size={20} color="#bbb" />
             <DropdownText>На головний екран</DropdownText>
           </DropdownItem>
