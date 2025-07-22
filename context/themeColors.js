@@ -15,6 +15,7 @@ export const lightThemeColors = {
   borderInput: '#cccccc',
   transparent: '#ffffffB3',
   transparentBackground: '#ffffffF2',
+  transparentBackground70: 'rgba(255, 255, 255, 0.7)',
   disabled: '#f0f0f0',
 
   watching: '#43a047',
@@ -42,6 +43,7 @@ export const darkThemeColors = {
   borderInput: '#2C2C2C',         // Бордер для інпутів
   transparent: '#000000F2',       // Темний фон для ImageViewing
   transparentBackground: '#000000FC',       // Темний фон для ImageViewing
+  transparentBackground70: 'rgba(5, 5, 5, 0.7)',
   disabled: '#2E2E2E',  
   
   watching: '#43a047',

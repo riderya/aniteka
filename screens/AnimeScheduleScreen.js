@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ActivityIndicator,
   Switch,
@@ -8,10 +8,14 @@ import {
   ScrollView,
   View,
   SafeAreaView,
+  Animated,
+  Easing,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
+import * as SecureStore from 'expo-secure-store';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
@@ -42,10 +46,15 @@ const groupByDay = (list) => {
     2: 'Вівторок',
     3: 'Середа',
     4: 'Четвер',
-    5: "Пʼятниця",
+    5: 'Пʼятниця',
     6: 'Субота',
     unknown: 'Невідомо',
   };
+
+  const months = [
+    'січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
+    'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'
+  ];
 
   const grouped = {};
   const todayUnix = new Date().setHours(0, 0, 0, 0);
@@ -62,26 +71,75 @@ const groupByDay = (list) => {
       }
 
       const day = airingDate.getDay();
-      if (!grouped[day]) grouped[day] = [];
-      grouped[day].push(item);
+      const key = airingDayUnix;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          dayOfWeek: day,
+          dateString: `${airingDate.getDate()} ${months[airingDate.getMonth()]}`,
+          items: [],
+        };
+      }
+      grouped[key].items.push(item);
     } else {
-      if (!grouped['unknown']) grouped['unknown'] = [];
-      grouped['unknown'].push(item);
+      if (!grouped['unknown']) {
+        grouped['unknown'] = {
+          dayOfWeek: 'unknown',
+          dateString: null,
+          items: [],
+        };
+      }
+      grouped['unknown'].items.push(item);
     }
   });
 
   const groupedArray = Object.entries(grouped)
-    .sort(([a], [b]) => {
-      const order = [1, 2, 3, 4, 5, 6, 0, 'unknown'];
-      return order.indexOf(Number(a)) - order.indexOf(Number(b));
-    })
-    .map(([key, value]) => ({
-      day: daysOfWeek[key] || 'Невідомо',
-      data: value,
+    .sort(([a], [b]) => a - b)
+    .map(([key, { dayOfWeek, dateString, items }]) => ({
+      day: daysOfWeek[dayOfWeek] || 'Невідомо',
+      date: dateString,
+      data: items,
     }));
 
   return { todayItems, groupedArray };
 };
+
+const GreenDot = () => {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scale, {
+          toValue: 1.3,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        width: 12,
+        height: 12,
+        backgroundColor: '#4caf50',
+        borderRadius: 6,
+        transform: [{ scale }],
+      }}
+    />
+  );
+};
+
+
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = 115;
@@ -100,27 +158,44 @@ const AnimeScheduleScreen = () => {
   const [modalVisible, setModalVisible] = useState(null);
   const { theme, isDark } = useTheme();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
-  const fetchSchedule = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.post(
-        'https://api.hikka.io/schedule/anime?page=1&size=100',
-        {
-          airing_season: [season, year],
-          status,
-          only_watch: onlyWatch,
-        }
-      );
-      const list = response.data.list;
-      setAnimeList(list);
-      const { todayItems, groupedArray } = groupByDay(list);
-      setTodayList(todayItems);
-      setGroupedList(groupedArray);
-    } finally {
-      setLoading(false);
+const fetchSchedule = async () => {
+  setLoading(true);
+  try {
+    let axiosConfig = {};
+    const token = await SecureStore.getItemAsync('hikka_token');
+    if (token) {
+      axiosConfig = {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          Cookie: `auth=${token}`,
+        },
+        withCredentials: true,
+      };
     }
-  };
+    const response = await axios.post(
+      'https://api.hikka.io/schedule/anime?page=1&size=100',
+      {
+        airing_season: [season, year],
+        status,
+        only_watch: onlyWatch,  // передаємо true або false
+      },
+      axiosConfig
+    );
+
+    const list = response.data.list;
+    const { todayItems, groupedArray } = groupByDay(list);
+    setAnimeList(list);
+    setTodayList(todayItems);
+    setGroupedList(groupedArray);
+  } catch (err) {
+    console.warn('Помилка при завантаженні розкладу:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchSchedule();
@@ -147,7 +222,7 @@ const AnimeScheduleScreen = () => {
     return (
       <CardWrapper style={{ marginRight: isLastInRow ? 0 : 12 }}>
         <AnimeColumnCard
-          anime={{ ...item.anime, watch: item.watch || [] }}
+          anime={item.anime}
           onPress={() =>
             navigation.navigate('AnimeDetails', { slug: item.anime.slug })
           }
@@ -159,39 +234,45 @@ const AnimeScheduleScreen = () => {
     );
   };
 
-  const renderModal = (type, options, selectedValues, onSelect) => (
-    <Modal visible={modalVisible === type} transparent animationType="slide">
-      <ModalBackdrop>
-        <ModalContent>
-          <ScrollView>
-            {options.map((opt) => {
-              const isSelected = selectedValues.includes(opt.value);
-              return (
-                <ModalOption
-                  key={opt.value}
-                  onPress={() => onSelect(opt.value)}
-                  selected={isSelected}
-                >
+  const Checkbox = ({ checked }) => (
+  <CheckboxContainer>
+    {checked && <CheckboxInner />}
+  </CheckboxContainer>
+);
+
+const renderModal = (type, options, selectedValues, onSelect) => (
+  <Modal visible={modalVisible === type} transparent animationType="slide">
+    <ModalBackdrop>
+      <ModalContent>
+        <ScrollView>
+          {options.map((opt) => {
+            const isSelected = selectedValues.includes(opt.value);
+            return (
+              <ModalOption key={opt.value} onPress={() => onSelect(opt.value)}>
+                <ModalOptionRow>
+                  <Checkbox checked={isSelected} />
                   <ModalText>{opt.label}</ModalText>
-                </ModalOption>
-              );
-            })}
-          </ScrollView>
-          <ModalClose onPress={() => setModalVisible(null)}>
-            <ModalText>Закрити</ModalText>
-          </ModalClose>
-        </ModalContent>
-      </ModalBackdrop>
-    </Modal>
-  );
+                </ModalOptionRow>
+              </ModalOption>
+            );
+          })}
+        </ScrollView>
+        <ModalClose onPress={() => setModalVisible(null)}>
+          <ModalText>Закрити</ModalText>
+        </ModalClose>
+      </ModalContent>
+    </ModalBackdrop>
+  </Modal>
+);
+
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <>
       <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title="Календар" />
       </BlurOverlay>
 
-      <ScrollContainer contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollContainer insets={insets}>
         <FiltersContainer>
           <SelectBox onPress={() => setModalVisible('year')}>
             <SelectText>{year}</SelectText>
@@ -229,39 +310,57 @@ const AnimeScheduleScreen = () => {
           </Center>
         ) : (
           <>
-            {todayList.length > 0 && (
-              <DayGroup>
-                <DayHeader>Сьогодні</DayHeader>
-                <View style={{ paddingHorizontal: 12 }}>
-                  <FlatList
-                    data={todayList}
-                    keyExtractor={(item, index) =>
-                      `${item.anime.slug}-today-${index}`
-                    }
-                    renderItem={renderAnimeCard}
-                    numColumns={numColumns}
-                    scrollEnabled={false}
-                  />
-                </View>
-              </DayGroup>
-            )}
+{todayList.length > 0 && (
+  <DayGroup>
+    <DayHeaderContainer style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <DayTitle>Сьогодні</DayTitle>
+      </View>
+      <DayDate>
+        <DateText>
+          {new Date().getDate()}{' '}
+          {['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'][new Date().getMonth()]}
+        </DateText>
+      </DayDate>
+      <GreenDot />
+    </DayHeaderContainer>
 
-            {groupedList.map((group) => (
-              <DayGroup key={group.day}>
-                <DayHeader>{group.day}</DayHeader>
-                <View style={{ paddingHorizontal: 12 }}>
-                  <FlatList
-                    data={group.data}
-                    keyExtractor={(item, index) =>
-                      `${item.anime.slug}-${index}`
-                    }
-                    renderItem={renderAnimeCard}
-                    numColumns={numColumns}
-                    scrollEnabled={false}
-                  />
-                </View>
-              </DayGroup>
-            ))}
+    <View style={{ paddingHorizontal: 12 }}>
+      <FlatList
+        data={todayList}
+        keyExtractor={(item, index) => `${item.anime.slug}-today-${index}`}
+        renderItem={renderAnimeCard}
+        numColumns={numColumns}
+        scrollEnabled={false}
+      />
+    </View>
+  </DayGroup>
+)}
+
+
+{groupedList.map((group, index) => (
+  <DayGroup key={`${group.day}-${index}`}>
+    <DayHeaderContainer>
+      <DayTitle>{group.day}</DayTitle>
+      {group.date && (
+        <DayDate>
+          <DateText>{group.date}</DateText>
+        </DayDate>
+      )}
+    </DayHeaderContainer>
+
+    <View style={{ paddingHorizontal: 12 }}>
+      <FlatList
+        data={group.data}
+        keyExtractor={(item, i) => `${item.anime.slug}-${i}`}
+        renderItem={renderAnimeCard}
+        numColumns={numColumns}
+        scrollEnabled={false}
+      />
+    </View>
+  </DayGroup>
+))}
+
           </>
         )}
 
@@ -280,7 +379,7 @@ const AnimeScheduleScreen = () => {
         })}
         {renderModal('status', STATUSES, status, onStatusChange)}
       </ScrollContainer>
-    </SafeAreaView>
+      </>
   );
 };
 
@@ -296,7 +395,8 @@ const BlurOverlay = styled(BlurView)`
 `;
 
 const ScrollContainer = styled.ScrollView`
-  padding-top: ${HEADER_HEIGHT}px;
+  padding-top: ${(props) => props.insets.top + HEADER_HEIGHT}px;
+  padding-bottom: ${(props) => props.insets.bottom}px;
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
@@ -323,11 +423,17 @@ const SwitchRow = styled.View`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  background-color: ${({ theme }) => theme.colors.card};
+  border: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  padding: 14px;
 `;
 
 const Label = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: 14px;
+  font-weight: 600;
 `;
 
 const ResetButton = styled.TouchableOpacity`
@@ -338,7 +444,7 @@ const ResetButton = styled.TouchableOpacity`
 `;
 
 const ResetText = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
+  color: ${({ theme }) => theme.colors.gray};
   font-weight: bold;
 `;
 
@@ -352,16 +458,37 @@ const NoDataText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const DayHeader = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 22px;
-  font-weight: bold;
-  margin: 12px;
-`;
-
 const DayGroup = styled.View`
   margin-top: 20px;
 `;
+
+const DayHeaderContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin: 0px 12px;
+  margin-bottom: 20px;
+  margin-top: 10px;
+  gap: 10px;
+`;
+
+const DayTitle = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 22px;
+  font-weight: bold;
+`;
+
+const DayDate = styled.View`
+  background-color: ${({ theme }) => theme.colors.primary};
+  padding: 4px 10px;
+  border-radius: 999px;
+`;
+
+const DateText = styled.Text`
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+`;
+
 
 const CardWrapper = styled.View`
   margin-bottom: 25px;
@@ -389,7 +516,8 @@ const ModalOption = styled.Pressable`
 
 const ModalText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
-  font-size: 16px;
+  font-weight: 500;
+  font-size: 14px;
 `;
 
 const ModalClose = styled.TouchableOpacity`
@@ -399,5 +527,29 @@ const ModalClose = styled.TouchableOpacity`
   margin-top: 12px;
   align-items: center;
 `;
+
+const ModalOptionRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+`;
+
+const CheckboxContainer = styled.View`
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border-width: 2px;
+  border-color: ${({ theme }) => theme.colors.borderInput};
+  justify-content: center;
+  align-items: center;
+`;
+
+const CheckboxInner = styled.View`
+  width: 10px;
+  height: 10px;
+  background-color: ${({ theme }) => theme.colors.primary};
+  border-radius: 999px;
+`;
+
 
 export default AnimeScheduleScreen;

@@ -98,7 +98,6 @@ export default function AnimeFilterScreen() {
     const loadToken = async () => {
       try {
         const token = await SecureStore.getItemAsync('hikka_token');
-        console.log('Fetched token:', token);
         if (token) setAuthToken(token);
       } catch (e) {
         console.error('Помилка отримання токена:', e);

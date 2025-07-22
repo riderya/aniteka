@@ -122,8 +122,8 @@ const renderItem = ({ item }) => {
   return (
     <Container>
       <RowLineHeader
-        title="Сьогоднішній календар"
-        onPress={() => navigation.navigate('AnimeCharactersScreen')}
+        title="Календар"
+        onPress={() => navigation.navigate('AnimeScheduleScreen')}
       />
       {loading ? (
         <Text style={{ color: 'gray', marginLeft: 12 }}>Завантаження...</Text>

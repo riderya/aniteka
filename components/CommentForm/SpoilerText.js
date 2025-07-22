@@ -30,6 +30,7 @@ export default SpoilerText;
 
 const Wrapper = styled(TouchableOpacity)`
   align-self: flex-start;
+  margin-top: 10px;
 `;
 
 const BlurContainer = styled.View`

@@ -7,6 +7,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/uk';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -99,10 +100,11 @@ const RowInner = styled.View`
 `;
 
 // --- Основний компонент ---
-const CollectionSlider = ({ navigation }) => {
+const CollectionSlider = () => {
   const { theme } = useTheme(); // використовуй свій контекст теми
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchCollections = async () => {
@@ -139,7 +141,7 @@ const CollectionSlider = ({ navigation }) => {
     <Container>
       <RowLineHeader
         title="Колекції"
-        onPress={() => navigation.navigate('AnimeCharactersScreen')}
+        onPress={() => navigation.navigate('AnimeCollectionsScreen')}
       />
       <FlatList
         data={collections}

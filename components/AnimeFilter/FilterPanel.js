@@ -3,6 +3,7 @@ import styled from 'styled-components/native';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
 import { View, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
 
@@ -456,13 +457,20 @@ export default function AnimeFilters({
     selectedSort,
   } = filters;
   const { theme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <>
       <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title='Фільтр' />
       </BlurOverlay>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 100, paddingBottom: 100, paddingLeft: 12, paddingRight: 12 }}>
+      <ScrollView
+        contentContainerStyle={{
+        paddingTop: insets.top + 50,
+        paddingBottom: insets.bottom + 80,
+        paddingLeft: 12,
+        paddingRight: 12,
+      }}>
 
 
 <Column>

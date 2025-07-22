@@ -1,14 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
-import RowLineHeader from '../DetailsAnime/RowLineHeader';
 import Entypo from '@expo/vector-icons/Entypo';
+import SpoilerText from '../components/CommentForm/SpoilerText';
+import HeaderTitleBar from '../components/Header/HeaderTitleBar';
+import { BlurView } from 'expo-blur';
+import { useTheme } from '../context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import SpoilerText from '../../components/CommentForm/SpoilerText';
 
-const LatestComments = () => {
+const AnimeAllLatestComments = () => {
   const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { theme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
   const commentType = {
@@ -31,21 +37,17 @@ const LatestComments = () => {
   useEffect(() => {
     const fetchComments = async () => {
       try {
-        const response = await axios.get('https://api.hikka.io/comments/latest');
-        setComments(response.data);
+        const response = await axios.get('https://api.hikka.io/comments/list?page=1&size=20');
+        setComments(response.data.list || []);
       } catch (error) {
         console.error('Помилка при завантаженні коментарів:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchComments();
   }, []);
-
-  const handleNavigate = (item) => {
-    if (item.content_type === 'anime' && item.preview?.slug) {
-      navigation.navigate('AnimeDetails', { slug: item.preview.slug });
-    }
-  };
 
   const parseCommentText = (text) => {
     const regex = /:::spoiler\s*\n([\s\S]*?)\n:::/g;
@@ -73,24 +75,39 @@ const LatestComments = () => {
     const parts = parseCommentText(text);
     return (
       <>
-{parts.map((part, i) => {
-  if (part.type === 'text') {
-    return <CommentText key={i} numberOfLines={3}>{part.content}</CommentText>;
-  }
-  if (part.type === 'spoiler') {
-    return <SpoilerText key={i} text={part.content} maxLines={3} />;
-  }
-  return null;
-})}
-
+        {parts.map((part, i) => {
+          if (part.type === 'text') {
+            return <CommentText key={i} numberOfLines={3}>{part.content}</CommentText>;
+          }
+          if (part.type === 'spoiler') {
+            return <SpoilerText key={i} text={part.content} maxLines={3} />;
+          }
+          return null;
+        })}
       </>
     );
   };
 
+  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 32 }} />;
+
+    const handleNavigate = (item) => {
+    if (item.content_type === 'anime' && item.preview?.slug) {
+      navigation.navigate('AnimeDetails', { slug: item.preview.slug });
+    }
+  };
+
   return (
-    <Container>
-      <RowLineHeader title="Коментарі" onPress={() => navigation.navigate('AnimeAllLatestComments')} />
-      <Column>
+    <>
+      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+        <HeaderTitleBar title="Останні коментарі" />
+      </BlurOverlay>
+
+      <Container
+        contentContainerStyle={{
+          paddingTop: 100,
+          paddingBottom: 20 + insets.bottom,
+        }}
+      >
         {comments.map((item, index) => {
           const avatar = item.author?.avatar || 'https://ui-avatars.com/api/?name=?';
           const username = item.author?.username || 'Користувач';
@@ -100,6 +117,7 @@ const LatestComments = () => {
           return (
             <CommentCard key={index}>
               <Row>
+                <CommentIndex>#{index + 1}</CommentIndex>
                 <Avatar source={{ uri: avatar }} />
                 <View>
                   <Username>{username}</Username>
@@ -131,36 +149,60 @@ const LatestComments = () => {
             </CommentCard>
           );
         })}
-      </Column>
-    </Container>
+      </Container>
+    </>
   );
 };
 
-export default LatestComments;
+export default AnimeAllLatestComments;
 
-// --- Styled Components ---
+// ====================== STYLES ======================
 
-const Container = styled.View`
-  margin-top: 25px;
+const Container = styled.ScrollView`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
+  padding: 16px 12px;
   flex-direction: column;
-  padding: 0 12px;
 `;
 
-const Column = styled.View`
-  flex-direction: column;
-  gap: 20px;
+const BlurOverlay = styled(BlurView)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  border-bottom-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
 `;
 
 const CommentCard = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
   border-radius: 24px;
-  padding: 12px;
+  padding: 16px;
   border: 1px solid ${({ theme }) => theme.colors.border};
+  margin-bottom: 20px;
 `;
 
 const Row = styled.View`
   flex-direction: row;
   align-items: center;
+`;
+
+const CommentIndex = styled.Text`
+  position: absolute;
+  font-size: 14px;
+  font-weight: bold;
+  margin-right: 12px;
+  color: ${({ theme }) => theme.colors.text};
+  background-color: ${({ theme }) => theme.colors.card};
+  border: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
+  padding: 4px 14px;
+  border-radius: 999px;
+  text-align: center;
+  z-index: 999;
+  top: -30px;
+  left: -10px;
 `;
 
 const Avatar = styled.Image`
@@ -206,7 +248,7 @@ const RowScore = styled.View`
   flex-direction: row;
   align-items: center;
   gap: 2px;
-  right: 0px;
+  right: 12px;
 `;
 
 const LinkTag = styled.Text`
