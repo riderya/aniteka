@@ -1,110 +1,141 @@
-import React, { useEffect, useState } from 'react';
-import { FlatList, Dimensions, ActivityIndicator, View } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+  Text,
+  View,
+} from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
+import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
+import CollectionCard from '../components/Cards/CollectionCard';
+import { Ionicons } from '@expo/vector-icons';
 
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import Entypo from '@expo/vector-icons/Entypo';
+const PAGE_SIZE = 20;
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_WIDTH = SCREEN_WIDTH * 1;
-const IMAGE_HEIGHT = CARD_WIDTH * 0.6;
+const contentTypeOptions = ['anime', 'manga', 'novel', 'character', 'person'];
+const sortOptions = ['system_ranking:desc', 'created:desc'];
 
 const AnimeCollectionsScreen = () => {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { theme, isDark } = useTheme();
+  const [page, setPage] = useState(1);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const [sort, setSort] = useState(sortOptions[0]);
+  const [contentType, setContentType] = useState(contentTypeOptions[0]);
+
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
+
+  const { isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const fetchCollections = useCallback(
+    async (pageNumber = 1) => {
+      try {
+        if (pageNumber === 1) setLoading(true);
+        else setIsFetchingMore(true);
+
+        const response = await axios.post(
+          `https://api.hikka.io/collections?page=${pageNumber}&size=${PAGE_SIZE}`,
+          {
+            sort: [sort],
+            content_type: contentType,
+            only_public: true,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        const newData = response.data.list || [];
+
+        setCollections((prev) =>
+          pageNumber === 1 ? newData : [...prev, ...newData]
+        );
+        setHasMore(newData.length === PAGE_SIZE);
+      } catch (error) {
+        console.error(
+          'Помилка при завантаженні колекцій:',
+          error.response?.data || error.message
+        );
+      } finally {
+        if (pageNumber === 1) setLoading(false);
+        else setIsFetchingMore(false);
+      }
+    },
+    [sort, contentType]
+  );
 
   useEffect(() => {
-  const fetchCollections = async () => {
-    try {
-      const response = await axios.post(
-        'https://api.hikka.io/collections?page=1&size=20',
-        {
-          sort: ['created:desc', 'system_ranking:desc'],
-          only_public: true,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+    setPage(1);
+    fetchCollections(1);
+  }, [sort, contentType]);
 
-      setCollections(response.data.list || []);
-    } catch (error) {
-      console.error('Помилка при завантаженні колекцій:', error.response?.data || error.message);
-    } finally {
-      setLoading(false);
+  const handleLoadMore = () => {
+    if (!isFetchingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchCollections(nextPage);
     }
   };
 
-  fetchCollections();
-}, []);
+  const renderHeader = () => (
+    <FilterContainer>
+      <DropdownWrapper>
+        <DropdownButton onPress={() => setTypeDropdownOpen(!typeDropdownOpen)}>
+          <DropdownText>Тип: {contentType}</DropdownText>
+          <Ionicons name="chevron-down" size={16} color="#999" />
+        </DropdownButton>
+        {typeDropdownOpen &&
+          contentTypeOptions.map((option) => (
+            <DropdownOption
+              key={option}
+              onPress={() => {
+                setContentType(option);
+                setTypeDropdownOpen(false);
+              }}
+            >
+              <DropdownText>{option}</DropdownText>
+            </DropdownOption>
+          ))}
+      </DropdownWrapper>
 
-  const renderCollection = ({ item }) => {
-    const animeList = item.collection?.map(col => col.content).filter(Boolean) || [];
-    const first = animeList[0];
-    const second = animeList[1];
-    const moreCount = animeList.length - 2;
-
-    return (
-      <Card>
-        <CardWrapper>
-          <AnimeStack>
-            {first && <FirstImage source={{ uri: first.image }} resizeMode="cover" />}
-            {second && <SecondImage source={{ uri: second.image }} resizeMode="cover" />}
-          </AnimeStack>
-          <FolderBackground />
-          <LinearGradient
-            colors={['transparent', theme.colors.card]}
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              width: '100%',
-              height: 200,
-              paddingHorizontal: 12,
-              paddingTop: 12,
-              paddingBottom: 8,
-              borderBottomLeftRadius: 16,
-              borderBottomRightRadius: 16,
-              zIndex: 4,
-              justifyContent: 'flex-end',
-            }}
-          >
-            <CollectionTitle numberOfLines={3}>
-              {item.title || 'Без назви'}
-            </CollectionTitle>
-<CardInner>
-<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-  {moreCount > 0 ? <RowInner style={{ minWidth: 70 }}>
-    <MoreText>+ ще {moreCount}</MoreText>
-  </RowInner>: null}
-
-    <RowInner>
-      <FontAwesome name="commenting" size={14} color={theme.colors.gray} />
-      <MoreText>{item.comments_count}</MoreText>
-    </RowInner>
-    <RowInner>
-      <Entypo name="arrow-bold-up" size={14} color={theme.colors.gray} />
-      <MoreText>{item.vote_score}</MoreText>
-    </RowInner>
-  </View>
-</CardInner>
-
-          </LinearGradient>
-        </CardWrapper>
-      </Card>
-    );
-  };
+      <DropdownWrapper>
+        <DropdownButton onPress={() => setSortDropdownOpen(!sortDropdownOpen)}>
+          <DropdownText>Сортування</DropdownText>
+          <Ionicons name="chevron-down" size={16} color="#999" />
+        </DropdownButton>
+        {sortDropdownOpen &&
+          sortOptions.map((option) => (
+            <DropdownOption
+              key={option}
+              onPress={() => {
+                setSort(option);
+                setSortDropdownOpen(false);
+              }}
+            >
+              <DropdownText>{option}</DropdownText>
+            </DropdownOption>
+          ))}
+      </DropdownWrapper>
+    </FilterContainer>
+  );
 
   return (
     <>
-      <HeaderTitleBar title="Колекції" />
+      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+        <HeaderTitleBar title="Колекції" />
+      </BlurOverlay>
+
       <Wrapper>
         {loading ? (
           <ActivityIndicator size="large" style={{ marginTop: 32 }} />
@@ -112,9 +143,21 @@ const AnimeCollectionsScreen = () => {
           <FlatList
             data={collections}
             keyExtractor={(item, index) => item.reference + index}
-            renderItem={renderCollection}
-            contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 12 }}
+            renderItem={({ item }) => <CollectionCard item={item} />}
+            contentContainerStyle={{
+              paddingTop: 115,
+              paddingBottom: 12 + insets.bottom,
+              paddingHorizontal: 12,
+            }}
+            ListHeaderComponent={renderHeader}
             showsVerticalScrollIndicator={false}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={
+              isFetchingMore ? (
+                <ActivityIndicator size="small" style={{ marginVertical: 16 }} />
+              ) : null
+            }
           />
         )}
       </Wrapper>
@@ -124,93 +167,51 @@ const AnimeCollectionsScreen = () => {
 
 export default AnimeCollectionsScreen;
 
-// -------------------- Styled Components --------------------
-
 const Wrapper = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const Card = styled.View`
-  width: 100%;
-  border-radius: 24px;
-  overflow: hidden;
-  margin-bottom: 20px;
-  border: 1px;
-  border-color: ${({ theme }) => theme.colors.borderInput};
-`;
-
-const CardWrapper = styled.View`
-  position: relative;
-  padding-top: ${IMAGE_HEIGHT}px;
-`;
-
-const FolderBackground = styled.View`
-  position: absolute;
-  top: 0;
-  width: 100%;
-  height: ${IMAGE_HEIGHT + 30}px;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  z-index: 0;
-  border-radius: 24px;
-`;
-
-const AnimeStack = styled.View`
+const BlurOverlay = styled(BlurView)`
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
+  right: 0;
+  z-index: 10;
+  border-bottom-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
 `;
 
-const SecondImage = styled.Image`
-  width: 100%;
-  height: ${IMAGE_HEIGHT}px;
-  border-radius: 24px;
-  position: absolute;
-  top: 10px;
-  z-index: 1;
-  opacity: 0.2;
+const FilterContainer = styled.View`
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
 `;
 
-const FirstImage = styled.Image`
-  width: 100%;
-  height: ${IMAGE_HEIGHT}px;
-  border-radius: 24px;
-  position: absolute;
-  top: 20px;
-  z-index: 2;
+const DropdownWrapper = styled.View`
+  flex: 1;
 `;
 
-const CollectionTitle = styled.Text`
-  font-size: 18px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.text};
-  margin-bottom: 4px;
-`;
-
-const MoreText = styled.Text`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
-const CardInner = styled.View`
-  position: absolute;
-  top: 0px;
-  left: 12px;
-  width: 100%;
+const DropdownButton = styled(TouchableOpacity)`
+  background-color: ${({ theme }) => theme.colors.card};
+  border-radius: 999px;
+  height: 50px;
+  padding: 0px 12px;
   flex-direction: row;
+  justify-content: center;
   align-items: center;
-  justify-content: flex-end;
+  gap: 8px;
 `;
 
-const RowInner = styled.View`
-  background-color: ${({ theme }) => theme.colors.transparentBackground70};
-  border: 1px;
-  border-color: ${({ theme }) => theme.colors.borderInput};
-  padding: 6px 12px;
+const DropdownOption = styled(TouchableOpacity)`
+  background-color: ${({ theme }) => theme.colors.card};
+  padding: 10px;
   border-radius: 8px;
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
+  margin-top: 4px;
+`;
+
+const DropdownText = styled(Text)`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
 `;
