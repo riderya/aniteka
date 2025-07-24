@@ -2,9 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   FlatList,
   ActivityIndicator,
-  TouchableOpacity,
   Text,
   View,
+  TouchableOpacity,
+  Modal,
+  Pressable,
 } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
@@ -14,119 +16,65 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import CollectionCard from '../components/Cards/CollectionCard';
 import { Ionicons } from '@expo/vector-icons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const PAGE_SIZE = 20;
+const contentTypeOptions = ['anime', 'character', 'person'];
 
-const contentTypeOptions = ['anime', 'manga', 'novel', 'character', 'person'];
-const sortOptions = ['system_ranking:desc', 'created:desc'];
+const sortOptions = [
+  { label: 'За рейтингом', value: 'system_ranking:desc' },
+  { label: 'Найновіші', value: 'created:desc' },
+];
 
 const AnimeCollectionsScreen = () => {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [sort, setSort] = useState(sortOptions[0].value);
+  const [isSortModalVisible, setIsSortModalVisible] = useState(false);
 
-  const [sort, setSort] = useState(sortOptions[0]);
-  const [contentType, setContentType] = useState(contentTypeOptions[0]);
-
-  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
-
-  const { isDark } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const fetchCollections = useCallback(
-    async (pageNumber = 1) => {
-      try {
-        if (pageNumber === 1) setLoading(true);
-        else setIsFetchingMore(true);
-
-        const response = await axios.post(
-          `https://api.hikka.io/collections?page=${pageNumber}&size=${PAGE_SIZE}`,
-          {
-            sort: [sort],
-            content_type: contentType,
-            only_public: true,
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
+  const fetchCollections = useCallback(async () => {
+    setLoading(true);
+    try {
+      const allResults = await Promise.all(
+        contentTypeOptions.map((type) =>
+          axios.post(
+            `https://api.hikka.io/collections?page=1&size=${PAGE_SIZE}`,
+            {
+              sort: [sort],
+              content_type: type,
+              only_public: true,
             },
-          }
-        );
+            {
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
+        )
+      );
 
-        const newData = response.data.list || [];
-
-        setCollections((prev) =>
-          pageNumber === 1 ? newData : [...prev, ...newData]
-        );
-        setHasMore(newData.length === PAGE_SIZE);
-      } catch (error) {
-        console.error(
-          'Помилка при завантаженні колекцій:',
-          error.response?.data || error.message
-        );
-      } finally {
-        if (pageNumber === 1) setLoading(false);
-        else setIsFetchingMore(false);
-      }
-    },
-    [sort, contentType]
-  );
+      const combined = allResults.flatMap(res => res.data.list || []);
+      setCollections(combined);
+    } catch (error) {
+      console.error('Помилка при завантаженні колекцій:', error.response?.data || error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [sort]);
 
   useEffect(() => {
-    setPage(1);
-    fetchCollections(1);
-  }, [sort, contentType]);
-
-  const handleLoadMore = () => {
-    if (!isFetchingMore && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchCollections(nextPage);
-    }
-  };
+    fetchCollections();
+  }, [sort]);
 
   const renderHeader = () => (
     <FilterContainer>
-      <DropdownWrapper>
-        <DropdownButton onPress={() => setTypeDropdownOpen(!typeDropdownOpen)}>
-          <DropdownText>Тип: {contentType}</DropdownText>
-          <Ionicons name="chevron-down" size={16} color="#999" />
-        </DropdownButton>
-        {typeDropdownOpen &&
-          contentTypeOptions.map((option) => (
-            <DropdownOption
-              key={option}
-              onPress={() => {
-                setContentType(option);
-                setTypeDropdownOpen(false);
-              }}
-            >
-              <DropdownText>{option}</DropdownText>
-            </DropdownOption>
-          ))}
-      </DropdownWrapper>
-
-      <DropdownWrapper>
-        <DropdownButton onPress={() => setSortDropdownOpen(!sortDropdownOpen)}>
-          <DropdownText>Сортування</DropdownText>
-          <Ionicons name="chevron-down" size={16} color="#999" />
-        </DropdownButton>
-        {sortDropdownOpen &&
-          sortOptions.map((option) => (
-            <DropdownOption
-              key={option}
-              onPress={() => {
-                setSort(option);
-                setSortDropdownOpen(false);
-              }}
-            >
-              <DropdownText>{option}</DropdownText>
-            </DropdownOption>
-          ))}
-      </DropdownWrapper>
+      <DropdownButton onPress={() => setIsSortModalVisible(true)}>
+        <DropdownText>
+          {sortOptions.find((opt) => opt.value === sort)?.label || 'Сортування'}
+        </DropdownText>
+        <Ionicons name="chevron-down" size={16} color="#999" />
+      </DropdownButton>
     </FilterContainer>
   );
 
@@ -151,21 +99,51 @@ const AnimeCollectionsScreen = () => {
             }}
             ListHeaderComponent={renderHeader}
             showsVerticalScrollIndicator={false}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.4}
-            ListFooterComponent={
-              isFetchingMore ? (
-                <ActivityIndicator size="small" style={{ marginVertical: 16 }} />
-              ) : null
-            }
           />
         )}
       </Wrapper>
+
+      {/* Модальне вікно сортування */}
+      <Modal
+        transparent
+        animationType="fade"
+        visible={isSortModalVisible}
+        onRequestClose={() => setIsSortModalVisible(false)}
+      >
+        <ModalBackdrop onPress={() => setIsSortModalVisible(false)}>
+          <Pressable onPress={() => {}} style={{ width: '80%' }}>
+            <ModalContainer>
+{sortOptions.map((option) => {
+  const isSelected = sort === option.value;
+  return (
+    <SortOption
+      key={option.value}
+      onPress={() => {
+        setSort(option.value);
+        setIsSortModalVisible(false);
+      }}
+    >
+      <SortRow>
+        <Checkbox>
+          {isSelected && <InnerCircle />}
+        </Checkbox>
+        <SortText>{option.label}</SortText>
+      </SortRow>
+    </SortOption>
+  );
+})}
+
+            </ModalContainer>
+          </Pressable>
+        </ModalBackdrop>
+      </Modal>
     </>
   );
 };
 
 export default AnimeCollectionsScreen;
+
+// === Styled Components ===
 
 const Wrapper = styled.View`
   flex: 1;
@@ -184,19 +162,11 @@ const BlurOverlay = styled(BlurView)`
 
 const FilterContainer = styled.View`
   flex-direction: column;
-  justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
 `;
 
-const DropdownWrapper = styled.View`
-  flex: 1;
-`;
-
 const DropdownButton = styled(TouchableOpacity)`
-  background-color: ${({ theme }) => theme.colors.card};
-  border-radius: 999px;
-  height: 50px;
   padding: 0px 12px;
   flex-direction: row;
   justify-content: center;
@@ -204,14 +174,54 @@ const DropdownButton = styled(TouchableOpacity)`
   gap: 8px;
 `;
 
-const DropdownOption = styled(TouchableOpacity)`
-  background-color: ${({ theme }) => theme.colors.card};
-  padding: 10px;
-  border-radius: 8px;
-  margin-top: 4px;
-`;
-
 const DropdownText = styled(Text)`
   color: ${({ theme }) => theme.colors.gray};
   font-size: 14px;
+  font-weight: 600;
+`;
+
+const ModalBackdrop = styled(Pressable)`
+  flex: 1;
+  background-color: rgba(0, 0, 0, 0.4);
+  justify-content: center;
+  align-items: center;
+`;
+
+const ModalContainer = styled.View`
+  background-color: ${({ theme }) => theme.colors.card};
+  padding: 20px;
+  border-radius: 32px;
+  width: 100%;
+`;
+
+const SortOption = styled.TouchableOpacity`
+  padding: 12px 0;
+`;
+
+const SortRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+`;
+
+const SortText = styled.Text`
+  font-size: 16px;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const Checkbox = styled.View`
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border-width: 2px;
+  border-color: ${({ theme }) => theme.colors.primary};
+  justify-content: center;
+  align-items: center;
+`;
+
+const InnerCircle = styled.View`
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background-color: ${({ theme }) => theme.colors.primary};
 `;

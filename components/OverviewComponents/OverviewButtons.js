@@ -23,6 +23,10 @@ const handlePress = async (key) => {
     navigation.navigate('AnimeFilterScreen');
   } if (key === 'schedule') {
     navigation.navigate('AnimeScheduleScreen');
+  } if (key === 'collections') {
+    navigation.navigate('AnimeCollectionsScreen');
+  } if (key === 'articles') {
+    navigation.navigate('AnimeAllArticlesScreen');
   } else if (key === 'random') {
       const maxPages = 1000;
       const randomPage = Math.floor(Math.random() * maxPages) + 1;
