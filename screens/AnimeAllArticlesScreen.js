@@ -9,12 +9,14 @@ import {
   Pressable,
   TextInput,
   ScrollView,
+  Switch,
 } from 'react-native';
 import axios from 'axios';
 import styled from 'styled-components/native';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
+import ArticleCard from '../components/Cards/ArticleCard';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
@@ -29,107 +31,6 @@ const BlurOverlay = styled(BlurView)`
   z-index: 10;
   border-bottom-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
-`;
-
-const ArticleCard = styled.View`
-  background-color: ${({ theme }) => theme.colors.card};
-  border: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
-  margin: 10px 12px;
-  padding: 16px;
-  border-radius: 24px;
-`;
-
-const TopRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const AuthorRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-`;
-
-const Avatar = styled.Image`
-  width: 36px;
-  height: 36px;
-  border-radius: 18px;
-  margin-right: 8px;
-`;
-
-const Username = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-weight: bold;
-`;
-
-const FollowButton = styled.TouchableOpacity`
-  padding: 6px 12px;
-  background-color: #2e2d36;
-  border-radius: 8px;
-`;
-
-const FollowText = styled.Text`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 12px;
-`;
-
-const Title = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 18px;
-  font-weight: bold;
-  margin-top: 10px;
-`;
-
-const Description = styled.Text`
-  color: #ccc;
-  margin-top: 8px;
-`;
-
-const StyledImage = styled.Image`
-  width: 100%;
-  height: 180px;
-  border-radius: 10px;
-  margin-top: 12px;
-`;
-
-const RowSpaceBeetween = styled.View`
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const TagsRow = styled.View`
-  flex-direction: row;
-  margin-top: 12px;
-  gap: 6px;
-`;
-
-const Tag = styled.Text`
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  color: ${({ theme }) => theme.colors.text};
-  padding: 4px 10px;
-  border-radius: 10px;
-  font-size: 12px;
-`;
-
-const StatsRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 16px;
-  margin-top: 12px;
-`;
-
-const Stat = styled.View`
-  flex-direction: row;
-  align-items: center;
-`;
-
-const StatText = styled.Text`
-  color: ${({ theme }) => theme.colors.gray};
-  margin-left: 4px;
-  font-size: 13px;
 `;
 
 const FilterButton = styled.TouchableOpacity`
@@ -225,58 +126,7 @@ const AnimeAllArticlesScreen = () => {
     fetchArticles(1, true);
   };
 
-  const renderItem = ({ item }) => (
-  <ArticleCard>
-      <TopRow>
-        <AuthorRow>
-          <Avatar
-            source={{
-              uri: item.author?.avatar || 'https://via.placeholder.com/36',
-            }}
-          />
-          <View>
-            <Username>{item.author?.username || 'Невідомо'}</Username>
-            <Text style={{ color: '#888', fontSize: 12 }}>
-              {item.category || 'Категорія'} ·{' '}
-              {new Date(item.created * 1000).toLocaleDateString('uk-UA')}
-            </Text>
-          </View>
-        </AuthorRow>
-      </TopRow>
-
-      <Title numberOfLines={2}>{item.title}</Title>
-
-      {item.content?.image && (
-        <StyledImage source={{ uri: item.content.image }} resizeMode="cover" />
-      )}
-
-      <RowSpaceBeetween>
-        <TagsRow>
-          {item.tags?.length > 0 && (
-            <>
-              <Tag>{item.tags[0].name}</Tag>
-              {item.tags.length > 1 && <Tag>+{item.tags.length - 1}</Tag>}
-            </>
-          )}
-        </TagsRow>
-
-        <StatsRow>
-          <Stat>
-            <Ionicons name="eye-outline" size={16} color={theme.colors.placeholder} />
-            <StatText>{item.views || 0}</StatText>
-          </Stat>
-          <Stat>
-            <Ionicons name="chatbubble-outline" size={16} color={theme.colors.placeholder} />
-            <StatText>{item.comments_count || 0}</StatText>
-          </Stat>
-          <Stat>
-            <Ionicons name="heart-outline" size={16} color={theme.colors.placeholder} />
-            <StatText>{item.vote_score || 0}</StatText>
-          </Stat>
-        </StatsRow>
-      </RowSpaceBeetween>
-    </ArticleCard>
-  );
+const renderItem = ({ item }) => <ArticleCard item={item} theme={theme} />;
 
   return (
     <>
@@ -294,19 +144,25 @@ const AnimeAllArticlesScreen = () => {
   contentContainerStyle={{
     paddingTop: 110,
     paddingBottom: 20 + insets.bottom,
+    paddingHorizontal: 12,
   }}
+  ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
   ListHeaderComponent={() => (
-    <FilterButton style={{ marginHorizontal: 12 }} onPress={() => setShowFilter(true)}>
-      <FontAwesome6 name="filter" size={18} color={theme.colors.gray} />
-      <FilterButtonText>Фільтр</FilterButtonText>
-    </FilterButton>
+    <View style={{ flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+      <FilterButton style={{ backgroundColor: theme.colors.primary }}>
+        <Ionicons name="create" size={20} color={theme.colors.background} />
+        <FilterButtonText style={{ color: theme.colors.background }}>
+          Створити статтю
+        </FilterButtonText>
+      </FilterButton>
+      <FilterButton onPress={() => setShowFilter(true)}>
+        <FontAwesome6 name="filter" size={18} color={theme.colors.gray} />
+        <FilterButtonText>Фільтр</FilterButtonText>
+      </FilterButton>
+    </View>
   )}
-  ListFooterComponent={
-    loading && <ActivityIndicator />
-  }
-  refreshControl={
-    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-  }
+  ListFooterComponent={loading && <ActivityIndicator />}
+  refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
 />
 
 
@@ -315,97 +171,143 @@ const AnimeAllArticlesScreen = () => {
         <ScrollView
         style={{ flex: 1, backgroundColor: theme.colors.background, paddingHorizontal: 12 }}
         contentContainerStyle={{
-          paddingTop: 12 + insets.top,
-          paddingBottom: 20 + insets.bottom,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
         }}>
           <Text style={{ color: theme.colors.text, fontSize: 24, marginBottom: 10, fontWeight: 'bold' }}>Фільтри</Text>
 
 {/* Категорії */}
-<Text style={{ color: theme.colors.text, marginBottom: 8, fontSize: 16, fontWeight: '600' }}>Категорії</Text>
-<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
-  {Object.keys(CATEGORY_TRANSLATIONS).map((cat) => (
-    <Pressable
-      key={cat}
-      style={{
-        backgroundColor: filters.categories.includes(cat) ? theme.colors.primary : theme.colors.inputBackground,
-        paddingVertical: 8,
-        paddingHorizontal: 24,
-        borderRadius: 999,
-        marginRight: 4,
-      }}
-      onPress={() =>
-        setFilters((prev) => {
-          const exists = prev.categories.includes(cat);
-          return {
-            ...prev,
-            categories: exists
-              ? prev.categories.filter((c) => c !== cat)
-              : [...prev.categories, cat],
-          };
-        })
-      }
-    >
-      <Text style={{ color: theme.colors.text }}>{CATEGORY_TRANSLATIONS[cat]}</Text>
-    </Pressable>
-  ))}
+<Text style={{ color: theme.colors.text, marginBottom: 8, fontSize: 16, fontWeight: '600' }}>
+  Категорії
+</Text>
+
+<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+  {Object.keys(CATEGORY_TRANSLATIONS).map((cat) => {
+    const isActive = filters.categories.includes(cat);
+    return (
+      <Pressable
+        key={cat}
+        style={{
+          backgroundColor: isActive ? theme.colors.primary : theme.colors.inputBackground,
+          paddingVertical: 8,
+          paddingHorizontal: 24,
+          borderRadius: 999,
+          marginRight: 4,
+        }}
+        onPress={() =>
+          setFilters((prev) => {
+            const exists = prev.categories.includes(cat);
+            return {
+              ...prev,
+              categories: exists
+                ? prev.categories.filter((c) => c !== cat)
+                : [...prev.categories, cat],
+            };
+          })
+        }
+      >
+        <Text
+          style={{
+            color: isActive ? '#fff' : theme.colors.text,
+          }}
+        >
+          {CATEGORY_TRANSLATIONS[cat]}
+        </Text>
+      </Pressable>
+    );
+  })}
 </View>
 
 
 
-          {/* Сортування */}
-          <Text style={{ color: theme.colors.text, marginTop: 16, marginBottom: 8, fontSize: 16, fontWeight: 600}}>
-            Сортування:
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Pressable
-              style={{
-                flex: 1,
-                backgroundColor: filters.sort[0].includes('created') ? theme.colors.primary : theme.colors.inputBackground,
-                padding: 10,
-                borderRadius: 8,
-              }}
-              onPress={() => {
-                const dir = filters.sort[0].split(':')[1];
-                setFilters((prev) => ({ ...prev, sort: [`created:${dir}`] }));
-              }}
-            >
-              <Text style={{ color: theme.colors.text, textAlign: 'center' }}>За датою</Text>
-            </Pressable>
-            <Pressable
-              style={{
-                flex: 1,
-                backgroundColor: filters.sort[0].includes('vote_score') ? theme.colors.primary : theme.colors.inputBackground,
-                padding: 10,
-                borderRadius: 8,
-              }}
-              onPress={() => {
-                const dir = filters.sort[0].split(':')[1];
-                setFilters((prev) => ({ ...prev, sort: [`vote_score:${dir}`] }));
-              }}
-            >
-              <Text style={{ color: theme.colors.text, textAlign: 'center' }}>За рейтингом</Text>
-            </Pressable>
-            <Pressable
-              style={{
-                padding: 10,
-                backgroundColor: theme.colors.inputBackground,
-                borderRadius: 8,
-              }}
-              onPress={() => {
-                const [type, dir] = filters.sort[0].split(':');
-                setFilters((prev) => ({
-                  ...prev,
-                  sort: [`${type}:${dir === 'asc' ? 'desc' : 'asc'}`],
-                }));
-              }}
-            >
-              <FontAwesome5
-                name={filters.sort[0].includes('asc') ? 'sort-amount-up' : 'sort-amount-down'}
-                size={20}
-                color="#fff"
-              />
-            </Pressable>
-          </View>
+
+{/* Сортування */}
+<Text
+  style={{
+    color: theme.colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: 600,
+  }}
+>
+  Сортування:
+</Text>
+
+<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+  {/* За датою */}
+  <Pressable
+    style={{
+      flex: 1,
+      backgroundColor: filters.sort[0].includes('created')
+        ? theme.colors.primary
+        : theme.colors.inputBackground,
+      padding: 10,
+      borderRadius: 8,
+    }}
+    onPress={() => {
+      const dir = filters.sort[0].split(':')[1];
+      setFilters((prev) => ({ ...prev, sort: [`created:${dir}`] }));
+    }}
+  >
+    <Text
+      style={{
+        color: filters.sort[0].includes('created') ? '#fff' : theme.colors.text,
+        textAlign: 'center',
+      }}
+    >
+      За датою
+    </Text>
+  </Pressable>
+
+  {/* За рейтингом */}
+  <Pressable
+    style={{
+      flex: 1,
+      backgroundColor: filters.sort[0].includes('vote_score')
+        ? theme.colors.primary
+        : theme.colors.inputBackground,
+      padding: 10,
+      borderRadius: 8,
+    }}
+    onPress={() => {
+      const dir = filters.sort[0].split(':')[1];
+      setFilters((prev) => ({ ...prev, sort: [`vote_score:${dir}`] }));
+    }}
+  >
+    <Text
+      style={{
+        color: filters.sort[0].includes('vote_score') ? '#fff' : theme.colors.text,
+        textAlign: 'center',
+      }}
+    >
+      За рейтингом
+    </Text>
+  </Pressable>
+
+  {/* Сортування напрямку */}
+  <Pressable
+    style={{
+      padding: 10,
+      backgroundColor: theme.colors.inputBackground,
+      borderRadius: 8,
+    }}
+    onPress={() => {
+      const [type, dir] = filters.sort[0].split(':');
+      setFilters((prev) => ({
+        ...prev,
+        sort: [`${type}:${dir === 'asc' ? 'desc' : 'asc'}`],
+      }));
+    }}
+  >
+    <FontAwesome5
+      name={filters.sort[0].includes('asc') ? 'sort-amount-up' : 'sort-amount-down'}
+      size={20}
+      color={theme.colors.gray}
+    />
+  </Pressable>
+</View>
+
 
           {/* Автор */}
           <Text style={{ color: theme.colors.text, marginTop: 16, marginBottom: 8, fontSize: 16, fontWeight: 600 }}>Автор</Text>
@@ -425,111 +327,160 @@ const AnimeAllArticlesScreen = () => {
             placeholderTextColor={theme.colors.placeholder}
           />
 
-          {/* Теги */}
-          <Text style={{ color: theme.colors.text, marginTop: 16, fontSize: 16, marginBottom: 8, fontWeight: 600 }}>Теги</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <TextInput
-              placeholder="Додати тег"
-              value={tagInput}
-              onChangeText={setTagInput}
-              style={{
-                backgroundColor: theme.colors.inputBackground,
-                color: theme.colors.text,
-                flex: 1,
-                padding: 10,
-                borderRadius: 8,
-              }}
-              placeholderTextColor={theme.colors.placeholder}
-            />
-            <Pressable
-              style={{ backgroundColor: theme.colors.inputBackground, padding: 10, borderRadius: 8 }}
-              onPress={() => {
-                if (tagInput && filters.tags.length < 3) {
-                  setFilters((prev) => ({
-                    ...prev,
-                    tags: [...prev.tags, tagInput],
-                  }));
-                  setTagInput('');
-                }
-              }}
-            >
-              <FontAwesome6 name="plus" size={18} color={theme.colors.text} />
-            </Pressable>
-          </View>
-          {/* Показані теги */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 }}>
-            {filters.tags.map((tag, index) => (
-              <Pressable
-                key={index}
-                onPress={() =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    tags: prev.tags.filter((t) => t !== tag),
-                  }))
-                }
-                style={{
-                  backgroundColor: theme.colors.primary,
-                  paddingVertical: 4,
-                  paddingHorizontal: 10,
-                  borderRadius: 10,
-                }}
-              >
-                <Text style={{ color: theme.colors.text }}>{tag} ✕</Text>
-              </Pressable>
-            ))}
-          </View>
+{/* Теги */}
+<Text style={{ color: theme.colors.text, marginTop: 16, fontSize: 16, marginBottom: 8, fontWeight: 600 }}>
+  Теги
+</Text>
 
-          {/* Відображення чернеток */}
-          <Text style={{ color: theme.colors.text, marginTop: 16, fontSize: 16, fontWeight: 600 }}>Відображення</Text>
-          <Pressable
-            onPress={() =>
-              setFilters((prev) => ({ ...prev, draft: !prev.draft }))
-            }
-            style={{
-              marginTop: 8,
-              padding: 10,
-              backgroundColor: filters.draft ? theme.colors.primary : theme.colors.inputBackground,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: theme.colors.text }}>
-              Чернетки: {filters.draft ? 'Увімкнено' : 'Вимкнено'}
-            </Text>
-          </Pressable>
+<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+  <TextInput
+    placeholder="Додати тег"
+    value={tagInput}
+    onChangeText={setTagInput}
+    style={{
+      backgroundColor: theme.colors.inputBackground,
+      color: theme.colors.text,
+      flex: 1,
+      padding: 10,
+      borderRadius: 8,
+    }}
+    placeholderTextColor={theme.colors.placeholder}
+  />
+  <Pressable
+    style={{
+      backgroundColor: theme.colors.inputBackground,
+      padding: 10,
+      borderRadius: 8,
+    }}
+    onPress={() => {
+      if (tagInput && filters.tags.length < 3) {
+        setFilters((prev) => ({
+          ...prev,
+          tags: [...prev.tags, tagInput],
+        }));
+        setTagInput('');
+      }
+    }}
+  >
+    <FontAwesome6 name="plus" size={18} color={theme.colors.gray} />
+  </Pressable>
+</View>
 
-{/* Тип контенту */}
-<Text style={{ color: theme.colors.text, marginTop: 16, marginBottom: 8, fontSize: 16, fontWeight: '600' }}>Тип контенту</Text>
-<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8}}>
-  {Object.keys(TYPE_TRANSLATIONS).map((type) => (
+{/* Показані теги */}
+<View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 6 }}>
+  {filters.tags.map((tag, index) => (
     <Pressable
-      key={type}
-      style={{
-        backgroundColor:
-          filters.content_type === type
-            ? theme.colors.primary
-            : theme.colors.inputBackground,
-        paddingVertical: 8,
-        paddingHorizontal: 24,
-        borderRadius: 999,
-        marginRight: 4,
-      }}
+      key={index}
       onPress={() =>
         setFilters((prev) => ({
           ...prev,
-          content_type: prev.content_type === type ? null : type,
+          tags: prev.tags.filter((t) => t !== tag),
         }))
       }
+      style={{
+        backgroundColor: theme.colors.primary,
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+        borderRadius: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
-      <Text style={{ color: theme.colors.text }}>{TYPE_TRANSLATIONS[type]}</Text>
+      <Text style={{ color: '#fff' }}>{tag} </Text>
+      <Ionicons name="close" size={20} color={theme.colors.background} />
     </Pressable>
   ))}
 </View>
 
 
-        {/* Кнопки */}
-<View style={{ marginTop: 32, gap: 12 }}>
+
+{/* Відображення чернеток */}
+<Text
+  style={{
+    color: theme.colors.text,
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+  }}
+>
+  Відображення
+</Text>
+
+<View
+  style={{
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+
+  }}
+>
+  <Text style={{ color: theme.colors.text, fontSize: 16 }}>
+    Чернетки: {filters.draft ? 'Увімкнено' : 'Вимкнено'}
+  </Text>
+  <Switch
+    value={filters.draft}
+    onValueChange={(value) =>
+      setFilters((prev) => ({ ...prev, draft: value }))
+    }
+    trackColor={{ false: '#767577', true: theme.colors.primary }}
+    thumbColor={filters.draft ? '#fff' : '#f4f3f4'}
+  />
+</View>
+
+
+{/* Тип контенту */}
+<Text
+  style={{
+    color: theme.colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '600',
+  }}
+>
+  Тип контенту
+</Text>
+
+<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+  {Object.keys(TYPE_TRANSLATIONS).map((type) => {
+    const isActive = filters.content_type === type;
+    return (
+      <Pressable
+        key={type}
+        style={{
+          backgroundColor: isActive
+            ? theme.colors.primary
+            : theme.colors.inputBackground,
+          paddingVertical: 8,
+          paddingHorizontal: 24,
+          borderRadius: 999,
+          marginRight: 4,
+        }}
+        onPress={() =>
+          setFilters((prev) => ({
+            ...prev,
+            content_type: prev.content_type === type ? null : type,
+          }))
+        }
+      >
+        <Text style={{ color: isActive ? '#fff' : theme.colors.text }}>
+          {TYPE_TRANSLATIONS[type]}
+        </Text>
+      </Pressable>
+    );
+  })}
+</View>
+
+
+        </ScrollView>
+
+                {/* Кнопки */}
+<View style={{ position: 'absolute', width: '100%', padding: 12, bottom: 0, marginTop: 32, gap: 12, backgroundColor: theme.colors.background, borderTopWidth: 1, borderColor: theme.colors.border }}>
   {/* Ряд з кнопками Очистити та Застосувати */}
-  <View style={{ flexDirection: 'row', gap: 12 }}>
+  <View
+   style={{ flexDirection: 'row', gap: 12, paddingBottom: insets.bottom, }}>
     <FilterButton
       style={{ flex: 1 }}
       onPress={() => {
@@ -549,23 +500,22 @@ const AnimeAllArticlesScreen = () => {
     </FilterButton>
 
     <FilterButton
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: theme.colors.primary }}
       onPress={() => {
         setShowFilter(false);
         fetchArticles(1, true);
       }}
     >
-      <FilterButtonText>Застосувати</FilterButtonText>
+      <FilterButtonText style={{ color: theme.colors.background }}>Застосувати</FilterButtonText>
     </FilterButton>
   </View>
 
   {/* Кнопка Скасувати окремо знизу */}
-  <FilterButton onPress={() => setShowFilter(false)}>
+  {/* <FilterButton onPress={() => setShowFilter(false)}>
     <FilterButtonText>Скасувати</FilterButtonText>
-  </FilterButton>
+  </FilterButton> */}
 </View>
 
-        </ScrollView>
       </Modal>
     </View>
     </>

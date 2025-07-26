@@ -86,7 +86,6 @@ const Card = styled.View`
   overflow: hidden;
   border: 2px;
   border-color: ${({ theme }) => theme.colors.border};
-  margin-bottom: 20px;
   ${(props) => props.compact && 'margin-right: 12px;'}
 `;
 

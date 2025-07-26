@@ -97,6 +97,7 @@ const AnimeCollectionsScreen = () => {
               paddingBottom: 12 + insets.bottom,
               paddingHorizontal: 12,
             }}
+            ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
             ListHeaderComponent={renderHeader}
             showsVerticalScrollIndicator={false}
           />

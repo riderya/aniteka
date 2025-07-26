@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import styled from 'styled-components/native';
-import { Dimensions, RefreshControl } from 'react-native';
+import { Dimensions, ScrollView, ActivityIndicator } from 'react-native';
 import Header from '../components/Header/Header';
 import HomeBannerSwiper from '../components/HomeBannerSwiper/HomeBannerSwiper';
 import AnimeSlider from '../components/Sliders/AnimeSlider';
+import { useTheme } from '../context/ThemeContext';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -23,26 +24,51 @@ const ColumnBlock = styled.View`
   padding-bottom: 110px;
 `;
 
+const RefreshOverlay = styled.View`
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  align-items: center;
+`;
+
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(Date.now());
+  const isRefreshingRef = useRef(false); // щоб уникнути повторних запусків
+  const { theme, isDark } = useTheme();
+
+  const PULL_THRESHOLD = 100; // поріг відступу для запуску оновлення (пікселів)
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    isRefreshingRef.current = true;
 
     setTimeout(() => {
       setRefreshKey(Date.now());
       setRefreshing(false);
-    }, 1000);
+      isRefreshingRef.current = false;
+    }, 1500);
   }, []);
+
+  // Обробник прокрутки
+  const onScroll = useCallback((event) => {
+    const yOffset = event.nativeEvent.contentOffset.y;
+
+    // Якщо тягнуть вниз, і поріг перевищено, і оновлення ще не запущене
+    if (yOffset < -PULL_THRESHOLD && !isRefreshingRef.current) {
+      onRefresh();
+    }
+  }, [onRefresh]);
 
   return (
     <>
       <Header />
+
       <Container
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        scrollEventThrottle={16}
+        onScroll={onScroll}
       >
         <BannerWrapper>
           <HomeBannerSwiper key={`banner-${refreshKey}`} />
@@ -61,7 +87,6 @@ export default function HomeScreen() {
             titleLineText="Популярні"
             descriptionText="Актуальні аніме, які варто переглянути."
           />
-
           <AnimeSlider
             key={`slider2-${refreshKey}`}
             api="https://api.hikka.io/anime?page=1&size=15"
@@ -72,7 +97,6 @@ export default function HomeScreen() {
             titleLineText="Онґоінґи"
             descriptionText="Актуальні аніме, які варто переглянути."
           />
-
           <AnimeSlider
             key={`slider3-${refreshKey}`}
             api="https://api.hikka.io/anime?page=1&size=15"
@@ -83,7 +107,6 @@ export default function HomeScreen() {
             titleLineText="Завершені"
             descriptionText="Актуальні аніме, які варто переглянути."
           />
-
           <AnimeSlider
             key={`slider4-${refreshKey}`}
             api="https://api.hikka.io/anime?page=1&size=15"
@@ -96,6 +119,12 @@ export default function HomeScreen() {
           />
         </ColumnBlock>
       </Container>
+
+      {refreshing && (
+        <RefreshOverlay>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </RefreshOverlay>
+      )}
     </>
   );
 }

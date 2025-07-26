@@ -6,6 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
 import CollectionCard from '../Cards/CollectionCard';
+
 const Container = styled.View`
   width: 100%;
   margin-top: 25px;
