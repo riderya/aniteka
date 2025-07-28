@@ -1,12 +1,13 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
+import { useNavigation } from '@react-navigation/native';
 
-const ArticleCardWrapper = styled.View`
+const TouchableCard = styled(TouchableOpacity)`
   width: ${({ cardWidth }) => (cardWidth ? `${cardWidth}px` : '100%')};
   background-color: ${({ theme }) => theme.colors.card};
   border: 1px solid ${({ theme }) => theme.colors.border};
@@ -96,8 +97,14 @@ const CATEGORY_TRANSLATIONS = {
 };
 
 const ArticleCard = ({ item, theme, cardWidth }) => {
+  const navigation = useNavigation();
+
+  const handlePress = () => {
+    navigation.navigate('ArticleDetailScreen', { slug: item.slug });
+  };
+
   return (
-    <ArticleCardWrapper cardWidth={cardWidth}>
+    <TouchableCard cardWidth={cardWidth} onPress={handlePress} activeOpacity={0.8}>
       <TopRow>
         <AuthorRow>
           <Avatar source={{ uri: item.author?.avatar || 'https://via.placeholder.com/36' }} />
@@ -107,14 +114,12 @@ const ArticleCard = ({ item, theme, cardWidth }) => {
               <Text style={{ color: '#888', fontSize: 12 }}>
                 {CATEGORY_TRANSLATIONS[item.category] || 'Категорія'}
               </Text>
-
               <FontAwesome
                 name="circle"
                 size={4}
                 color={theme.colors.gray}
                 style={{ marginHorizontal: 6 }}
               />
-
               <Text style={{ color: '#888', fontSize: 12 }}>
                 {formatDistanceToNow(new Date(item.created * 1000), {
                   addSuffix: true,
@@ -128,11 +133,10 @@ const ArticleCard = ({ item, theme, cardWidth }) => {
 
       <Title numberOfLines={2}>{item.title}</Title>
 
-<StyledImage
-  source={item.content?.image ? { uri: item.content.image } : null}
-  resizeMode="cover"
-/>
-
+      <StyledImage
+        source={item.content?.image ? { uri: item.content.image } : null}
+        resizeMode="cover"
+      />
 
       <RowSpaceBetween>
         <TagsRow>
@@ -159,7 +163,7 @@ const ArticleCard = ({ item, theme, cardWidth }) => {
           </Stat>
         </StatsRow>
       </RowSpaceBetween>
-    </ArticleCardWrapper>
+    </TouchableCard>
   );
 };
 

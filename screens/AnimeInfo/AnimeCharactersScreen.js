@@ -5,13 +5,13 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import styled from 'styled-components/native';
+import axios from 'axios';
+import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
+import avatarFallback from '../../assets/image/image404.png';
+import { useTheme } from '../../context/ThemeContext';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import axios from 'axios';
-import { useTheme } from '../../context/ThemeContext';
-import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
-import avatarFallback from '../../assets/image/image404.png';
 
 const Container = styled.View`
   flex: 1;
