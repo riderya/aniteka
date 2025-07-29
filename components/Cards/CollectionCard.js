@@ -1,14 +1,17 @@
 import React from 'react';
-import { View, Dimensions } from 'react-native';
+import { View, Dimensions, Pressable } from 'react-native';
 import styled from 'styled-components/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Entypo from '@expo/vector-icons/Entypo';
 import { useTheme } from '../../context/ThemeContext';
+import { useNavigation } from '@react-navigation/native'; // 🔹 додаємо навігацію
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+
 const CollectionCard = ({ item, compact = false }) => {
   const { theme } = useTheme();
+  const navigation = useNavigation(); // 🔹 отримуємо navigation
 
   const cardWidth = compact ? SCREEN_WIDTH * 0.6 : SCREEN_WIDTH - 24;
   const imageHeight = cardWidth * 0.6;
@@ -18,66 +21,70 @@ const CollectionCard = ({ item, compact = false }) => {
   const second = animeList[1];
   const moreCount = animeList.length - 2;
 
-return (
-  <Card style={{ width: cardWidth }} compact={compact}>
-    {/* CardInner тепер поза CardWrapper */}
-    {!compact && (
-      <CardInner>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {moreCount > 0 && (
-            <RowInner style={{ minWidth: 70 }}>
-              <MoreText>+ ще {moreCount}</MoreText>
-            </RowInner>
-          )}
-          <RowInner>
-            <FontAwesome name="commenting" size={14} color={theme.colors.gray} />
-            <MoreText>{item.comments_count}</MoreText>
-          </RowInner>
-          <RowInner>
-            <Entypo name="arrow-bold-up" size={14} color={theme.colors.gray} />
-            <MoreText>{item.vote_score}</MoreText>
-          </RowInner>
-        </View>
-      </CardInner>
-    )}
+  const handlePress = () => {
+    navigation.navigate('CollectionDetailScreen', { reference: item.reference });
+  };
 
-    <CardWrapper style={{ paddingTop: imageHeight }}>
-      <AnimeStack>
-        {first && <FirstImage source={{ uri: first.image }} style={{ height: imageHeight }} resizeMode="cover" />}
-        {second && <SecondImage source={{ uri: second.image }} style={{ height: imageHeight }} resizeMode="cover" />}
-      </AnimeStack>
+  return (
+    <Pressable onPress={handlePress}>
+      <Card style={{ width: cardWidth }} compact={compact}>
+        {!compact && (
+          <CardInner>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {moreCount > 0 && (
+                <RowInner style={{ minWidth: 70 }}>
+                  <MoreText>+ ще {moreCount}</MoreText>
+                </RowInner>
+              )}
+              <RowInner>
+                <FontAwesome name="commenting" size={14} color={theme.colors.gray} />
+                <MoreText>{item.comments_count}</MoreText>
+              </RowInner>
+              <RowInner>
+                <Entypo name="arrow-bold-up" size={14} color={theme.colors.gray} />
+                <MoreText>{item.vote_score}</MoreText>
+              </RowInner>
+            </View>
+          </CardInner>
+        )}
 
-      <FolderBackground style={{ height: imageHeight + 30 }} />
+        <CardWrapper style={{ paddingTop: imageHeight }}>
+          <AnimeStack>
+            {first && <FirstImage source={{ uri: first.image }} style={{ height: imageHeight }} resizeMode="cover" />}
+            {second && <SecondImage source={{ uri: second.image }} style={{ height: imageHeight }} resizeMode="cover" />}
+          </AnimeStack>
 
-      <LinearGradient
-        colors={['transparent', theme.colors.card]}
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          width: '100%',
-          height: 160,
-          paddingHorizontal: 12,
-          paddingTop: 12,
-          paddingBottom: 8,
-          borderBottomLeftRadius: 16,
-          borderBottomRightRadius: 16,
-          zIndex: 4,
-          justifyContent: 'flex-end',
-        }}
-      >
-        <CollectionTitle numberOfLines={2}>
-          {item.title || 'Без назви'}
-        </CollectionTitle>
-      </LinearGradient>
-    </CardWrapper>
-  </Card>
-);
+          <FolderBackground style={{ height: imageHeight + 30 }} />
 
+          <LinearGradient
+            colors={['transparent', theme.colors.card]}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: '100%',
+              height: 160,
+              paddingHorizontal: 12,
+              paddingTop: 12,
+              paddingBottom: 8,
+              borderBottomLeftRadius: 16,
+              borderBottomRightRadius: 16,
+              zIndex: 4,
+              justifyContent: 'flex-end',
+            }}
+          >
+            <CollectionTitle numberOfLines={2}>
+              {item.title || 'Без назви'}
+            </CollectionTitle>
+          </LinearGradient>
+        </CardWrapper>
+      </Card>
+    </Pressable>
+  );
 };
 
-
 export default CollectionCard;
+
 
 // стилі — без змін, окрім Card, де можна додати marginRight лише для compact
 

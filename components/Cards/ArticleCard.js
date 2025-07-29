@@ -57,11 +57,11 @@ const RowSpaceBetween = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+    margin-top: 12px;
 `;
 
 const TagsRow = styled.View`
   flex-direction: row;
-  margin-top: 12px;
   gap: 6px;
 `;
 

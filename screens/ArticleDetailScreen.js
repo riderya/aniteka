@@ -6,6 +6,7 @@ import YoutubePlayer from "react-native-youtube-iframe";
 import ImageViewing from 'react-native-image-viewing';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import Entypo from '@expo/vector-icons/Entypo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -37,28 +38,39 @@ const CATEGORY_TRANSLATIONS = {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  const renderChildren = (children) =>
-    children?.map((child, index) => {
-      if (typeof child.text === 'string') {
-        let style = {};
-        if (child.bold) style.fontWeight = 'bold';
-        return <Text key={index} style={style}>{child.text}</Text>;
-      }
+const renderChildren = (children, customStyle = {}) =>
+  children?.map((child, index) => {
+    if (typeof child.text === 'string') {
+      let style = { ...customStyle };
+      if (child.bold) style.fontWeight = 'bold';
 
-      if (child.type === 'a') {
-        return (
-          <Text
-            key={index}
-            style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
-            onPress={() => Linking.openURL(child.url)}
-          >
-            {renderChildren(child.children)}
-          </Text>
-        );
-      }
+      const cleanText = child.text
+        .replace(/\s+/g, ' ')
+        .replace(/^\s+|\s+$/g, '');
 
-      return null;
-    });
+      return <Text key={index} style={style}>{cleanText}</Text>;
+    }
+
+    if (child.type === 'a') {
+      return (
+        <Text
+          key={index}
+          style={{
+            color: theme.colors.primary,
+            textDecorationLine: 'underline',
+            ...customStyle,
+          }}
+          onPress={() => Linking.openURL(child.url)}
+        >
+          {renderChildren(child.children, customStyle)}
+        </Text>
+      );
+    }
+
+    return null;
+  });
+
+
 
   useEffect(() => {
     if (!article) return;
@@ -88,12 +100,18 @@ const SpoilerWrapper = ({ children }) => {
   const [visible, setVisible] = useState(false);
   return (
     <SpoilerContainer>
-      <Pressable onPress={() => setVisible(!visible)}>
+      <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} onPress={() => setVisible(!visible)}>
         <SpoilerButtonText style={{ color: theme.colors.primary }}>
           {visible ? 'Сховати спойлер' : 'Показати спойлер'}
         </SpoilerButtonText>
+        <Entypo name="select-arrows" size={20} color={theme.colors.gray} />
       </Pressable>
-      {visible && <SpoilerContent>{renderChildren(children)}</SpoilerContent>}
+      {visible && (
+  <SpoilerContent>
+    {renderChildren(children, { color: theme.colors.text })}
+  </SpoilerContent>
+)}
+
     </SpoilerContainer>
   );
 };
@@ -131,9 +149,10 @@ const SpoilerWrapper = ({ children }) => {
         return (
           <Blockquote key={i}>
             {block.children?.map((child, index) => (
-              <BlockquoteText key={index}>
-                {child.text || renderChildren(child.children)}
-              </BlockquoteText>
+<BlockquoteText key={index}>
+  {(child.text?.replace(/\s+/g, ' ').trim()) || renderChildren(child.children)}
+</BlockquoteText>
+
             ))}
           </Blockquote>
         );
@@ -265,7 +284,7 @@ const SpoilerWrapper = ({ children }) => {
 
         {renderDocument(article.document)}
 
-        <ContentBlock>
+        {/* <ContentBlock>
           <Text>🎞 Пов'язане аніме:</Text>
           {article?.content?.image && (
             <Image
@@ -274,7 +293,7 @@ const SpoilerWrapper = ({ children }) => {
             />
           )}
           <Text>{article?.content?.title_ua || article?.content?.title_en || ''}</Text>
-        </ContentBlock>
+        </ContentBlock> */}
       </ScrollView>
 
       <ImageViewing
@@ -305,6 +324,7 @@ const Title = styled.Text`
   font-size: 22px;
   font-weight: bold;
   margin-bottom: 12px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const AuthorContainer = styled.View`
@@ -333,6 +353,7 @@ const TagContainer = styled.View`
 
 const Tag = styled.Text`
   background-color: ${({ theme }) => theme.colors.inputBackground};
+  color: ${({ theme }) => theme.colors.text};
   padding: 4px 12px;
   border-radius: 999px;
   margin-right: 8px;
@@ -342,6 +363,7 @@ const Tag = styled.Text`
 const Paragraph = styled.Text`
   font-size: 16px;
   margin-bottom: 12px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const List = styled.View`
@@ -352,6 +374,7 @@ const ListItem = styled.Text`
   font-size: 16px;
   padding-left: 12px;
   margin-bottom: 6px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const ImageRow = styled.View`
@@ -380,14 +403,14 @@ const FullWidthImage = styled.Image`
 
 const Blockquote = styled.View`
   border-left-width: 3px;
-  border-left-color: #888;
+  border-left-color: ${({ theme }) => theme.colors.gray};
   padding-left: 12px;
   margin: 12px 0;
 `;
 
 const BlockquoteText = styled.Text`
   font-style: italic;
-  color: #555;
+  color: ${({ theme }) => theme.colors.gray};
   font-size: 16px;
 `;
 
@@ -396,6 +419,7 @@ const H1 = styled.Text`
   font-weight: bold;
   margin-top: 24px;
   margin-bottom: 12px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const H2 = styled.Text`
@@ -403,6 +427,7 @@ const H2 = styled.Text`
   font-weight: bold;
   margin-top: 22px;
   margin-bottom: 11px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const H3 = styled.Text`
@@ -410,6 +435,7 @@ const H3 = styled.Text`
   font-weight: bold;
   margin-top: 20px;
   margin-bottom: 10px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const H4 = styled.Text`
@@ -417,6 +443,7 @@ const H4 = styled.Text`
   font-weight: bold;
   margin-top: 18px;
   margin-bottom: 9px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const H5 = styled.Text`
@@ -424,6 +451,7 @@ const H5 = styled.Text`
   font-weight: bold;
   margin-top: 16px;
   margin-bottom: 8px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const H6 = styled.Text`
@@ -431,21 +459,22 @@ const H6 = styled.Text`
   font-weight: bold;
   margin-top: 14px;
   margin-bottom: 7px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const SpoilerContainer = styled.View`
-  margin-vertical: 12px;
-  padding: 10px;
+  padding: 10px 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
+  border-radius: 12px;
   background-color: ${({ theme }) => theme.colors.card};
+  margin-bottom: 12px;
 `;
 
 const SpoilerButtonText = styled.Text`
   font-weight: bold;
-  margin-bottom: 6px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const SpoilerContent = styled.View`
-  margin-top: 6px;
+  margin-top: 12px;
 `;
