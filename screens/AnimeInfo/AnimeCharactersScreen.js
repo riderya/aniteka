@@ -2,16 +2,15 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  TouchableOpacity,
 } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
-import avatarFallback from '../../assets/image/image404.png';
 import { useTheme } from '../../context/ThemeContext';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CharacterCardItem from '../../components/Cards/CharacterCardItem';
 
 const Container = styled.View`
   flex: 1;
@@ -33,38 +32,8 @@ const BlurOverlay = styled(BlurView)`
   border-color: ${({ theme }) => theme.colors.border};
 `;
 
-const CharacterCard = styled.View`
-  flex-direction: row;
-  margin: 6px 12px;
-`;
-
-const CharacterImage = styled.Image`
-  width: 80px;
-  height: 100px;
-  border-radius: 16px;
-  background-color: ${({ theme }) => theme.colors.card};
-`;
-
-const Info = styled.View`
-  padding-left: 12px;
-  width: 78%;
-`;
-
-const Name = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 16px;
-  font-weight: bold;
-`;
-
-const AltName = styled.Text`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 14px;
-  margin-top: 4px;
-`;
-
 const AnimeCharactersScreen = () => {
   const route = useRoute();
-  const navigation = useNavigation();
   const { slug, title } = route.params;
 
   const insets = useSafeAreaInsets();
@@ -100,7 +69,6 @@ const AnimeCharactersScreen = () => {
 
   return (
     <Container>
-
       <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`Всі персонажі: ${title}`} />
       </BlurOverlay>
@@ -113,30 +81,7 @@ const AnimeCharactersScreen = () => {
           paddingBottom: 20 + insets.bottom,
         }}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('AnimeCharacterDetailsScreen', {
-                slug: item.character.slug,
-              })
-            }
-          >
-            <CharacterCard>
-              <CharacterImage
-                source={
-                  item?.character?.image?.trim()
-                    ? { uri: item.character.image }
-                    : avatarFallback
-                }
-              />
-              <Info>
-                <Name numberOfLines={1}>
-                  {item.character.name_ua || '?'}
-                </Name>
-                <AltName>{item.character.name_en || '?'}</AltName>
-                <AltName>{item.character.name_ja || '?'}</AltName>
-              </Info>
-            </CharacterCard>
-          </TouchableOpacity>
+          <CharacterCardItem character={item.character} />
         )}
       />
     </Container>

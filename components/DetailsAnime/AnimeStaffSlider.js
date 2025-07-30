@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, FlatList } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import RowLineHeader from './RowLineHeader';
-import avatarFallback from '../../assets/image/image404.png';
+import StaffColumnCard from '../Cards/StaffColumnCard';
 
 const Container = styled.View``;
 
@@ -16,28 +16,12 @@ const LineGray = styled.View`
   margin-right: 12px;
 `;
 
-const StaffCard = styled.View`
-  margin-right: 15px;
-  width: 90px;
-`;
-
-const StaffImage = styled.Image`
-  width: 90px;
-  height: 120px;
-  border-radius: 24px;
-`;
-
 const StaffName = styled.Text`
   font-size: 14px;
   font-weight: 500;
   margin-top: 4px;
+  margin-left: 12px;
   color: ${({ theme }) => theme.colors.text};
-`;
-
-const RoleText = styled.Text`
-  font-size: 12px;
-  margin-top: 4px;
-  color: ${({ theme }) => theme.colors.gray};
 `;
 
 const AnimeStaffSlider = ({ slug, title }) => {
@@ -74,7 +58,7 @@ const AnimeStaffSlider = ({ slug, title }) => {
     return (
       <Container>
         <RowLineHeader title="Автори" />
-        <StaffName style={{ marginLeft: 12 }}>Немає даних</StaffName>
+        <StaffName>Немає даних</StaffName>
       </Container>
     );
   }
@@ -93,29 +77,7 @@ const AnimeStaffSlider = ({ slug, title }) => {
         contentContainerStyle={{ paddingHorizontal: 15 }}
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => (
-          <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('AnimePeopleDetailsScreen', { slug: item.person.slug, })
-          }
-        >
-          <StaffCard>
-            <StaffImage
-  source={
-    item?.person?.image?.trim()
-      ? { uri: item?.person.image }
-      : avatarFallback
-  }
-            />
-            {item.roles.length > 0 && (
-              <RoleText numberOfLines={1}>
-                {item.roles[0].name_ua || item.roles[0].name_en}
-              </RoleText>
-            )}
-            <StaffName numberOfLines={1}>
-              {item.person.name_ua || item.person.name_en}
-            </StaffName>
-          </StaffCard>
-          </TouchableOpacity>
+          <StaffColumnCard person={item.person} roles={item.roles} />
         )}
       />
 

@@ -33,6 +33,10 @@ const AnimeColumnCard = ({
   cardWidth = 140,
   imageWidth = 140,
   imageHeight = 190,
+  titleFontSize = 14,
+  footerFontSize = 12,
+  badgeFontSize = 14,
+  badgePadding = 4,
 }) => {
   const { theme } = useTheme();
   const statusColors = getStatusColors(theme);
@@ -52,22 +56,30 @@ const AnimeColumnCard = ({
             imageHeight={imageHeight}
           />
           {statuses.map((status) => (
-            <StatusBadge key={status} color={statusColors[status] || '#666'}>
-              <StatusText>{statusLabels[status] || status}</StatusText>
+            <StatusBadge
+              key={status}
+              color={statusColors[status] || '#666'}
+              badgePadding={badgePadding}
+            >
+              <StatusText badgeFontSize={badgeFontSize}>
+                {statusLabels[status] || status}
+              </StatusText>
             </StatusBadge>
           ))}
         </PosterWrapper>
 
-        <Title numberOfLines={2} cardWidth={cardWidth}>
+        <Title numberOfLines={2} cardWidth={cardWidth} titleFontSize={titleFontSize}>
           {anime.title_ua || anime.title_en || anime.title_ja || '?'}
         </Title>
 
         <RowFooter>
-          <TextFooter>
+          <TextFooter footerFontSize={footerFontSize}>
             {anime.episodes_released ?? '?'} з {anime.episodes_total ?? '?'} еп
           </TextFooter>
           <StyledIcon name="circle" size={4} />
-          <TextFooter>{anime.score ?? '?'}</TextFooter>
+          <TextFooter footerFontSize={footerFontSize}>
+            {anime.score ?? '?'}
+          </TextFooter>
         </RowFooter>
       </Item>
     </TouchableOpacity>
@@ -95,7 +107,7 @@ const Poster = styled.Image`
 
 const Title = styled.Text`
   margin-top: 10px;
-  font-size: 14px;
+  font-size: ${({ titleFontSize }) => titleFontSize}px;
   width: ${({ cardWidth }) => cardWidth}px;
   color: ${({ theme }) => theme.colors.text};
   font-weight: 600;
@@ -107,16 +119,15 @@ const StatusBadge = styled.View`
   left: 8px;
   right: 8px;
   background-color: ${({ color }) => color};
-  padding: 4px;
+  padding: ${({ badgePadding }) => badgePadding}px;
   border-radius: 12px;
   justify-content: center;
   align-items: center;
-
 `;
 
 const StatusText = styled.Text`
   color: white;
-  font-size: 14px;
+  font-size: ${({ badgeFontSize }) => badgeFontSize}px;
   font-weight: 500;
 `;
 
@@ -128,7 +139,7 @@ const RowFooter = styled.View`
 `;
 
 const TextFooter = styled.Text`
-  font-size: 12px;
+  font-size: ${({ footerFontSize }) => footerFontSize}px;
   color: ${({ theme }) => theme.colors.gray};
 `;
 

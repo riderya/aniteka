@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  TouchableOpacity,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -11,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
 import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
-import avatarFallback from '../../assets/image/image404.png';
+import StaffCardRow from '../../components/Cards/StaffCardRow';
 
 const Container = styled.View`
   flex: 1;
@@ -33,42 +32,12 @@ const BlurOverlay = styled(BlurView)`
   border-color: ${({ theme }) => theme.colors.border};
 `;
 
-const StaffCard = styled.View`
-  flex-direction: row;
-  margin: 6px 12px;
-`;
-
-const StaffImage = styled.Image`
-  width: 80px;
-  height: 100px;
-  border-radius: 16px;
-  background-color: ${({ theme }) => theme.colors.card};
-`;
-
-const Info = styled.View`
-  padding-left: 12px;
-  width: 78%;
-`;
-
-const Name = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 16px;
-  font-weight: bold;
-`;
-
-const Role = styled.Text`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 14px;
-  margin-top: 4px;
-`;
-
-// ------------ component ------------
 const AnimeStaffScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { slug, title } = route.params;
 
-  const insets = useSafeAreaInsets();          // ← беремо bottom‑inset
+  const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
 
   const [staff, setStaff] = useState([]);
@@ -100,47 +69,27 @@ const AnimeStaffScreen = () => {
 
   return (
     <Container>
-      {/* шапка */}
       <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`Всі автори: ${title}`} />
       </BlurOverlay>
 
-      {/* список авторів */}
       <FlatList
         data={staff}
         keyExtractor={(item) => item.person.slug}
         contentContainerStyle={{
           paddingTop: headerHeight,
-          paddingBottom: 20 + insets.bottom,   // ← базові 20 px + safe‑area
+          paddingBottom: 20 + insets.bottom,
         }}
         renderItem={({ item }) => (
-          <TouchableOpacity
+          <StaffCardRow
+            person={item.person}
+            roles={item.roles}
             onPress={() =>
               navigation.navigate('AnimePeopleDetailsScreen', {
                 slug: item.person.slug,
               })
             }
-          >
-            <StaffCard>
-              <StaffImage
-                source={
-                  item?.person?.image?.trim()
-                    ? { uri: item.person.image }
-                    : avatarFallback
-                }
-              />
-              <Info>
-                <Name numberOfLines={1}>
-                  {item.person.name_ua || item.person.name_en}
-                </Name>
-                <Role numberOfLines={2}>
-                  {item.roles
-                    .map((r) => r.name_ua || r.name_en)
-                    .join(', ')}
-                </Role>
-              </Info>
-            </StaffCard>
-          </TouchableOpacity>
+          />
         )}
       />
     </Container>
