@@ -13,7 +13,7 @@ export default function App() {
         <NavigationContainer>
           <AppWithStatusBar />
         </NavigationContainer>
-        <Toast config={toastConfig} />
+        <Toast config={toastConfig} position="bottom" />
       </WatchStatusProvider>
     </AppThemeProvider>
   );

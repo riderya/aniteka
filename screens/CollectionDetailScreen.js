@@ -1,140 +1,71 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { ActivityIndicator, Dimensions, View } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
+import { AntDesign, Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 import Markdown from 'react-native-markdown-display';
+import Toast from 'react-native-toast-message';
 import styled from 'styled-components/native';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import AnimeColumnCard from '../components/Cards/AnimeColumnCard';
 import CharacterColumnCard from '../components/Cards/CharacterColumnCard';
 import StaffColumnCard from '../components/Cards/StaffColumnCard';
 
-const markdownStyles = {
-  body: {
-    color: '#444',
-    fontSize: 16,
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  heading1: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  paragraph: {
-    marginBottom: 8,
-  },
-  link: {
-    color: '#007AFF',
-  },
-  listItem: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-  },
-};
-
-// --- Компонент Spoiler ---
-const SpoilerContainer = styled.TouchableOpacity`
-  background-color: ${({ theme }) => (theme.isDark ? '#333' : '#eee')};
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-vertical: 8px;
-`;
-
-const SpoilerLabel = styled.Text`
-  font-weight: bold;
-  color: #007AFF;
-  margin-bottom: 6px;
-`;
-
-const SpoilerText = styled.Text`
-  color: ${({ theme }) => (theme.isDark ? '#ddd' : '#444')};
-  font-size: 16px;
-  line-height: 22px;
-`;
-
-const Spoiler = ({ children }) => {
-  const [visible, setVisible] = useState(false);
-  const { theme } = useTheme();
-
-  return (
-    <SpoilerContainer
-      onPress={() => setVisible(!visible)}
-      activeOpacity={0.8}
-      theme={theme}
-    >
-      <SpoilerLabel>{visible ? 'Сховати спойлер' : 'Показати спойлер'}</SpoilerLabel>
-      {visible && <SpoilerText theme={theme}>{children}</SpoilerText>}
-    </SpoilerContainer>
-  );
-};
-
-// --- Функція для рендеру Markdown з підтримкою спойлерів ---
-const renderMarkdownWithSpoilers = (text) => {
-  if (!text) return null;
-
-  try {
-    // Розділяємо по :::spoiler та :::
-    const parts = text.split(/:::spoiler|:::/g);
-
-    return parts.map((part, index) => {
-      if (index % 2 === 1) {
-        // Це спойлер
-        return (
-          <Spoiler key={index}>
-            <Markdown style={markdownStyles}>{part.trim()}</Markdown>
-          </Spoiler>
-        );
-      } else {
-        // Звичайний текст
-        return <Markdown key={index} style={markdownStyles}>{part.trim()}</Markdown>;
-      }
-    });
-  } catch (e) {
-    console.warn('Помилка рендеру Markdown з спойлерами:', e);
-    return <Markdown style={markdownStyles}>{text}</Markdown>;
-  }
+const formatDate = (timestamp) => {
+  if (!timestamp) return '';
+  
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleDateString('uk-UA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 };
 
 const CollectionDetailScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { reference } = route.params;
-  const [collection, setCollection] = useState(null);
-  const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
 
+  // States
+  const [collection, setCollection] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [showUpdated, setShowUpdated] = useState(false);
+  const [hasSeenUpdated, setHasSeenUpdated] = useState(false);
+  const [isFavourite, setIsFavourite] = useState(false);
+  const [favouriteLoading, setFavouriteLoading] = useState(false);
+  const [score, setScore] = useState(0);
+  const [voteScore, setVoteScore] = useState(0);
+  const [voteLoading, setVoteLoading] = useState(false);
 
+  // Card layout calculations
   const screenWidth = Dimensions.get('window').width;
-  const cardSpacing = 12; // простір між картками
+  const cardSpacing = 12;
   const numColumns = 3;
   const totalSpacing = cardSpacing * (numColumns - 1);
-  const cardWidth = (screenWidth - totalSpacing - 24) / numColumns; // 24 — paddingHorizontal (12 + 12)
-
-  const getShortDescription = (text) => {
-    if (!text) return '';
-    const sentences = text.match(/[^.!?]+[.!?]*/g) || [];
-    if (sentences.length <= 12) return text;
-    return sentences.slice(0, 12).join(' ');
-  };
+  const cardWidth = (screenWidth - totalSpacing - 24) / numColumns;
 
   const fetchCollection = async () => {
     const token = await SecureStore.getItemAsync('hikka_token');
     try {
       const response = await axios.get(`https://api.hikka.io/collections/${reference}`, {
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
           Cookie: `auth=${token}`,
         },
       });
       setCollection(response.data);
+      setVoteScore(response.data.vote_score);
+      setScore(response.data.my_vote || 0);
     } catch (error) {
       console.error('Помилка завантаження колекції:', error);
     } finally {
@@ -142,8 +73,149 @@ const CollectionDetailScreen = () => {
     }
   };
 
+  const checkIsFavourite = async () => {
+    const token = await SecureStore.getItemAsync('hikka_token');
+    if (!collection?.slug || !token) return;
+
+    try {
+      const response = await axios.get(
+        `https://api.hikka.io/favourite/collection/${collection.slug}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Cookie: `auth=${token}`,
+          },
+        }
+      );
+      setIsFavourite(response.status === 200);
+    } catch (error) {
+      setIsFavourite(false);
+    }
+  };
+
+const toggleFavourite = async () => {
+  if (favouriteLoading) return;
+  setFavouriteLoading(true);
+
+  const token = await SecureStore.getItemAsync('hikka_token');
+  try {
+    if (isFavourite) {
+      await axios.delete(`https://api.hikka.io/favourite/collection/${reference}`, {
+        headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
+      });
+      setIsFavourite(false);
+      Toast.show({
+        type: 'info',
+        text1: 'Видалено з улюбленого',
+      });
+    } else {
+      await axios.put(`https://api.hikka.io/favourite/collection/${reference}`, {}, {
+        headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
+      });
+      setIsFavourite(true);
+      Toast.show({
+        type: 'success',
+        text1: 'Додано в улюблене',
+      });
+    }
+  } catch (error) {
+    console.error('Помилка оновлення уподобаного:', error);
+    Toast.show({
+      type: 'error',
+      text1: 'Помилка при оновленні улюбленого',
+    });
+  } finally {
+    setFavouriteLoading(false);
+  }
+};
+
+const sendVote = async (newScore) => {
+  if (voteLoading) return;
+  setVoteLoading(true);
+
+  const token = await SecureStore.getItemAsync('hikka_token');
+  try {
+    await axios.put(
+      `https://api.hikka.io/vote/collection/${reference}`,
+      { score: newScore },
+      {
+        headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
+      }
+    );
+    setVoteScore(prev => prev - score + newScore);
+    setScore(newScore);
+
+    if (newScore === 1) {
+      Toast.show({
+        type: 'success',
+        text1: 'Ви поставили лайк',
+      });
+    } else if (newScore === -1) {
+      Toast.show({
+        type: 'info',
+        text1: 'Ви поставили дизлайк',
+      });
+    } else {
+      Toast.show({
+        type: 'info',
+        text1: 'Ваш голос скасовано',
+      });
+    }
+  } catch (error) {
+    console.error('Помилка надсилання голосу:', error);
+    Toast.show({
+      type: 'error',
+      text1: 'Помилка при голосуванні',
+    });
+  } finally {
+    setVoteLoading(false);
+  }
+};
+
+  const renderCard = useCallback((item, index) => {
+    const { content_type, content } = item;
+    const isLastInRow = (index + 1) % numColumns === 0;
+
+    return (
+      <CardWrapper key={index} style={{ width: cardWidth, marginRight: isLastInRow ? 0 : cardSpacing }}>
+        {content_type === 'anime' && (
+          <AnimeColumnCard
+            anime={content}
+            onPress={() => navigation.navigate('AnimeDetails', { slug: content.slug })}
+            cardWidth={cardWidth}
+            imageWidth={cardWidth}
+            imageHeight={cardWidth * 1.4}
+          />
+        )}
+        {content_type === 'character' && (
+          <CharacterColumnCard
+            character={content}
+            width={`${cardWidth}px`}
+            height={`${cardWidth * 1.4}px`}
+            borderRadius="16px"
+            fontSize="16px"
+            cardWidth={`${cardWidth}px`}
+          />
+        )}
+        {content_type === 'person' && (
+          <StaffColumnCard
+            person={content}
+            roles={content.roles}
+            cardWidth={`${cardWidth}px`}
+            imageWidth={`${cardWidth}px`}
+            imageHeight={`${cardWidth * 1.4}px`}
+            borderRadius="16px"
+          />
+        )}
+      </CardWrapper>
+    );
+  }, [cardWidth, cardSpacing, numColumns, navigation]);
+
   useEffect(() => {
-    fetchCollection();
+    const loadData = async () => {
+      await Promise.all([fetchCollection(), checkIsFavourite()]);
+    };
+    loadData();
   }, []);
 
   if (loading) {
@@ -162,67 +234,7 @@ const CollectionDetailScreen = () => {
     );
   }
 
-  const {
-    title,
-    description,
-    nsfw,
-    author,
-    collection: items,
-    labels_order,
-    tags,
-  } = collection;
-
-  const renderCard = (item, index) => {
-  const { content_type, content } = item;
-
-  const isLastInRow = (index + 1) % numColumns === 0;
-
-  return (
-    <CardWrapper
-      key={index.toString()}
-      style={{
-        width: cardWidth,
-        marginRight: isLastInRow ? 0 : cardSpacing,
-      }}
-    >
-      {content_type === 'anime' && (
-        <AnimeColumnCard
-          anime={content}
-          onPress={() => navigation.navigate('AnimeDetails', { slug: content.slug })}
-          cardWidth={cardWidth}
-          imageWidth={cardWidth}
-          imageHeight={cardWidth * 1.4}
-        />
-      )}
-
-      {content_type === 'character' && (
-        <CharacterColumnCard
-          character={content}
-          width={`${cardWidth}px`}
-          height={`${cardWidth * 1.4}px`}
-          borderRadius="16px"
-          fontSize="16px"
-          cardWidth={`${cardWidth}px`}
-          cardMarginRight="0px"
-          marginTop="6px"
-        />
-      )}
-
-      {content_type === 'person' && (
-        <StaffColumnCard
-          person={content}
-          roles={content.roles}
-          cardWidth={`${cardWidth}px`}
-          imageWidth={`${cardWidth}px`}
-          imageHeight={`${cardWidth * 1.4}px`}
-          borderRadius="16px"
-          marginRight="0px"
-        />
-      )}
-    </CardWrapper>
-  );
-};
-
+  const { title, description, nsfw, author, collection: items, labels_order, tags } = collection;
 
   return (
     <>
@@ -240,7 +252,26 @@ const CollectionDetailScreen = () => {
       >
         <Title>{title}</Title>
 
-        {tags && tags.length > 0 && (
+        {collection.created > 0 && (
+  <CreatedAtButton 
+    onPress={() => {
+      if (!hasSeenUpdated) {
+        setShowUpdated(true);
+        setHasSeenUpdated(true);
+      }
+    }}
+    activeOpacity={1}
+  >
+    <CreatedAt>Створено: {formatDate(collection.created)}</CreatedAt>
+    {(showUpdated || hasSeenUpdated) && collection.updated > 0 && collection.updated !== collection.created && (
+      <CreatedAt style={{ marginTop: 2 }}>
+        Оновлено: {formatDate(collection.updated)}
+      </CreatedAt>
+    )}
+  </CreatedAtButton>
+)}
+
+        {tags?.length > 0 && (
           <TagsContainer>
             {tags.map((tag, i) => (
               <Tag key={i}>{tag}</Tag>
@@ -248,62 +279,100 @@ const CollectionDetailScreen = () => {
           </TagsContainer>
         )}
 
-        {description ? (
-          <>
-            {showFullDescription ? (
-              <React.Fragment key="full">
-                {renderMarkdownWithSpoilers(description)}
-              </React.Fragment>
-            ) : (
-              <React.Fragment key="short">
-                {renderMarkdownWithSpoilers(getShortDescription(description))}
-              </React.Fragment>
-            )}
-            {description.match(/[^.!?]+[.!?]*/g)?.length > 12 && (
-              <ToggleButton onPress={() => setShowFullDescription(!showFullDescription)}>
-                <ToggleButtonText>
-                  {showFullDescription ? 'Показати менше' : 'Показати більше'}
-                </ToggleButtonText>
-              </ToggleButton>
-            )}
-          </>
-        ) : null}
+<View style={{ 
+  flexDirection: 'row', 
+  alignItems: 'center', 
+  justifyContent: 'flex-start',
+  marginTop: 12,
+  marginBottom: 12,
+}}>
+  
+<FavouriteButton
+  onPress={toggleFavourite}
+  disabled={favouriteLoading}
+  isFavourite={isFavourite}
+>
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <AntDesign 
+      name={isFavourite ? "heart" : "hearto"} 
+      size={16} 
+      color="#e53935"
+      style={{
+        marginRight: 8,
+        borderRightWidth: 1,
+        borderColor: '#ccc',
+        paddingRight: 8
+      }}
+    />
+    <FavouriteText>
+      {isFavourite ? 'Видалити з улюблених' : 'Додати в улюблене'}
+    </FavouriteText>
+  </View>
+</FavouriteButton>
 
-        {nsfw && <NSFW>🔞 NSFW</NSFW>}
+<View style={{ flexDirection: 'row', alignItems: 'center' }}>  
+<VoteButton
+  active={score === 1}
+  onPress={() => sendVote(score === 1 ? 0 : 1)}
+  theme={theme}
+  disabled={voteLoading}
+>
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <AntDesign 
+      name="like1" 
+      size={16} 
+      color={score === 1 ? '#43a047' : theme.isDark ? 'white' : 'black'} // Зелений коли активний
+    />
+  </View>
+</VoteButton>
 
-        <AuthorBlock>
-          <AuthorLabel>Автор:</AuthorLabel>
-          <AuthorName>{author?.username || 'Невідомий'}</AuthorName>
-        </AuthorBlock>
+  <VoteScoreText>{voteScore}</VoteScoreText>
 
-{items && items.length > 0 ? (
-  labels_order && labels_order.length > 0 ? (
-    labels_order.map((label) => {
-      const itemsByLabel = items.filter((item) => item.label === label);
-      if (itemsByLabel.length === 0) return null;
+<VoteButton
+  active={score === -1}
+  onPress={() => sendVote(score === -1 ? 0 : -1)}
+  theme={theme}
+  disabled={voteLoading}
+>
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <AntDesign 
+      name="dislike1" 
+      size={16} 
+      color={score === -1 ? '#e53935' : theme.isDark ? 'white' : 'black'} // Червоний коли активний
+    />
+  </View>
+</VoteButton>
+</View>
 
-      return (
-        <LabelBlock key={label}>
-          <LabelTitle>{label}</LabelTitle>
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <Ionicons name="chatbubble-outline" size={16} color="#888" />
+    <CommentsCountText style={{ marginLeft: 4 }}>{collection.comments_count}</CommentsCountText>
+  </View>
+</View>
 
-          <CardRow>
-            {itemsByLabel.map((item, index) => {
-              return renderCard(item, index);
-            })}
-          </CardRow>
-        </LabelBlock>
-      );
-    })
-  ) : (
-    // Якщо немає labels_order, показуємо просто всі елементи
-    <CardRow>
-      {items.map((item, index) => renderCard(item, index))}
-    </CardRow>
-  )
-) : (
-  <InfoText>Немає елементів у колекції.</InfoText>
-)}
+        {items?.length > 0 ? (
+          labels_order?.length > 0 ? (
+            labels_order.map(label => {
+              const itemsByLabel = items.filter(item => item.label === label);
+              if (itemsByLabel.length === 0) return null;
 
+              return (
+                <LabelBlock key={label}>
+                  <LabelTitle>{label}</LabelTitle>
+                  <CardRow>
+                    {itemsByLabel.map((item, index) => renderCard(item, index))}
+                  </CardRow>
+                </LabelBlock>
+              );
+            })
+          ) : (
+            <CardRow>
+              {items.map((item, index) => renderCard(item, index))}
+            </CardRow>
+          )
+        ) : (
+          <InfoText>Немає елементів у колекції.</InfoText>
+        )}
       </StyledScrollView>
     </>
   );
@@ -340,24 +409,6 @@ const Title = styled.Text`
   font-size: 22px;
   font-weight: bold;
   margin-bottom: 4px;
-`;
-
-const NSFW = styled.Text`
-  color: red;
-  font-weight: bold;
-  margin-bottom: 12px;
-`;
-
-const AuthorBlock = styled.View`
-  margin-bottom: 16px;
-`;
-
-const AuthorLabel = styled.Text`
-  font-weight: bold;
-`;
-
-const AuthorName = styled.Text`
-  color: #555;
 `;
 
 const LabelBlock = styled.View`
@@ -398,13 +449,52 @@ const Tag = styled.Text`
   font-size: 14px;
 `;
 
-const ToggleButton = styled.TouchableOpacity`
+const CreatedAtButton = styled.TouchableOpacity`
   margin-top: 4px;
-  padding: 4px 8px;
 `;
 
-const ToggleButtonText = styled.Text`
-  color: #007AFF;
+const CreatedAt = styled.Text`
+  color: #888;
+  font-size: 14px;
+  margin-top: 4px;
+`;
+
+const VoteScoreText = styled.Text`
+  color: #888;
+  font-size: 14px;
+  margin-top: 4px;
+`;
+
+const CommentsCountText = styled.Text`
+  color: #888;
+  font-size: 14px;
+  margin-top: 4px;
+`;
+
+
+const FavouriteButton = styled.TouchableOpacity`
+  margin-top: 8px;
+  padding: 10px 12px;
+  align-self: flex-start;
+  background-color: #f8f8f8;
+  border-radius: 12px;
+  border-width: 1px;
+  border-color: ${({ isFavourite }) => (isFavourite ? '#e53935' : '#ссс')};
+`;
+
+const FavouriteText = styled.Text`
+  color: #666;
   font-weight: 600;
   font-size: 14px;
+`;
+
+const VoteButton = styled.TouchableOpacity`
+  padding: 8px 16px;
+  margin-right: 12px;
+  border-radius: 8px;
+`;
+
+const VoteButtonText = styled.Text`
+  font-weight: bold;
+  font-size: 16px;
 `;
