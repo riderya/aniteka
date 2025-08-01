@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ActivityIndicator, Dimensions, View } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
-import axios from 'axios';
 import Markdown from 'react-native-markdown-display';
+import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import styled from 'styled-components/native';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
@@ -38,7 +38,6 @@ const CollectionDetailScreen = () => {
   // States
   const [collection, setCollection] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showFullDescription, setShowFullDescription] = useState(false);
   const [showUpdated, setShowUpdated] = useState(false);
   const [hasSeenUpdated, setHasSeenUpdated] = useState(false);
   const [isFavourite, setIsFavourite] = useState(false);
@@ -47,6 +46,9 @@ const CollectionDetailScreen = () => {
   const [voteScore, setVoteScore] = useState(0);
   const [voteLoading, setVoteLoading] = useState(false);
 
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const MAX_DESCRIPTION_LENGTH = 300;
+
   // Card layout calculations
   const screenWidth = Dimensions.get('window').width;
   const cardSpacing = 12;
@@ -54,32 +56,98 @@ const CollectionDetailScreen = () => {
   const totalSpacing = cardSpacing * (numColumns - 1);
   const cardWidth = (screenWidth - totalSpacing - 24) / numColumns;
 
-  const fetchCollection = async () => {
-    const token = await SecureStore.getItemAsync('hikka_token');
-    try {
-      const response = await axios.get(`https://api.hikka.io/collections/${reference}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Cookie: `auth=${token}`,
-        },
-      });
-      setCollection(response.data);
-      setVoteScore(response.data.vote_score);
-      setScore(response.data.my_vote || 0);
-    } catch (error) {
-      console.error('Помилка завантаження колекції:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const markdownStyles = {
+  body: {
+    color: theme.colors.gray,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  heading1: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+    color: theme.colors.text,
+  },
+  heading2: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+    color: theme.colors.text,
+  },
+  text: {
+    color: theme.colors.gray,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  paragraph: {
+    marginVertical: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+    link: {
+      color: theme.colors.primary,
+      textDecorationLine: 'underline',
+    },
+  blockquote: {
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.border,
+    paddingLeft: 16,
+    marginLeft: 0,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  code_block: {
+    backgroundColor: theme.colors.inputBackground,
+    padding: 12,
+    borderRadius: 8,
+    fontFamily: 'monospace',
+  },
+  code_inline: {
+    backgroundColor: theme.colors.inputBackground,
+    padding: 4,
+    borderRadius: 4,
+    fontFamily: 'monospace',
+  },
+  list_item: {
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  bullet_list: {
+    marginLeft: 16,
+  },
+  ordered_list: {
+    marginLeft: 16,
+  }
+};
+
+const fetchCollection = async () => {
+  const token = await SecureStore.getItemAsync('hikka_token');
+  try {
+    const response = await axios.get(`https://api.hikka.io/collections/${reference}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Cookie: `auth=${token}`,
+      },
+    });
+    setCollection(response.data);
+    setVoteScore(response.data.vote_score);
+  } catch (error) {
+    console.error('Помилка завантаження колекції:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const checkIsFavourite = async () => {
     const token = await SecureStore.getItemAsync('hikka_token');
-    if (!collection?.slug || !token) return;
+    if (!token) return;
 
     try {
-      const response = await axios.get(
-        `https://api.hikka.io/favourite/collection/${collection.slug}`,
+      await axios.get(
+        `https://api.hikka.io/favourite/collection/${reference}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -87,90 +155,121 @@ const CollectionDetailScreen = () => {
           },
         }
       );
-      setIsFavourite(response.status === 200);
+      setIsFavourite(true);
     } catch (error) {
       setIsFavourite(false);
     }
   };
 
-const toggleFavourite = async () => {
-  if (favouriteLoading) return;
-  setFavouriteLoading(true);
+  const toggleFavourite = async () => {
+    if (favouriteLoading) return;
+    setFavouriteLoading(true);
 
-  const token = await SecureStore.getItemAsync('hikka_token');
-  try {
-    if (isFavourite) {
-      await axios.delete(`https://api.hikka.io/favourite/collection/${reference}`, {
-        headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
-      });
-      setIsFavourite(false);
+    const token = await SecureStore.getItemAsync('hikka_token');
+    try {
+      if (isFavourite) {
+        await axios.delete(`https://api.hikka.io/favourite/collection/${reference}`, {
+          headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
+        });
+        setIsFavourite(false);
+        Toast.show({
+          type: 'info',
+          text1: 'Видалено з улюбленого',
+        });
+      } else {
+        await axios.put(`https://api.hikka.io/favourite/collection/${reference}`, {}, {
+          headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
+        });
+        setIsFavourite(true);
+        Toast.show({
+          type: 'success',
+          text1: 'Додано в улюблене',
+        });
+      }
+    } catch (error) {
+      console.error('Помилка оновлення уподобаного:', error);
       Toast.show({
-        type: 'info',
-        text1: 'Видалено з улюбленого',
+        type: 'error',
+        text1: 'Помилка при оновленні улюбленого',
       });
-    } else {
-      await axios.put(`https://api.hikka.io/favourite/collection/${reference}`, {}, {
-        headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
-      });
-      setIsFavourite(true);
-      Toast.show({
-        type: 'success',
-        text1: 'Додано в улюблене',
-      });
+    } finally {
+      setFavouriteLoading(false);
     }
-  } catch (error) {
-    console.error('Помилка оновлення уподобаного:', error);
-    Toast.show({
-      type: 'error',
-      text1: 'Помилка при оновленні улюбленого',
-    });
-  } finally {
-    setFavouriteLoading(false);
-  }
-};
-
-const sendVote = async (newScore) => {
-  if (voteLoading) return;
-  setVoteLoading(true);
-
+  };
+  
+  // Add after checkIsFavourite function
+const checkVoteStatus = async () => {
   const token = await SecureStore.getItemAsync('hikka_token');
+  if (!token) return;
+
   try {
-    await axios.put(
+    const response = await axios.get(
       `https://api.hikka.io/vote/collection/${reference}`,
-      { score: newScore },
       {
-        headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Cookie: `auth=${token}`,
+        },
       }
     );
-    setVoteScore(prev => prev - score + newScore);
-    setScore(newScore);
-
-    if (newScore === 1) {
-      Toast.show({
-        type: 'success',
-        text1: 'Ви поставили лайк',
-      });
-    } else if (newScore === -1) {
-      Toast.show({
-        type: 'info',
-        text1: 'Ви поставили дизлайк',
-      });
+    if (response.data && typeof response.data.score === 'number') {
+      setScore(response.data.score);
     } else {
-      Toast.show({
-        type: 'info',
-        text1: 'Ваш голос скасовано',
-      });
+      setScore(0);
     }
   } catch (error) {
-    console.error('Помилка надсилання голосу:', error);
-    Toast.show({
-      type: 'error',
-      text1: 'Помилка при голосуванні',
-    });
-  } finally {
-    setVoteLoading(false);
+    // If 404, it means no vote exists yet
+    if (error.response?.status === 404) {
+      setScore(0);
+    } else {
+      console.error('Помилка отримання статусу голосу:', error);
+      setScore(0);
+    }
   }
 };
+
+  const sendVote = async (newScore) => {
+    if (voteLoading) return;
+    setVoteLoading(true);
+
+    const token = await SecureStore.getItemAsync('hikka_token');
+    try {
+      await axios.put(
+        `https://api.hikka.io/vote/collection/${reference}`,
+        { score: newScore },
+        {
+          headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
+        }
+      );
+      setVoteScore(prev => prev - score + newScore);
+      setScore(newScore);
+
+      if (newScore === 1) {
+        Toast.show({
+          type: 'success',
+          text1: 'Ви поставили лайк',
+        });
+      } else if (newScore === -1) {
+        Toast.show({
+          type: 'info',
+          text1: 'Ви поставили дизлайк',
+        });
+      } else {
+        Toast.show({
+          type: 'info',
+          text1: 'Ваш голос скасовано',
+        });
+      }
+    } catch (error) {
+      console.error('Помилка надсилання голосу:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка при голосуванні',
+      });
+    } finally {
+      setVoteLoading(false);
+    }
+  };
 
   const renderCard = useCallback((item, index) => {
     const { content_type, content } = item;
@@ -191,9 +290,9 @@ const sendVote = async (newScore) => {
           <CharacterColumnCard
             character={content}
             width={`${cardWidth}px`}
-            height={`${cardWidth * 1.4}px`}
-            borderRadius="16px"
-            fontSize="16px"
+            height={`${cardWidth * 1.3}px`}
+            borderRadius="24px"
+            fontSize="15px"
             cardWidth={`${cardWidth}px`}
           />
         )}
@@ -203,20 +302,26 @@ const sendVote = async (newScore) => {
             roles={content.roles}
             cardWidth={`${cardWidth}px`}
             imageWidth={`${cardWidth}px`}
-            imageHeight={`${cardWidth * 1.4}px`}
-            borderRadius="16px"
+            imageHeight={`${cardWidth * 1.3}px`}
+            borderRadius="24px"
           />
         )}
       </CardWrapper>
     );
   }, [cardWidth, cardSpacing, numColumns, navigation]);
 
-  useEffect(() => {
+useFocusEffect(
+  useCallback(() => {
     const loadData = async () => {
-      await Promise.all([fetchCollection(), checkIsFavourite()]);
+      await Promise.all([
+        fetchCollection(), 
+        checkIsFavourite(),
+        checkVoteStatus()
+      ]);
     };
     loadData();
-  }, []);
+  }, [reference])
+);
 
   if (loading) {
     return (
@@ -234,7 +339,7 @@ const sendVote = async (newScore) => {
     );
   }
 
-  const { title, description, nsfw, author, collection: items, labels_order, tags } = collection;
+  const { title, collection: items, labels_order, tags } = collection;
 
   return (
     <>
@@ -250,26 +355,50 @@ const sendVote = async (newScore) => {
           backgroundColor: theme.background,
         }}
       >
+
+        {collection.author && (
+  <AuthorContainer 
+    onPress={() => navigation.navigate('UserProfile', { 
+      reference: collection.author.reference 
+    })}
+    activeOpacity={0.7}
+  >
+    <AuthorAvatar 
+      source={collection.author.avatar 
+        ? { uri: collection.author.avatar }
+        : require('../assets/image/image404.png')
+      }
+    />
+    <AuthorInfo>
+      <AuthorName>{collection.author.username}</AuthorName>
+      <AuthorCollection>Автор колекції</AuthorCollection>
+    </AuthorInfo>
+  </AuthorContainer>
+)}
+
         <Title>{title}</Title>
 
-        {collection.created > 0 && (
-  <CreatedAtButton 
-    onPress={() => {
-      if (!hasSeenUpdated) {
-        setShowUpdated(true);
-        setHasSeenUpdated(true);
-      }
-    }}
-    activeOpacity={1}
-  >
-    <CreatedAt>Створено: {formatDate(collection.created)}</CreatedAt>
-    {(showUpdated || hasSeenUpdated) && collection.updated > 0 && collection.updated !== collection.created && (
-      <CreatedAt style={{ marginTop: 2 }}>
-        Оновлено: {formatDate(collection.updated)}
-      </CreatedAt>
+<CreatedAtButton 
+  onPress={() => {
+    if (!hasSeenUpdated) {
+      setShowUpdated(true);
+      setHasSeenUpdated(true);
+    }
+  }}
+  activeOpacity={1}
+>
+  <CreatedAt>
+    <CreatedAtText>{formatDate(collection.created)}</CreatedAtText>
+    {!showUpdated && !hasSeenUpdated && (
+      <AntDesign name="right" size={14} color="#888" />
     )}
-  </CreatedAtButton>
-)}
+  </CreatedAt>
+  {(showUpdated || hasSeenUpdated) && collection.updated > 0 && collection.updated !== collection.created && (
+    <CreatedAt style={{ marginTop: 2 }}>
+      <CreatedAtText>Оновлено: {formatDate(collection.updated)}</CreatedAtText>
+    </CreatedAt>
+  )}
+</CreatedAtButton>
 
         {tags?.length > 0 && (
           <TagsContainer>
@@ -279,76 +408,94 @@ const sendVote = async (newScore) => {
           </TagsContainer>
         )}
 
-<View style={{ 
-  flexDirection: 'row', 
-  alignItems: 'center', 
-  justifyContent: 'flex-start',
-  marginTop: 12,
-  marginBottom: 12,
-}}>
-  
-<FavouriteButton
-  onPress={toggleFavourite}
-  disabled={favouriteLoading}
-  isFavourite={isFavourite}
->
-  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    <AntDesign 
-      name={isFavourite ? "heart" : "hearto"} 
-      size={16} 
-      color="#e53935"
-      style={{
-        marginRight: 8,
-        borderRightWidth: 1,
-        borderColor: '#ccc',
-        paddingRight: 8
-      }}
-    />
-    <FavouriteText>
-      {isFavourite ? 'Видалити з улюблених' : 'Додати в улюблене'}
-    </FavouriteText>
-  </View>
-</FavouriteButton>
+<ButtonsScrollView>
+  <ButtonsContainer>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>  
+      <VoteButton
+        active={score === 1}
+        onPress={() => sendVote(score === 1 ? 0 : 1)}
+        theme={theme}
+        disabled={voteLoading}
+      >
+        <Ionicons 
+          name="chevron-up" 
+          size={24} 
+          color={score === 1 
+            ? theme.colors.success 
+            : theme.colors.gray}
+        />
+      </VoteButton>
 
-<View style={{ flexDirection: 'row', alignItems: 'center' }}>  
-<VoteButton
-  active={score === 1}
-  onPress={() => sendVote(score === 1 ? 0 : 1)}
-  theme={theme}
-  disabled={voteLoading}
->
-  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    <AntDesign 
-      name="like1" 
-      size={16} 
-      color={score === 1 ? '#43a047' : theme.isDark ? 'white' : 'black'} // Зелений коли активний
-    />
-  </View>
-</VoteButton>
+      <VoteScoreText>{voteScore}</VoteScoreText>
 
-  <VoteScoreText>{voteScore}</VoteScoreText>
+      <VoteButton
+        active={score === -1}
+        onPress={() => sendVote(score === -1 ? 0 : -1)}
+        theme={theme}
+        disabled={voteLoading}
+      >
+        <Ionicons 
+          name="chevron-down"
+          size={24} 
+          color={score === -1
+            ? theme.colors.error
+            : theme.colors.gray}
+        />
+      </VoteButton>
+    </View>
 
-<VoteButton
-  active={score === -1}
-  onPress={() => sendVote(score === -1 ? 0 : -1)}
-  theme={theme}
-  disabled={voteLoading}
->
-  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    <AntDesign 
-      name="dislike1" 
-      size={16} 
-      color={score === -1 ? '#e53935' : theme.isDark ? 'white' : 'black'} // Червоний коли активний
-    />
-  </View>
-</VoteButton>
-</View>
+    <FavouriteButton
+      onPress={toggleFavourite}
+      disabled={favouriteLoading}
+      isFavourite={isFavourite}
+    >
+      <AntDesign 
+        name={isFavourite ? "heart" : "hearto"} 
+        size={16} 
+        color={theme.colors.error}
+        style={{
+          marginRight: 8,
+          borderRightWidth: 1,
+          borderColor: '#ccc',
+          paddingRight: 8
+        }}
+      />
+      <FavouriteText isFavourite={isFavourite}>
+        {isFavourite ? 'Видалити з улюблених' : 'Додати в улюблене'}
+      </FavouriteText>
+    </FavouriteButton>
 
-  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    <Ionicons name="chatbubble-outline" size={16} color="#888" />
-    <CommentsCountText style={{ marginLeft: 4 }}>{collection.comments_count}</CommentsCountText>
-  </View>
-</View>
+    <CommentsCountButton>
+      <Ionicons name="chatbubble-outline" size={16} color={theme.colors.gray}/>
+      <CommentsCountText 
+        style={{ marginLeft: 8 }}>
+        {collection.comments_count}
+      </CommentsCountText>
+    </CommentsCountButton>
+  </ButtonsContainer>
+</ButtonsScrollView>
+
+{collection.description && (
+  <DescriptionContainer>
+    <Markdown 
+      style={markdownStyles}
+    >
+      {isDescriptionExpanded 
+        ? collection.description 
+        : collection.description.length > MAX_DESCRIPTION_LENGTH 
+          ? `${collection.description.slice(0, MAX_DESCRIPTION_LENGTH)}...`
+          : collection.description
+      }
+    </Markdown>
+    {collection.description.length > MAX_DESCRIPTION_LENGTH && (
+      <ShowMoreButton onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+        <ShowMoreText>
+          {isDescriptionExpanded ? 'Показати менше' : 'Показати більше'}
+        </ShowMoreText>
+      </ShowMoreButton>
+    )}
+  </DescriptionContainer>
+)}
 
         {items?.length > 0 ? (
           labels_order?.length > 0 ? (
@@ -380,6 +527,7 @@ const sendVote = async (newScore) => {
 
 export default CollectionDetailScreen;
 
+// Styled components
 const BlurOverlay = styled(BlurView)`
   position: absolute;
   top: 0;
@@ -397,18 +545,18 @@ const Center = styled.View`
 `;
 
 const InfoText = styled.Text`
-  color: #444;
+  color: ${({ theme }) => theme.colors.gray};
   font-size: 16px;
 `;
 
 const StyledScrollView = styled.ScrollView`
-  background-color: #fff;
+  background-color: ${({ theme }) => theme.colors.background};
 `;
 
 const Title = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
   font-size: 22px;
   font-weight: bold;
-  margin-bottom: 4px;
 `;
 
 const LabelBlock = styled.View`
@@ -419,7 +567,7 @@ const LabelTitle = styled.Text`
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 12px;
-  color: #222;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const CardRow = styled.View`
@@ -430,7 +578,7 @@ const CardRow = styled.View`
 
 const CardWrapper = styled.View`
   margin-right: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 `;
 
 const TagsContainer = styled.View`
@@ -441,60 +589,139 @@ const TagsContainer = styled.View`
 
 const Tag = styled.Text`
   background-color: #e0e0e0;
-  color: #333;
+  color: ${({ theme }) => theme.colors.text};
   padding: 6px 12px;
   border-radius: 16px;
   margin-right: 8px;
-  margin-bottom: 8px;
   font-size: 14px;
 `;
 
 const CreatedAtButton = styled.TouchableOpacity`
-  margin-top: 4px;
+  margin-top: 12px;
 `;
 
 const CreatedAt = styled.Text`
-  color: #888;
+  color: ${({ theme }) => theme.colors.gray};
   font-size: 14px;
-  margin-top: 4px;
 `;
 
 const VoteScoreText = styled.Text`
-  color: #888;
+  color: ${({ theme }) => theme.colors.gray};
   font-size: 14px;
-  margin-top: 4px;
+`;
+
+const CommentsCountButton = styled.View`
+  flex-direction: row;
+  align-items: center;
+  border-radius: 16px;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.borderInput};
+  height: 45px;
+  padding: 0px 16px;
 `;
 
 const CommentsCountText = styled.Text`
-  color: #888;
+  color: ${({ theme }) => theme.colors.gray};
   font-size: 14px;
-  margin-top: 4px;
 `;
 
-
 const FavouriteButton = styled.TouchableOpacity`
-  margin-top: 8px;
-  padding: 10px 12px;
+  flex-direction: row;
+  align-items: center;
+  height: 45px;
+  padding: 0px 16px;
   align-self: flex-start;
-  background-color: #f8f8f8;
-  border-radius: 12px;
+  border-radius: 16px;
   border-width: 1px;
-  border-color: ${({ isFavourite }) => (isFavourite ? '#e53935' : '#ссс')};
+  border-color: ${({ theme, isFavourite }) => 
+    isFavourite ? theme.colors.error : theme.colors.borderInput};
+  opacity: ${({ disabled }) => disabled ? 0.5 : 1};
 `;
 
 const FavouriteText = styled.Text`
-  color: #666;
+  color: ${({ theme, isFavourite }) => 
+    isFavourite ? theme.colors.error : theme.colors.gray};
   font-weight: 600;
   font-size: 14px;
 `;
 
 const VoteButton = styled.TouchableOpacity`
-  padding: 8px 16px;
-  margin-right: 12px;
-  border-radius: 8px;
+  flex-direction: row;
+  align-items: center;
+  height: 45px;
+  padding: 0px;
 `;
 
-const VoteButtonText = styled.Text`
+const CreatedAtText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+`;
+
+const DescriptionContainer = styled.View`
+  margin-top: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom-width: 1px;
+  border-color: ${({ theme }) => theme.colors.borderInput};
+`;
+
+const ShowMoreButton = styled.TouchableOpacity`
+  margin-top: 8px;
+  align-self: flex-start;
+`;
+
+const ShowMoreText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
   font-weight: bold;
-  font-size: 16px;
+`;
+
+// Add these styled components at the bottom of the file
+const AuthorContainer = styled.TouchableOpacity`
+  background-color: ${({ theme }) => theme.colors.card};
+  padding: 12px;
+  border-radius: 16px;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 12px;
+`;
+
+const AuthorAvatar = styled.Image`
+  width: 35px;
+  height: 35px;
+  border-radius: 999px;
+  margin-right: 12px;
+`;
+
+const AuthorInfo = styled.View`
+  flex: 1;
+`;
+
+const AuthorName = styled.Text`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const AuthorCollection = styled.Text`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.gray};
+`;
+
+const ButtonsScrollView = styled.ScrollView.attrs({
+  horizontal: true,
+  showsHorizontalScrollIndicator: false,
+  contentContainerStyle: {
+    paddingRight: 12,
+  },
+})`
+  margin-left: -12px;
+  padding-left: 12px;
+`;
+
+const ButtonsContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
 `;

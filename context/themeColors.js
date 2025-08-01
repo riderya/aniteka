@@ -5,7 +5,7 @@ export const lightThemeColors = {
   text: '#080808',
   textSecondary: '#555555', 
   border: '#f1f1f1',
-  gray: '#999999',
+  gray: '#666',
   success: '#4caf50',
   warning: '#ffa726',
   error: '#f44336',
