@@ -381,7 +381,7 @@ const AnimeCharacterDetailsScreen = () => {
                       lineHeight: 20,
                     },
                     link: {
-                      color: '#3498db',
+                      color: theme.colors.primary,
                     },
                   }}
                 >

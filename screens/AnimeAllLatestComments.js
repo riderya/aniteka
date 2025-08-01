@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator, StatusBar } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import Entypo from '@expo/vector-icons/Entypo';
@@ -88,7 +88,17 @@ const AnimeAllLatestComments = () => {
     );
   };
 
-  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 32 }} />;
+  if (loading) {
+    return (
+      <ScreenContainer>
+        <StatusBar
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor={theme.colors.background}
+        />
+        <ActivityIndicator size="large" style={{ marginTop: 32 }} color={theme.colors.primary} />
+      </ScreenContainer>
+    );
+  }
 
     const handleNavigate = (item) => {
     if (item.content_type === 'anime' && item.preview?.slug) {
@@ -97,7 +107,11 @@ const AnimeAllLatestComments = () => {
   };
 
   return (
-    <>
+    <ScreenContainer>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.colors.background}
+      />
       <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title="Останні коментарі" />
       </BlurOverlay>
@@ -150,13 +164,18 @@ const AnimeAllLatestComments = () => {
           );
         })}
       </Container>
-    </>
+    </ScreenContainer>
   );
 };
 
 export default AnimeAllLatestComments;
 
 // ====================== STYLES ======================
+
+const ScreenContainer = styled.View`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
 
 const Container = styled.ScrollView`
   flex: 1;

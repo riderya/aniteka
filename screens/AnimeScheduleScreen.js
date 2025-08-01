@@ -484,7 +484,7 @@ const DayDate = styled.View`
 `;
 
 const DateText = styled.Text`
-  color: white;
+  color: ${({ theme }) => theme.colors.background};
   font-weight: bold;
   font-size: 14px;
 `;

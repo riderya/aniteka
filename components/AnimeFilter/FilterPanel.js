@@ -465,6 +465,7 @@ export default function AnimeFilters({
         <HeaderTitleBar title='Фільтр' />
       </BlurOverlay>
       <ScrollView
+        style={{ backgroundColor: theme.colors.background }}
         contentContainerStyle={{
         paddingTop: insets.top + 50,
         paddingBottom: insets.bottom + 80,

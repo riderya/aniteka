@@ -3,9 +3,11 @@ import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
 import { FlatList, useWindowDimensions } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 
 const Container = styled.View`
   flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
 `;
 
 const LoadingIndicator = styled.ActivityIndicator`
@@ -18,6 +20,7 @@ const EmptyContainer = styled.View`
   justify-content: center;
   padding: 20px;
   padding-top: 150px;
+  background-color: ${({ theme }) => theme.colors.background};
 `;
 
 const EmptyImage = styled.Image`
@@ -40,6 +43,7 @@ const CardWrapper = styled.View`
 export default function AnimeResults({ animeList, loadingAnime, onEndReached }) {
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
+  const { theme } = useTheme();
   const cardWidth = 115;
   const spacing = 12;
   const numColumns = Math.floor(width / (cardWidth + spacing));
@@ -78,6 +82,7 @@ export default function AnimeResults({ animeList, loadingAnime, onEndReached }) 
         renderItem={renderItem}
         keyExtractor={(item) => item.slug}
         numColumns={numColumns}
+        style={{ backgroundColor: theme.colors.background }}
         contentContainerStyle={{ paddingTop: 115, paddingHorizontal: 6 }}
         columnWrapperStyle={{
           justifyContent: 'space-between',

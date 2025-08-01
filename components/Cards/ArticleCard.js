@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
+import TagComponent from '../Custom/TagComponent';
 import { useNavigation } from '@react-navigation/native';
 
 const TouchableCard = styled(TouchableOpacity)`

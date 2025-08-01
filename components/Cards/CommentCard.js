@@ -9,7 +9,7 @@ import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { BlurView } from 'expo-blur';
+
 
 dayjs.extend(isToday);
 dayjs.extend(isYesterday);
@@ -75,20 +75,40 @@ const SpoilerText = ({ text }) => {
   };
 
   return (
-    <TouchableOpacity onPress={toggleSpoiler} activeOpacity={0.8} style={{ alignSelf: 'flex-start', marginVertical: 4 }}>
+    <TouchableOpacity onPress={toggleSpoiler} activeOpacity={0.8} style={{ width: '100%', marginVertical: 4 }}>
       {revealed ? (
-        <RevealedText>{text}</RevealedText>
+        <RevealedContainer>
+          <Markdown 
+            style={{
+              body: {
+                color: theme.colors.text,
+                fontSize: 14,
+                lineHeight: 20,
+              },
+              link: {
+                color: theme.colors.primary,
+              },
+            }}
+          >
+            {text}
+          </Markdown>
+        </RevealedContainer>
       ) : (
-        <BlurContainer>
-          <TextStyled>{text}</TextStyled>
-          <BlurViewStyled intensity={15} tint={'light'} />
-        </BlurContainer>
+        <SpoilerContainer>
+          <HiddenText>{text}</HiddenText>
+          <SpoilerOverlay>
+            <SpoilerMessage>
+              <SpoilerMessageLine>Цей текст може містити спойлер.</SpoilerMessageLine>
+              <SpoilerMessageLineBold>Натисніть, щоб прочитати</SpoilerMessageLineBold>
+            </SpoilerMessage>
+          </SpoilerOverlay>
+        </SpoilerContainer>
       )}
     </TouchableOpacity>
   );
 };
 
-const BlurContainer = styled.View`
+const SpoilerContainer = styled.View`
   position: relative;
   padding: 8px;
   border-radius: 6px;
@@ -96,23 +116,47 @@ const BlurContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.inputBackground};
 `;
 
-const TextStyled = styled(Text)`
+const HiddenText = styled(Text)`
   font-size: 14px;
   line-height: 20px;
-  color: ${({ theme }) => theme.colors.text || '#000'};
+  color: transparent;
 `;
 
-const BlurViewStyled = styled(BlurView)`
+const SpoilerOverlay = styled.View`
   position: absolute;
-  top: 0; left: 0; bottom: 0; right: 0;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
+  justify-content: center;
+  align-items: center;
   border-radius: 6px;
 `;
 
-const RevealedText = styled(Text)`
+const SpoilerMessage = styled.View`
+  align-items: center;
+  padding: 8px;
+`;
+
+const SpoilerMessageLine = styled(Text)`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  font-style: italic;
+`;
+
+const SpoilerMessageLineBold = styled(Text)`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  font-weight: bold;
+`;
+
+const RevealedContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.inputBackground};
-  color: ${({ theme }) => theme.colors.text || '#000'};
-  font-size: 14px;
-  line-height: 20px;
   padding: 8px;
   border-radius: 6px;
 `;

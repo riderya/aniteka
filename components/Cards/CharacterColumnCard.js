@@ -20,7 +20,7 @@ const CharacterImage = styled.Image`
 const CharacterName = styled.Text`
   font-size: ${({ fontSize }) => fontSize || '14px'};
   font-weight: 500;
-  margin-top: ${({ marginTop }) => marginTop || '4px'};
+  margin-top: ${({ marginTop }) => marginTop || '10px'};
   color: ${({ theme }) => theme.colors.text};
 `;
 
@@ -32,7 +32,7 @@ const CharacterColumnCard = ({
   fontSize = '14px',
   cardWidth = '90px',
   cardMarginRight = '15px',
-  marginTop = '4px',
+  marginTop = '10px',
 }) => {
   const navigation = useNavigation();
 

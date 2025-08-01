@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
-import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
+import Markdown from 'react-native-markdown-display';
 
 const SpoilerText = ({ text, maxLines = 3 }) => {
-  const { isDark } = useTheme();
+  const { theme } = useTheme();
   const [revealed, setRevealed] = useState(false);
 
   const toggleSpoiler = () => {
@@ -15,12 +15,32 @@ const SpoilerText = ({ text, maxLines = 3 }) => {
   return (
     <Wrapper activeOpacity={0.8} onPress={toggleSpoiler}>
       {revealed ? (
-        <RevealedText numberOfLines={maxLines}>{text}</RevealedText>
+        <RevealedContainer>
+          <Markdown 
+            style={{
+              body: {
+                color: theme.colors.text,
+                fontSize: 14,
+                lineHeight: 20,
+              },
+              link: {
+                color: theme.colors.primary,
+              },
+            }}
+          >
+            {text}
+          </Markdown>
+        </RevealedContainer>
       ) : (
-        <BlurContainer>
-          <TextStyled numberOfLines={maxLines}>{text}</TextStyled>
-          <BlurViewStyled intensity={15} tint={isDark ? 'dark' : 'light'} />
-        </BlurContainer>
+        <SpoilerContainer>
+          <HiddenText numberOfLines={maxLines}>{text}</HiddenText>
+          <SpoilerOverlay>
+            <SpoilerMessage>
+              <SpoilerMessageLine>Цей текст може містити спойлер.</SpoilerMessageLine>
+              <SpoilerMessageLineBold>Натисніть, щоб прочитати</SpoilerMessageLineBold>
+            </SpoilerMessage>
+          </SpoilerOverlay>
+        </SpoilerContainer>
       )}
     </Wrapper>
   );
@@ -29,37 +49,59 @@ const SpoilerText = ({ text, maxLines = 3 }) => {
 export default SpoilerText;
 
 const Wrapper = styled(TouchableOpacity)`
-  align-self: flex-start;
+  width: 100%;
   margin-top: 10px;
 `;
 
-const BlurContainer = styled.View`
+const SpoilerContainer = styled.View`
   position: relative;
   padding: 8px;
   border-radius: 6px;
   overflow: hidden;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
 `;
 
-const TextStyled = styled(Text)`
+const HiddenText = styled(Text)`
   font-size: 14px;
   line-height: 20px;
-  color: ${({ theme }) => theme.colors.text || '#000'};
+  color: transparent;
 `;
 
-const BlurViewStyled = styled(BlurView)`
+const SpoilerOverlay = styled.View`
   position: absolute;
   top: 0;
   left: 0;
   bottom: 0;
   right: 0;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
+  justify-content: center;
+  align-items: center;
   border-radius: 6px;
 `;
 
-const RevealedText = styled(Text)`
+const SpoilerMessage = styled.View`
+  align-items: center;
+  padding: 8px;
+`;
+
+const SpoilerMessageLine = styled(Text)`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  font-style: italic;
+`;
+
+const SpoilerMessageLineBold = styled(Text)`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  font-weight: bold;
+`;
+
+const RevealedContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.inputBackground};
-  color: ${({ theme }) => theme.colors.text || '#000'};
-  font-size: 14px;
-  line-height: 20px;
   padding: 8px;
   border-radius: 16px;
 `;

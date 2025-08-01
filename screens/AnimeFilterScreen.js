@@ -284,7 +284,13 @@ export default function AnimeFilterScreen() {
   };
 
   if (loadingGenres || !tokenReady) {
-    return null; // або лоадер
+    return (
+      <Container>
+        <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+          <HeaderTitleBar title="Фільтр" />
+        </BlurOverlay>
+      </Container>
+    );
   }
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ActivityIndicator, Dimensions, View } from 'react-native';
+import { ActivityIndicator, Dimensions, View, Text } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -14,6 +14,7 @@ import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import AnimeColumnCard from '../components/Cards/AnimeColumnCard';
 import CharacterColumnCard from '../components/Cards/CharacterColumnCard';
 import StaffColumnCard from '../components/Cards/StaffColumnCard';
+import SpoilerText from '../components/CommentForm/SpoilerText';
 
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
@@ -48,6 +49,94 @@ const CollectionDetailScreen = () => {
 
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const MAX_DESCRIPTION_LENGTH = 300;
+
+  // Function to process spoilers in text
+  const processSpoilers = (text) => {
+    if (!text) return [];
+    
+    const spoilerRegex = /:::spoiler\s*\n?([\s\S]*?)\n?:::/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = spoilerRegex.exec(text)) !== null) {
+      // Add text before spoiler
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'text',
+          content: text.slice(lastIndex, match.index)
+        });
+      }
+      
+      // Add spoiler content
+      parts.push({
+        type: 'spoiler',
+        content: match[1].trim()
+      });
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text after last spoiler
+    if (lastIndex < text.length) {
+      parts.push({
+        type: 'text',
+        content: text.slice(lastIndex)
+      });
+    }
+    
+    return parts.length > 0 ? parts : [{ type: 'text', content: text }];
+  };
+
+  // Функція для обрізання тексту з урахуванням спойлерів
+  const truncateTextWithSpoilers = (text, maxLength) => {
+    if (!text || text.length <= maxLength) return text;
+    
+    const parts = processSpoilers(text);
+    let currentLength = 0;
+    const truncatedParts = [];
+    
+    for (const part of parts) {
+      if (part.type === 'text') {
+        const remainingLength = maxLength - currentLength;
+        if (remainingLength <= 0) break;
+        
+        if (part.content.length <= remainingLength) {
+          truncatedParts.push(part);
+          currentLength += part.content.length;
+        } else {
+          // Обрізаємо текст до доступної довжини
+          truncatedParts.push({
+            type: 'text',
+            content: part.content.slice(0, remainingLength) + '...'
+          });
+          break;
+        }
+      } else if (part.type === 'spoiler') {
+        // Для спойлерів перевіряємо чи можемо додати весь спойлер
+        const spoilerLength = part.content.length + 20; // Приблизна довжина для спойлера
+        if (currentLength + spoilerLength <= maxLength) {
+          truncatedParts.push(part);
+          currentLength += spoilerLength;
+        } else {
+          // Якщо спойлер не вміщується, зупиняємося
+          break;
+        }
+      }
+    }
+    
+    // Відновлюємо оригінальний текст з обрізаними частинами
+    let result = '';
+    for (const part of truncatedParts) {
+      if (part.type === 'text') {
+        result += part.content;
+      } else if (part.type === 'spoiler') {
+        result += `:::spoiler\n${part.content}\n:::`;
+      }
+    }
+    
+    return result;
+  };
 
   // Card layout calculations
   const screenWidth = Dimensions.get('window').width;
@@ -173,7 +262,7 @@ const fetchCollection = async () => {
         });
         setIsFavourite(false);
         Toast.show({
-          type: 'info',
+          type: 'error',
           text1: 'Видалено з улюбленого',
         });
       } else {
@@ -189,7 +278,7 @@ const fetchCollection = async () => {
     } catch (error) {
       console.error('Помилка оновлення уподобаного:', error);
       Toast.show({
-        type: 'error',
+        type: 'info',
         text1: 'Помилка при оновленні улюбленого',
       });
     } finally {
@@ -251,19 +340,19 @@ const checkVoteStatus = async () => {
         });
       } else if (newScore === -1) {
         Toast.show({
-          type: 'info',
+          type: 'success',
           text1: 'Ви поставили дизлайк',
         });
       } else {
         Toast.show({
-          type: 'info',
+          type: 'error',
           text1: 'Ваш голос скасовано',
         });
       }
     } catch (error) {
       console.error('Помилка надсилання голосу:', error);
       Toast.show({
-        type: 'error',
+        type: 'info',
         text1: 'Помилка при голосуванні',
       });
     } finally {
@@ -292,7 +381,7 @@ const checkVoteStatus = async () => {
             width={`${cardWidth}px`}
             height={`${cardWidth * 1.3}px`}
             borderRadius="24px"
-            fontSize="15px"
+            fontSize="14px"
             cardWidth={`${cardWidth}px`}
           />
         )}
@@ -395,7 +484,7 @@ useFocusEffect(
   </CreatedAt>
   {(showUpdated || hasSeenUpdated) && collection.updated > 0 && collection.updated !== collection.created && (
     <CreatedAt style={{ marginTop: 2 }}>
-      <CreatedAtText>Оновлено: {formatDate(collection.updated)}</CreatedAtText>
+      <CreatedAtText>Ред: {formatDate(collection.updated)}</CreatedAtText>
     </CreatedAt>
   )}
 </CreatedAtButton>
@@ -466,7 +555,7 @@ useFocusEffect(
     </FavouriteButton>
 
     <CommentsCountButton>
-      <Ionicons name="chatbubble-outline" size={16} color={theme.colors.gray}/>
+      <Ionicons name="chatbox-outline" size={16} color={theme.colors.gray}/>
       <CommentsCountText 
         style={{ marginLeft: 8 }}>
         {collection.comments_count}
@@ -477,16 +566,29 @@ useFocusEffect(
 
 {collection.description && (
   <DescriptionContainer>
-    <Markdown 
-      style={markdownStyles}
-    >
-      {isDescriptionExpanded 
+    {(() => {
+      const descriptionText = isDescriptionExpanded 
         ? collection.description 
-        : collection.description.length > MAX_DESCRIPTION_LENGTH 
-          ? `${collection.description.slice(0, MAX_DESCRIPTION_LENGTH)}...`
-          : collection.description
-      }
-    </Markdown>
+        : truncateTextWithSpoilers(collection.description, MAX_DESCRIPTION_LENGTH);
+      
+      const processedParts = processSpoilers(descriptionText);
+      
+      return (
+        <>
+          {processedParts.map((part, index) => (
+            <View key={index}>
+              {part.type === 'text' ? (
+                <Markdown style={markdownStyles}>
+                  {part.content}
+                </Markdown>
+              ) : (
+                <SpoilerText text={part.content} />
+              )}
+            </View>
+          ))}
+        </>
+      );
+    })()}
     {collection.description.length > MAX_DESCRIPTION_LENGTH && (
       <ShowMoreButton onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
         <ShowMoreText>
@@ -542,6 +644,7 @@ const Center = styled.View`
   flex: 1;
   justify-content: center;
   align-items: center;
+  background-color: ${({ theme }) => theme.colors.background};
 `;
 
 const InfoText = styled.Text`
@@ -588,7 +691,7 @@ const TagsContainer = styled.View`
 `;
 
 const Tag = styled.Text`
-  background-color: #e0e0e0;
+  background-color:${({ theme }) => theme.colors.card};
   color: ${({ theme }) => theme.colors.text};
   padding: 6px 12px;
   border-radius: 16px;
@@ -667,7 +770,7 @@ const DescriptionContainer = styled.View`
 
 const ShowMoreButton = styled.TouchableOpacity`
   margin-top: 8px;
-  align-self: flex-start;
+  align-self: center;
 `;
 
 const ShowMoreText = styled.Text`
@@ -678,19 +781,21 @@ const ShowMoreText = styled.Text`
 
 // Add these styled components at the bottom of the file
 const AuthorContainer = styled.TouchableOpacity`
-  background-color: ${({ theme }) => theme.colors.card};
-  padding: 12px;
-  border-radius: 16px;
   flex-direction: row;
   align-items: center;
   margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background-color: ${({ theme }) => theme.colors.card};
+  border: 1px;
+  border-color: ${({ theme }) => theme.colors.card};
 `;
 
 const AuthorAvatar = styled.Image`
-  width: 35px;
-  height: 35px;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
-  margin-right: 12px;
+  margin-right: 10px;
 `;
 
 const AuthorInfo = styled.View`
@@ -698,8 +803,9 @@ const AuthorInfo = styled.View`
 `;
 
 const AuthorName = styled.Text`
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
+  margin-bottom: 4px;
   color: ${({ theme }) => theme.colors.text};
 `;
 
@@ -711,17 +817,12 @@ const AuthorCollection = styled.Text`
 const ButtonsScrollView = styled.ScrollView.attrs({
   horizontal: true,
   showsHorizontalScrollIndicator: false,
-  contentContainerStyle: {
-    paddingRight: 12,
-  },
 })`
-  margin-left: -12px;
-  padding-left: 12px;
 `;
 
 const ButtonsContainer = styled.View`
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin-top: 12px;
 `;
