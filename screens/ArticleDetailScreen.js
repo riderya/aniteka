@@ -9,6 +9,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Entypo from '@expo/vector-icons/Entypo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
 import { formatDistanceToNow } from 'date-fns';
@@ -16,6 +17,7 @@ import { uk } from 'date-fns/locale';
 
 const ArticleDetailScreen = () => {
   const { slug } = useRoute().params;
+  const navigation = useNavigation();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const { theme, isDark } = useTheme();
@@ -247,7 +249,10 @@ const SpoilerWrapper = ({ children }) => {
         }}
       >
 
-<AuthorContainer>
+<AuthorContainer 
+  onPress={() => navigation.navigate('UserProfileScreen', { username: article.author.username })}
+  activeOpacity={0.7}
+>
   <Avatar source={{ uri: article.author.avatar }} />
   <View>
     <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 4, color: theme.colors.text }}>
@@ -327,7 +332,7 @@ const Title = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const AuthorContainer = styled.View`
+const AuthorContainer = styled.Pressable`
   flex-direction: row;
   align-items: center;
   margin-bottom: 12px;

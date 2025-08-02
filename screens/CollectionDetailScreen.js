@@ -9,6 +9,7 @@ import * as SecureStore from 'expo-secure-store';
 import Markdown from 'react-native-markdown-display';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
+import toastConfig from '../components/CustomToast';
 import styled from 'styled-components/native';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import AnimeColumnCard from '../components/Cards/AnimeColumnCard';
@@ -252,9 +253,21 @@ const fetchCollection = async () => {
 
   const toggleFavourite = async () => {
     if (favouriteLoading) return;
+    
+    const token = await SecureStore.getItemAsync('hikka_token');
+    if (!token) {
+      Toast.show({
+        type: 'error',
+        text1: 'Потрібна авторизація',
+        text2: 'Щоб додати в улюблене, потрібно увійти в акаунт.',
+        position: 'bottom',
+        visibilityTime: 3000,
+      });
+      return;
+    }
+    
     setFavouriteLoading(true);
 
-    const token = await SecureStore.getItemAsync('hikka_token');
     try {
       if (isFavourite) {
         await axios.delete(`https://api.hikka.io/favourite/collection/${reference}`, {
@@ -278,7 +291,7 @@ const fetchCollection = async () => {
     } catch (error) {
       console.error('Помилка оновлення уподобаного:', error);
       Toast.show({
-        type: 'info',
+        type: 'error',
         text1: 'Помилка при оновленні улюбленого',
       });
     } finally {
@@ -319,9 +332,21 @@ const checkVoteStatus = async () => {
 
   const sendVote = async (newScore) => {
     if (voteLoading) return;
+    
+    const token = await SecureStore.getItemAsync('hikka_token');
+    if (!token) {
+      Toast.show({
+        type: 'error',
+        text1: 'Потрібна авторизація',
+        text2: 'Щоб голосувати, потрібно увійти в акаунт.',
+        position: 'bottom',
+        visibilityTime: 3000,
+      });
+      return;
+    }
+    
     setVoteLoading(true);
 
-    const token = await SecureStore.getItemAsync('hikka_token');
     try {
       await axios.put(
         `https://api.hikka.io/vote/collection/${reference}`,
@@ -352,7 +377,7 @@ const checkVoteStatus = async () => {
     } catch (error) {
       console.error('Помилка надсилання голосу:', error);
       Toast.show({
-        type: 'info',
+        type: 'error',
         text1: 'Помилка при голосуванні',
       });
     } finally {
@@ -447,8 +472,8 @@ useFocusEffect(
 
         {collection.author && (
   <AuthorContainer 
-    onPress={() => navigation.navigate('UserProfile', { 
-      reference: collection.author.reference 
+    onPress={() => navigation.navigate('UserProfileScreen', { 
+      username: collection.author.username 
     })}
     activeOpacity={0.7}
   >
@@ -473,7 +498,7 @@ useFocusEffect(
       setShowUpdated(true);
       setHasSeenUpdated(true);
     }
-  }}
+  }} 
   activeOpacity={1}
 >
   <CreatedAt>
@@ -623,6 +648,7 @@ useFocusEffect(
           <InfoText>Немає елементів у колекції.</InfoText>
         )}
       </StyledScrollView>
+      <Toast config={toastConfig} position="bottom" />
     </>
   );
 };
@@ -765,7 +791,7 @@ const DescriptionContainer = styled.View`
   margin-bottom: 24px;
   padding-bottom: 12px;
   border-bottom-width: 1px;
-  border-color: ${({ theme }) => theme.colors.borderInput};
+  border-color: ${({ theme }) => theme.colors.border};
 `;
 
 const ShowMoreButton = styled.TouchableOpacity`

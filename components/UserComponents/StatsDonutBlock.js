@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import styled from 'styled-components/native';
 import Svg, { Circle } from 'react-native-svg';
 import { TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { useTheme } from '../../context/ThemeContext';
 import RowLineHeader from '../../components/DetailsAnime/RowLineHeader';
 
@@ -18,9 +19,8 @@ const palette = {
 /* ====== styled‑components ====== */
 const Card = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
-  border-radius: 12px;
+  border-radius: 16px;
   width: 100%;
-  margin-top: 15px;
   padding: 12px 0px;
 `;
 
@@ -55,19 +55,29 @@ const LegendText = styled.Text`
 `;
 
 const DonutWrapper = styled.View`
+  align-items: center;
 `;
 
+
+
 /* ====== компонент Donut ====== */
-const Donut = ({ segments, radius = 55, stroke = 25 }) => {
+const Donut = ({ segments, radius = 55, stroke = 25, rotation = 0 }) => {
   const CIRCUMFERENCE = 2 * Math.PI * radius;
   const adjustedRadius = radius - stroke / 2; // Коригуємо радіус для правильного відображення
 
   let acc = 0;
   return (
-    <Svg width={radius * 2} height={radius * 2} viewBox={`0 0 ${radius * 2} ${radius * 2}`}>
-      {segments.map(({ value, color }, idx) => {
-        const dash = (value / 100) * CIRCUMFERENCE;
-        const dashArray = `${dash} ${CIRCUMFERENCE - dash}`;
+    <Svg 
+      width={radius * 2} 
+      height={radius * 2} 
+      viewBox={`0 0 ${radius * 2} ${radius * 2}`}
+      style={{ transform: [{ rotate: `${rotation}deg` }] }}
+    >
+             {segments.map(({ value, color }, idx) => {
+         // Мінімальна товщина для сегментів (хоча б 1% від кола для кращої видимості)
+         const minValue = Math.max(value, 1);
+         const dash = (minValue / 100) * CIRCUMFERENCE;
+         const dashArray = `${dash} ${CIRCUMFERENCE - dash}`;
         const circle = (
           <Circle
             key={idx}
@@ -92,6 +102,9 @@ const Donut = ({ segments, radius = 55, stroke = 25 }) => {
 /* ====== головний блок ====== */
 const StatsDonutBlock = ({ stats }) => {
     const { theme, isDark } = useTheme();
+    const [rotation, setRotation] = useState(0);
+    const [lastRotation, setLastRotation] = useState(0);
+    
   // підготуємо дані
   const { watching, planned, completed, on_hold, dropped } = stats;
 
@@ -114,6 +127,22 @@ const StatsDonutBlock = ({ stats }) => {
     value: (d.value / total) * 100,
   }));
 
+
+
+  const onGestureEvent = (event) => {
+    const { translationX, translationY } = event.nativeEvent;
+    const angle = Math.atan2(translationY, translationX) * (180 / Math.PI);
+    setRotation(lastRotation + angle);
+  };
+
+  const onHandlerStateChange = (event) => {
+    if (event.nativeEvent.state === State.END) {
+      setLastRotation(rotation);
+    }
+  };
+
+
+
   return (
     <Card>
         <RowLineHeader title='Статистика'/>
@@ -134,7 +163,14 @@ const StatsDonutBlock = ({ stats }) => {
 
         {/* Donut */}
         <DonutWrapper>
-          <Donut segments={segments} />
+          <PanGestureHandler
+            onGestureEvent={onGestureEvent}
+            onHandlerStateChange={onHandlerStateChange}
+          >
+            <TouchableOpacity activeOpacity={1}>
+              <Donut segments={segments} rotation={rotation} />
+            </TouchableOpacity>
+          </PanGestureHandler>
         </DonutWrapper>
       </LegendRow>
       

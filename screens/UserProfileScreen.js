@@ -1,0 +1,628 @@
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components/native';
+import { ScrollView, ActivityIndicator, Alert, RefreshControl, View } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { AntDesign, Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import * as SecureStore from 'expo-secure-store';
+import Toast from 'react-native-toast-message';
+import toastConfig from '../components/CustomToast';
+
+import Header from '../components/Header/Header';
+import UserAvatar from '../components/UserComponents/UserAvatar';
+import FollowStatsBlock from '../components/UserComponents/FollowStatsBlock';
+import UserActivityBlock from '../components/UserComponents/UserActivityBlock';
+import StatsDonutBlock from '../components/UserComponents/StatsDonutBlock';
+import { useTheme } from '../context/ThemeContext';
+
+const Container = styled.ScrollView`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const HeaderContainer = styled.View`
+  position: relative;
+  height: 250px;
+  overflow: hidden;
+`;
+
+const CoverImage = styled.Image`
+  width: 100%;
+  height: 100%;
+  position: absolute;
+`;
+
+const CoverOverlay = styled.View`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+`;
+
+const FollowButton = styled.TouchableOpacity`
+  padding: 14px 24px;
+  border-radius: 999px;
+  background-color: ${({ isFollowed, theme, disabled }) => 
+    disabled ? theme.colors.card : 
+    isFollowed ? theme.colors.card : theme.colors.primary};
+  border: 1px solid ${({ isFollowed, theme, disabled }) => 
+    disabled ? 'rgba(128, 128, 128, 0.3)' :
+    isFollowed ? theme.colors.border : 'transparent'};
+  opacity: ${({ disabled }) => disabled ? 0.6 : 1};
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+`;
+
+const FollowButtonText = styled.Text`
+  color: ${({ isFollowed, theme }) => 
+    isFollowed ? theme.colors.text : theme.colors.background};
+  font-weight: 600;
+  font-size: 16px;
+`;
+
+const FollowButtonIconWrapper = styled.View`
+  margin-right: 8px;
+`;
+
+const UserInfoContainer = styled.View`
+  margin-top: -80px;
+  padding: 0 20px;
+  align-items: center;
+`;
+
+const ContentContainer = styled.View`
+  padding: 20px;
+  gap: 20px;
+`;
+
+const LoadingContainer = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const ErrorContainer = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const ErrorText = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 16px;
+  text-align: center;
+  margin-bottom: 20px;
+`;
+
+const RetryButton = styled.TouchableOpacity`
+  background-color: ${({ theme }) => theme.colors.primary};
+  padding: 12px 24px;
+  border-radius: 8px;
+`;
+
+const RetryButtonText = styled.Text`
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 16px;
+`;
+
+const RoleBadge = styled.View`
+  background-color: ${({ theme }) => theme.colors.primary};
+  padding: 4px 12px;
+  border-radius: 12px;
+  margin-top: 8px;
+`;
+
+const RoleText = styled.Text`
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+`;
+
+const ProfileInfoContainer = styled.View`
+  margin-top: 16px;
+  padding: 16px;
+  background-color: ${({ theme }) => theme.colors.card};
+  border-radius: 12px;
+  gap: 8px;
+`;
+
+const ProfileInfoRow = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const ProfileInfoLabel = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+`;
+
+const ProfileInfoValue = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 14px;
+  font-weight: 500;
+`;
+
+// Helper function to format time ago
+const formatTimeAgo = (timestamp) => {
+  if (!timestamp) return 'Невідомо';
+  
+  const now = Math.floor(Date.now() / 1000);
+  const diff = now - timestamp;
+  
+  const minutes = Math.floor(diff / 60);
+  const hours = Math.floor(diff / 3600);
+  const days = Math.floor(diff / 86400);
+  const months = Math.floor(days / 30.44);
+  const years = Math.floor(days / 365.25);
+  
+  if (years > 0) {
+    return `${years} ${years === 1 ? 'рік' : years < 5 ? 'роки' : 'років'} тому`;
+  } else if (months > 0) {
+    return `${months} ${months === 1 ? 'місяць' : months < 5 ? 'місяці' : 'місяців'} тому`;
+  } else if (days > 0) {
+    return `${days} ${days === 1 ? 'день' : days < 5 ? 'дні' : 'днів'} тому`;
+  } else if (hours > 0) {
+    return `${hours} ${hours === 1 ? 'годину' : hours < 5 ? 'години' : 'годин'} тому`;
+  } else if (minutes > 0) {
+    return `${minutes} ${minutes === 1 ? 'хвилину' : minutes < 5 ? 'хвилини' : 'хвилин'} тому`;
+  } else {
+    return 'Щойно';
+  }
+};
+
+const UserProfile = () => {
+  const route = useRoute();
+  const navigation = useNavigation();
+  const { theme } = useTheme();
+  const [userData, setUserData] = useState(null);
+  const [activityData, setActivityData] = useState([]);
+  const [animeHours, setAnimeHours] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [followStats, setFollowStats] = useState({ followers: 0, following: 0 });
+  const [watchStats, setWatchStats] = useState({ 
+    duration: 0, 
+    completed: 0, 
+    watching: 0, 
+    planned: 0, 
+    dropped: 0, 
+    on_hold: 0 
+  });
+  const [isFollowed, setIsFollowed] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const username = route.params?.username || 'hikka';
+
+  // Get auth token
+  const getAuthToken = async () => {
+    try {
+      return await SecureStore.getItemAsync('hikka_token');
+    } catch (err) {
+      console.error('Error getting auth token:', err);
+      return null;
+    }
+  };
+
+  // API functions
+  const checkFollowStatus = async () => {
+    try {
+      const token = await getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['Cookie'] = `auth=${token}`;
+      }
+
+      const response = await fetch(`https://api.hikka.io/follow/${username}`, {
+        method: 'GET',
+        headers
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.follow;
+      }
+      return false;
+    } catch (err) {
+      console.error('Error checking follow status:', err);
+      return false;
+    }
+  };
+
+  const followUser = async () => {
+    try {
+      const token = await getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['Cookie'] = `auth=${token}`;
+      }
+
+      const response = await fetch(`https://api.hikka.io/follow/${username}`, {
+        method: 'PUT',
+        headers
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.follow;
+      }
+      return false;
+    } catch (err) {
+      console.error('Error following user:', err);
+      return false;
+    }
+  };
+
+  const unfollowUser = async () => {
+    try {
+      const token = await getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['Cookie'] = `auth=${token}`;
+      }
+
+      const response = await fetch(`https://api.hikka.io/follow/${username}`, {
+        method: 'DELETE',
+        headers
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return !data.follow;
+      }
+      return false;
+    } catch (err) {
+      console.error('Error unfollowing user:', err);
+      return false;
+    }
+  };
+
+  const fetchFollowStats = async () => {
+    try {
+      const response = await fetch(`https://api.hikka.io/follow/${username}/stats`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+      return { followers: 0, following: 0 };
+    } catch (err) {
+      console.error('Error fetching follow stats:', err);
+      return { followers: 0, following: 0 };
+    }
+  };
+
+  const fetchWatchStats = async () => {
+    try {
+      const response = await fetch(`https://api.hikka.io/watch/${username}/stats`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+      return { 
+        duration: 0, 
+        completed: 0, 
+        watching: 0, 
+        planned: 0, 
+        dropped: 0, 
+        on_hold: 0 
+      };
+    } catch (err) {
+      console.error('Error fetching watch stats:', err);
+      return { 
+        duration: 0, 
+        completed: 0, 
+        watching: 0, 
+        planned: 0, 
+        dropped: 0, 
+        on_hold: 0 
+      };
+    }
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      setError(null);
+      const response = await fetch(`https://api.hikka.io/user/${username}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setUserData(data);
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+      setError('Не вдалося завантажити профіль користувача');
+    }
+  };
+
+  const fetchUserActivity = async () => {
+    try {
+      const response = await fetch(`https://api.hikka.io/user/${username}/activity`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setActivityData(data);
+      
+      // Try to get actual watch duration from watch stats first
+      try {
+        const watchResponse = await fetch(`https://api.hikka.io/watch/${username}/stats`);
+        if (watchResponse.ok) {
+          const watchData = await watchResponse.json();
+          if (watchData.duration && watchData.duration > 0) {
+            // Convert duration to hours (assuming duration is in minutes)
+            const hours = Math.round(watchData.duration / 60);
+            setAnimeHours(hours);
+            return;
+          }
+        }
+      } catch (watchErr) {
+        console.error('Error fetching watch stats for activity calculation:', watchErr);
+      }
+      
+      // Fallback: Calculate total anime hours from activity data
+      // The actions field might represent episodes watched or time spent
+      const totalActions = data.reduce((sum, item) => sum + (item.actions || 0), 0);
+      // Assuming each action represents about 20 minutes of anime watching
+      const estimatedMinutesPerAction = 20;
+      const totalMinutes = totalActions * estimatedMinutesPerAction;
+      const totalHours = Math.round(totalMinutes / 60);
+      setAnimeHours(totalHours);
+    } catch (err) {
+      console.error('Error fetching user activity:', err);
+      // Don't set error for activity, just log it
+      setAnimeHours(0);
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    
+    // Check authentication first
+    const token = await getAuthToken();
+    setIsAuthenticated(!!token);
+    
+    const promises = [
+      fetchUserProfile(), 
+      fetchUserActivity(),
+      fetchWatchStats().then(stats => setWatchStats(stats))
+    ];
+    
+    // Only load follow data if authenticated
+    if (token) {
+      promises.push(
+        fetchFollowStats().then(stats => setFollowStats(stats)),
+        checkFollowStatus().then(status => setIsFollowed(status))
+      );
+    }
+    
+    await Promise.all(promises);
+    setLoading(false);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  const handleFollowToggle = async () => {
+    if (followLoading) return;
+    
+         // Check if user is authenticated
+     if (!isAuthenticated) {
+       Toast.show({
+         type: 'error',
+         text1: 'Потрібна авторизація',
+         text2: 'Щоб підписатися на користувача, потрібно увійти в акаунт.',
+         position: 'bottom',
+         visibilityTime: 3000,
+       });
+       return;
+     }
+    
+    // Check if user is trying to follow themselves
+    // This would need to be implemented based on current user data
+    // For now, we'll just proceed with the API call
+    
+    setFollowLoading(true);
+    
+    try {
+      let success = false;
+      
+      if (isFollowed) {
+        success = await unfollowUser();
+      } else {
+        success = await followUser();
+      }
+      
+      if (success) {
+        setIsFollowed(!isFollowed);
+        // Refresh follow stats
+        const newStats = await fetchFollowStats();
+        setFollowStats(newStats);
+        
+                 Toast.show({
+           type: isFollowed ? 'error' : 'success',
+           text1: isFollowed ? 'Відписано' : 'Підписано',
+           text2: isFollowed 
+             ? 'Ви більше не стежите за цим користувачем' 
+             : 'Тепер ви стежите за цим користувачем',
+           position: 'bottom',
+           visibilityTime: 3000,
+         });
+             } else {
+         Toast.show({
+           type: 'error',
+           text1: 'Помилка',
+           text2: 'Не вдалося виконати дію. Спробуйте ще раз.',
+           position: 'bottom',
+           visibilityTime: 3000,
+         });
+       }
+         } catch (err) {
+       console.error('Error in follow toggle:', err);
+       Toast.show({
+         type: 'error',
+         text1: 'Помилка',
+         text2: 'Сталася помилка. Спробуйте ще раз.',
+         position: 'bottom',
+         visibilityTime: 3000,
+       });
+     } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [username]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <LoadingContainer>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </LoadingContainer>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <ErrorContainer>
+          <ErrorText>{error}</ErrorText>
+          <RetryButton onPress={loadData}>
+            <RetryButtonText>Спробувати знову</RetryButtonText>
+          </RetryButton>
+        </ErrorContainer>
+      </View>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <ErrorContainer>
+          <ErrorText>Користувача не знайдено</ErrorText>
+          <RetryButton onPress={() => navigation.goBack()}>
+            <RetryButtonText>Назад</RetryButtonText>
+          </RetryButton>
+        </ErrorContainer>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <Header />
+      
+      <Container
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
+        {/* Header with cover image */}
+        <HeaderContainer>
+          <CoverImage
+            source={
+              userData.cover
+                ? { uri: userData.cover }
+                : require('../assets/image/banner-zaglushka.jpg')
+            }
+            resizeMode="cover"
+          />
+          <CoverOverlay />
+        </HeaderContainer>
+
+        {/* User info section */}
+        <UserInfoContainer>
+          <UserAvatar userData={userData} showEmailButton={false} showUserBadge={true} />
+        </UserInfoContainer>
+
+        {/* Content section */}
+        <ContentContainer>
+          {/* Follow stats */}
+          <FollowStatsBlock 
+            stats={followStats}
+          />
+
+          {/* Follow button */}
+                     <FollowButton 
+             isFollowed={isFollowed}
+             onPress={handleFollowToggle}
+             disabled={followLoading}
+           >
+            {followLoading ? (
+              <ActivityIndicator color={theme.colors.text} />
+            ) : (
+              <>
+                <FollowButtonIconWrapper>
+                  {!isFollowed ? (
+                    <Ionicons name="person-add-outline" size={20} color={theme.colors.background}  />
+                  ) : (
+                    <Ionicons name="person-remove-outline" size={20} color={theme.colors.text} />
+                  )}
+                </FollowButtonIconWrapper>
+                                 <FollowButtonText isFollowed={isFollowed}>
+                   {isFollowed ? 'Не стежити' : 'Відстежувати'}
+                 </FollowButtonText>
+              </>
+            )}
+          </FollowButton>
+
+          {/* Watch stats donut */}
+          <StatsDonutBlock 
+            stats={watchStats}
+          />
+
+          {/* User activity */}
+          {activityData.length > 0 && (
+            <UserActivityBlock 
+              activity={activityData}
+              animeHours={animeHours}
+            />
+          )}
+
+
+        </ContentContainer>
+      </Container>
+      <Toast config={toastConfig} position="bottom" />
+    </View>
+  );
+};
+
+export default UserProfile;

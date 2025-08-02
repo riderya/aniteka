@@ -137,7 +137,7 @@ export default function SearchScreen() {
     } else if (type === 'people') {
       navigation.navigate('AnimePeopleDetailsScreen', { slug: item.slug, })
     } else if (type === 'users') {
-      navigation.navigate('UserProfileScreen', { reference: item.reference });
+      navigation.navigate('UserProfileScreen', { username: item.username });
     }
   };
 
