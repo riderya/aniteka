@@ -108,7 +108,6 @@ export default function SearchScreen() {
     }
   };
   
-
   const handleHistoryPress = (term) => {
     setQuery(term);
   };

@@ -9,11 +9,11 @@ import { useNavigation } from '@react-navigation/native'; // 🔹 додаємо
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const CollectionCard = ({ item, compact = false }) => {
+const CollectionCard = ({ item, compact = false, cardWidth: customCardWidth }) => {
   const { theme } = useTheme();
   const navigation = useNavigation(); // 🔹 отримуємо navigation
 
-  const cardWidth = compact ? SCREEN_WIDTH * 0.6 : SCREEN_WIDTH - 24;
+  const cardWidth = customCardWidth || (compact ? SCREEN_WIDTH * 0.6 : SCREEN_WIDTH - 24);
   const imageHeight = cardWidth * 0.6;
 
   const animeList = item.collection?.map(col => col.content).filter(Boolean) || [];

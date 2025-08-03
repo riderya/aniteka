@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import styled from 'styled-components/native';
 import { TouchableOpacity } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+
+const TOKEN_KEY = 'hikka_token';
 
 const statusLabels = {
   watching: 'Дивлюсь',
@@ -27,7 +31,7 @@ const getStatusColors = (theme) => ({
   dropped: hexToRgba(theme.colors.dropped, 0.8),
 });
 
-const AnimeColumnCard = ({
+const AnimeColumnCard = React.memo(({
   anime,
   onPress,
   cardWidth = 140,
@@ -37,17 +41,63 @@ const AnimeColumnCard = ({
   footerFontSize = 12,
   badgeFontSize = 14,
   badgePadding = 4,
+  badgeBottom = 10,
+  badgeLeft = 10,
+  badgeRight = 10,
+  marginTop = 0,
+  marginBottom = 0,
 }) => {
+  const navigation = useNavigation();
   const { theme } = useTheme();
-  const statusColors = getStatusColors(theme);
+  const [userStatus, setUserStatus] = useState(null);
+  
+  // Memoize status colors to prevent recalculation
+  const statusColors = useMemo(() => getStatusColors(theme), [theme]);
 
-  const statuses = anime.watch && anime.watch.length > 0
-    ? [...new Set(anime.watch.map((w) => w.status))]
-    : [];
+  // Fetch user status from API like AnimeRowCard does
+  useEffect(() => {
+    const fetchUserStatus = async () => {
+      try {
+        const token = await SecureStore.getItemAsync(TOKEN_KEY);
+        if (!token) {
+          setUserStatus(null);
+          return;
+        }
+
+        const res = await fetch(`https://api.hikka.io/watch/${anime.slug}`, {
+          headers: { auth: token }
+        });
+
+        if (!res.ok) {
+          setUserStatus(null);
+          return;
+        }
+
+        const data = await res.json();
+        setUserStatus(data.status || null);
+      } catch {
+        setUserStatus(null);
+      }
+    };
+
+    fetchUserStatus();
+  }, [anime.slug]);
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      navigation.navigate('AnimeDetails', { slug: anime.slug });
+    }
+  };
 
   return (
-    <TouchableOpacity onPress={onPress}>
-      <Item cardWidth={cardWidth}>
+    <TouchableOpacity onPress={handlePress}>
+      <Item 
+        cardWidth={cardWidth} 
+        marginTop={marginTop} 
+        marginBottom={marginBottom}
+      >
         <PosterWrapper>
           <Poster
             source={{ uri: anime.image }}
@@ -55,17 +105,19 @@ const AnimeColumnCard = ({
             imageWidth={imageWidth}
             imageHeight={imageHeight}
           />
-          {statuses.map((status) => (
+          {userStatus && (
             <StatusBadge
-              key={status}
-              color={statusColors[status] || '#666'}
+              color={statusColors[userStatus] || '#666'}
               badgePadding={badgePadding}
+              bottom={badgeBottom}
+              left={badgeLeft}
+              right={badgeRight}
             >
               <StatusText badgeFontSize={badgeFontSize}>
-                {statusLabels[status] || status}
+                {statusLabels[userStatus] || userStatus}
               </StatusText>
             </StatusBadge>
-          ))}
+          )}
         </PosterWrapper>
 
         <Title numberOfLines={2} cardWidth={cardWidth} titleFontSize={titleFontSize}>
@@ -84,15 +136,18 @@ const AnimeColumnCard = ({
       </Item>
     </TouchableOpacity>
   );
-};
+});
+
+AnimeColumnCard.displayName = 'AnimeColumnCard';
 
 export default AnimeColumnCard;
 
 // styled components
 
 const Item = styled.View`
-  max-width: ${({ cardWidth }) => cardWidth}px;
-  width: 100%;
+  width: ${({ cardWidth }) => cardWidth}px;
+  margin-top: ${({ marginTop }) => marginTop}px;
+  margin-bottom: ${({ marginBottom }) => marginBottom}px;
 `;
 
 const PosterWrapper = styled.View`
@@ -115,11 +170,11 @@ const Title = styled.Text`
 
 const StatusBadge = styled.View`
   position: absolute;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
+  bottom: ${({ bottom = 10 }) => bottom}px;
+  left: ${({ left = 10 }) => left}px;
+  right: ${({ right = 10 }) => right}px;
   background-color: ${({ color }) => color};
-  padding: ${({ badgePadding }) => badgePadding}px;
+  padding: 4px;
   border-radius: 12px;
   justify-content: center;
   align-items: center;

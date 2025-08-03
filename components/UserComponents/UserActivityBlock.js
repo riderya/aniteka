@@ -11,6 +11,7 @@ const Card = styled.View`
   border-radius: 16px;
   padding: 12px 0px;
   width: 100%;
+  margin-bottom: 20px;
 `;
 
 const StatRow = styled.View`
@@ -147,7 +148,7 @@ const formatAnimeTime = (hours) => {
   }
   
   const totalMinutes = hours * 60;
-  const totalDays = Math.floor(totalMinutes / (60 * 24));
+  const totalDays = Math.floor(totalMinutes / (60 * 24)) + 1;
   
   // Calculate months and days using more accurate calculation
   // Assuming average month length of 30.44 days (365.25 / 12)
@@ -156,7 +157,7 @@ const formatAnimeTime = (hours) => {
   const days = Math.floor(totalDays % averageMonthDays);
   
   // Calculate hours and minutes from the remaining time after days
-  const remainingMinutes = totalMinutes - (totalDays * 24 * 60);
+  const remainingMinutes = totalMinutes - ((totalDays - 1) * 24 * 60);
   const remainingHours = Math.floor(remainingMinutes / 60);
   const minutes = Math.floor(remainingMinutes % 60);
   
@@ -258,7 +259,7 @@ const UserActivityBlock = ({ activity, animeHours = 0 }) => {
       <Card>
         <RowLineHeader title="Час аніме"/>
         <StatRow>
-          <DaysValue>{Math.floor(animeHours / 24)} днів</DaysValue>
+          <DaysValue>{Math.floor(animeHours / 24) + 1} днів</DaysValue>
           <Value>{animeHours} годин</Value>
         </StatRow>
 

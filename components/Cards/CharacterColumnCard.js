@@ -33,18 +33,23 @@ const CharacterColumnCard = ({
   cardWidth = '90px',
   cardMarginRight = '15px',
   marginTop = '10px',
+  onPress,
 }) => {
   const navigation = useNavigation();
 
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      navigation.navigate('AnimeCharacterDetailsScreen', {
+        slug: character.slug,
+        name_ua: character.name_ua,
+      });
+    }
+  };
+
   return (
-    <TouchableOpacity
-      onPress={() =>
-        navigation.navigate('AnimeCharacterDetailsScreen', {
-          slug: character.slug,
-          name_ua: character.name_ua,
-        })
-      }
-    >
+    <TouchableOpacity onPress={handlePress}>
       <Card cardWidth={cardWidth} cardMarginRight={cardMarginRight}>
         <CharacterImage
           width={width}

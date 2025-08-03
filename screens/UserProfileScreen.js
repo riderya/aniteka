@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components/native';
-import { ScrollView, ActivityIndicator, Alert, RefreshControl, View } from 'react-native';
+import { FlatList, ActivityIndicator, Alert, RefreshControl, View } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -13,12 +13,13 @@ import UserAvatar from '../components/UserComponents/UserAvatar';
 import FollowStatsBlock from '../components/UserComponents/FollowStatsBlock';
 import UserActivityBlock from '../components/UserComponents/UserActivityBlock';
 import StatsDonutBlock from '../components/UserComponents/StatsDonutBlock';
+import UserWatchList from '../components/UserComponents/UserWatchList';
+import MyCollectionsBlock from '../components/UserComponents/MyCollectionsBlock';
+import AnimeHistoryBlock from '../components/UserComponents/AnimeHistoryBlock';
+import FavoritesBlock from '../components/UserComponents/FavoritesBlock';
 import { useTheme } from '../context/ThemeContext';
 
-const Container = styled.ScrollView`
-  flex: 1;
-  background-color: ${({ theme }) => theme.colors.background};
-`;
+
 
 const HeaderContainer = styled.View`
   position: relative;
@@ -58,8 +59,9 @@ const FollowButton = styled.TouchableOpacity`
 `;
 
 const FollowButtonText = styled.Text`
-  color: ${({ isFollowed, theme }) => 
-    isFollowed ? theme.colors.text : theme.colors.background};
+  /* color: ${({ isFollowed, theme }) => 
+    isFollowed ? theme.colors.text : theme.colors.background}; */
+  color: #ffffff;
   font-weight: 600;
   font-size: 16px;
 `;
@@ -70,14 +72,11 @@ const FollowButtonIconWrapper = styled.View`
 
 const UserInfoContainer = styled.View`
   margin-top: -80px;
-  padding: 0 20px;
+  padding: 0px 12px;
   align-items: center;
 `;
 
-const ContentContainer = styled.View`
-  padding: 20px;
-  gap: 20px;
-`;
+
 
 const LoadingContainer = styled.View`
   flex: 1;
@@ -151,6 +150,40 @@ const ProfileInfoValue = styled.Text`
   font-weight: 500;
 `;
 
+const ProfileActionButtonsContainer = styled.View`
+  margin-top: 20px;
+  padding: 0px;
+`;
+
+const ActionButtonsScrollView = styled.ScrollView.attrs({
+  horizontal: true,
+  showsHorizontalScrollIndicator: false,
+  contentContainerStyle: {
+    paddingLeft: 12,
+  },
+})``;
+
+const ActionButton = styled.TouchableOpacity`
+  background-color: ${({ theme, isActive }) => 
+    isActive ? theme.colors.primary : theme.colors.card};
+  padding: 12px 20px;
+  border-radius: 25px;
+  margin-right: 12px;
+  border: 1px solid ${({ theme, isActive }) => 
+    isActive ? theme.colors.primary : theme.colors.border};
+  min-width: 100px;
+  align-items: center;
+  flex-direction: row;
+  gap: 8px;
+`;
+
+const ActionButtonText = styled.Text`
+  color: ${({ theme, isActive }) => 
+    isActive ? '#ffffff' : theme.colors.text};
+  font-size: 14px;
+  font-weight: 600;
+`;
+
 // Helper function to format time ago
 const formatTimeAgo = (timestamp) => {
   if (!timestamp) return 'Невідомо';
@@ -201,8 +234,35 @@ const UserProfile = () => {
   const [isFollowed, setIsFollowed] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeTab, setActiveTab] = useState('statistics');
 
   const username = route.params?.username || 'hikka';
+
+  const handleTabPress = (tabName) => {
+    setActiveTab(tabName);
+    // Тут можна додати логіку для завантаження відповідних даних
+    console.log('Tab pressed:', tabName);
+  };
+
+  // Оновлюємо renderData коли змінюється activeTab
+  useEffect(() => {
+    // Це забезпечить перерендер FlatList при зміні табу
+  }, [activeTab]);
+
+  // Prepare data for FlatList
+  const renderData = [
+    { type: 'header', id: 'header' },
+    { type: 'followStats', id: 'followStats' },
+    { type: 'followButton', id: 'followButton' },
+    { type: 'actionButtons', id: 'actionButtons' },
+    // Показуємо блоки в залежності від активного табу
+    ...(activeTab === 'statistics' ? [{ type: 'watchStats', id: 'watchStats' }] : []),
+    ...(activeTab === 'animeList' ? [{ type: 'watchList', id: 'watchList' }] : []),
+    ...(activeTab === 'favorites' ? [{ type: 'favorites', id: 'favorites' }] : []),
+    ...(activeTab === 'collections' ? [{ type: 'collections', id: 'collections' }] : []),
+    ...(activeTab === 'history' ? [{ type: 'history', id: 'history' }] : []),
+    ...(activeTab === 'statistics' && activityData.length > 0 ? [{ type: 'activity', id: 'activity' }] : [])
+  ];
 
   // Get auth token
   const getAuthToken = async () => {
@@ -433,6 +493,197 @@ const UserProfile = () => {
     setRefreshing(false);
   };
 
+  const renderItem = ({ item }) => {
+    switch (item.type) {
+      case 'header':
+        return (
+          <>
+            <HeaderContainer>
+              <CoverImage
+                source={
+                  userData?.cover
+                    ? { uri: userData.cover }
+                    : require('../assets/image/banner-zaglushka.jpg')
+                }
+                resizeMode="cover"
+              />
+              <CoverOverlay />
+            </HeaderContainer>
+            <UserInfoContainer>
+              <UserAvatar userData={userData} showEmailButton={false} showUserBadge={true} />
+            </UserInfoContainer>
+          </>
+        );
+      
+             case 'actionButtons':
+         return (
+           <ProfileActionButtonsContainer>
+             <ActionButtonsScrollView>
+               <ActionButton 
+                 isActive={activeTab === 'statistics'} 
+                 onPress={() => handleTabPress('statistics')}
+               >
+                 <Ionicons 
+                   name="stats-chart" 
+                   size={16} 
+                   color={activeTab === 'statistics' ? '#ffffff' : theme.colors.text} 
+                 />
+                 <ActionButtonText isActive={activeTab === 'statistics'}>
+                   Статистика
+                 </ActionButtonText>
+               </ActionButton>
+               
+               <ActionButton 
+                 isActive={activeTab === 'animeList'} 
+                 onPress={() => handleTabPress('animeList')}
+               >
+                 <Ionicons 
+                   name="list" 
+                   size={16} 
+                   color={activeTab === 'animeList' ? '#ffffff' : theme.colors.text} 
+                 />
+                 <ActionButtonText isActive={activeTab === 'animeList'}>
+                   Список аніме
+                 </ActionButtonText>
+               </ActionButton>
+               
+               <ActionButton 
+                 isActive={activeTab === 'favorites'} 
+                 onPress={() => handleTabPress('favorites')}
+               >
+                 <Ionicons 
+                   name="heart" 
+                   size={16} 
+                   color={activeTab === 'favorites' ? '#ffffff' : theme.colors.text} 
+                 />
+                 <ActionButtonText isActive={activeTab === 'favorites'}>
+                   Улюблені
+                 </ActionButtonText>
+               </ActionButton>
+               
+               <ActionButton 
+                 isActive={activeTab === 'collections'} 
+                 onPress={() => handleTabPress('collections')}
+               >
+                 <Ionicons 
+                   name="folder" 
+                   size={16} 
+                   color={activeTab === 'collections' ? '#ffffff' : theme.colors.text} 
+                 />
+                 <ActionButtonText isActive={activeTab === 'collections'}>
+                   Колекції
+                 </ActionButtonText>
+               </ActionButton>
+               
+               <ActionButton 
+                 isActive={activeTab === 'history'} 
+                 onPress={() => handleTabPress('history')}
+               >
+                 <Ionicons 
+                   name="time" 
+                   size={16} 
+                   color={activeTab === 'history' ? '#ffffff' : theme.colors.text} 
+                 />
+                 <ActionButtonText isActive={activeTab === 'history'}>
+                   Історія
+                 </ActionButtonText>
+               </ActionButton>
+             </ActionButtonsScrollView>
+           </ProfileActionButtonsContainer>
+         );
+      
+             case 'followStats':
+         return (
+           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
+             <FollowStatsBlock stats={followStats} />
+           </View>
+         );
+       
+       case 'followButton':
+         return (
+           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
+             <FollowButton 
+               isFollowed={isFollowed}
+               onPress={handleFollowToggle}
+               disabled={followLoading}
+             >
+               {followLoading ? (
+                 <ActivityIndicator color={theme.colors.text} />
+               ) : (
+                 <>
+                   <FollowButtonIconWrapper>
+                     {!isFollowed ? (
+                       <Ionicons name="person-add-outline" size={20} color='#ffffff'  />
+                     ) : (
+                       <Ionicons name="person-remove-outline" size={20} color='#ffffff' />
+                     )}
+                   </FollowButtonIconWrapper>
+                   <FollowButtonText isFollowed={isFollowed}>
+                     {isFollowed ? 'Не стежити' : 'Відстежувати'}
+                   </FollowButtonText>
+                 </>
+               )}
+             </FollowButton>
+           </View>
+         );
+       
+       case 'watchStats':
+         return (
+           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
+             <StatsDonutBlock stats={watchStats} />
+           </View>
+         );
+       
+       case 'activity':
+         return (
+           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
+             <UserActivityBlock 
+               activity={activityData}
+               animeHours={animeHours}
+             />
+           </View>
+         );
+       
+              case 'watchList':
+          return (
+            <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
+              <UserWatchList 
+                username={username}
+                watchStatus="completed"
+                limit={21}
+                onStatusChange={(newStatus) => {
+                  console.log('Status changed to:', newStatus);
+                }}
+              />
+            </View>
+          );
+        
+                case 'favorites':
+           return (
+             <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
+               <FavoritesBlock username={username} />
+             </View>
+           );
+        
+        case 'collections':
+          return (
+            <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
+              <MyCollectionsBlock username={username} />
+            </View>
+          );
+        
+        case 'history':
+          return (
+            <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
+              <AnimeHistoryBlock username={username} />
+            </View>
+          );
+       
+       default:
+         return null;
+    }
+  };
+
   const handleFollowToggle = async () => {
     if (followLoading) return;
     
@@ -545,7 +796,10 @@ const UserProfile = () => {
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Header />
       
-      <Container
+      <FlatList
+        data={renderData}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -554,72 +808,9 @@ const UserProfile = () => {
             tintColor={theme.colors.primary}
           />
         }
-      >
-        {/* Header with cover image */}
-        <HeaderContainer>
-          <CoverImage
-            source={
-              userData.cover
-                ? { uri: userData.cover }
-                : require('../assets/image/banner-zaglushka.jpg')
-            }
-            resizeMode="cover"
-          />
-          <CoverOverlay />
-        </HeaderContainer>
-
-        {/* User info section */}
-        <UserInfoContainer>
-          <UserAvatar userData={userData} showEmailButton={false} showUserBadge={true} />
-        </UserInfoContainer>
-
-        {/* Content section */}
-        <ContentContainer>
-          {/* Follow stats */}
-          <FollowStatsBlock 
-            stats={followStats}
-          />
-
-          {/* Follow button */}
-                     <FollowButton 
-             isFollowed={isFollowed}
-             onPress={handleFollowToggle}
-             disabled={followLoading}
-           >
-            {followLoading ? (
-              <ActivityIndicator color={theme.colors.text} />
-            ) : (
-              <>
-                <FollowButtonIconWrapper>
-                  {!isFollowed ? (
-                    <Ionicons name="person-add-outline" size={20} color={theme.colors.background}  />
-                  ) : (
-                    <Ionicons name="person-remove-outline" size={20} color={theme.colors.text} />
-                  )}
-                </FollowButtonIconWrapper>
-                                 <FollowButtonText isFollowed={isFollowed}>
-                   {isFollowed ? 'Не стежити' : 'Відстежувати'}
-                 </FollowButtonText>
-              </>
-            )}
-          </FollowButton>
-
-          {/* Watch stats donut */}
-          <StatsDonutBlock 
-            stats={watchStats}
-          />
-
-          {/* User activity */}
-          {activityData.length > 0 && (
-            <UserActivityBlock 
-              activity={activityData}
-              animeHours={animeHours}
-            />
-          )}
-
-
-        </ContentContainer>
-      </Container>
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      />
       <Toast config={toastConfig} position="bottom" />
     </View>
   );

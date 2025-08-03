@@ -42,8 +42,8 @@ const LegendItem = styled.View`
 `;
 
 const ColorDot = styled.View`
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 2px;
   background-color: ${({ color }) => color};
   margin-right: 6px;

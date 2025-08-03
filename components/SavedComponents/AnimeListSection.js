@@ -5,7 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Octicons from '@expo/vector-icons/Octicons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
-import AnimeRowCard from './AnimeRowCard';
+import AnimeRowCard from '../Cards/AnimeRowCard';
 
 const AnimeListSection = ({ animeList, sortOptions, toggleSort, showRandomAnime, theme, onRefreshData }) => {
   const navigation = useNavigation();
