@@ -6,13 +6,13 @@ import { useNavigation } from '@react-navigation/native';
 
 const StaffCard = styled.View`
   margin-right: ${({ marginRight }) => marginRight || '15px'};
-  width: ${({ cardWidth }) => cardWidth || '90px'};
+  width: ${({ cardWidth }) => typeof cardWidth === 'string' ? cardWidth : `${cardWidth}px`};
 `;
 
 const StaffImage = styled.Image`
-  width: ${({ imageWidth }) => imageWidth || '90px'};
-  height: ${({ imageHeight }) => imageHeight || '120px'};
-  border-radius: ${({ borderRadius }) => borderRadius || '24px'};
+  width: ${({ imageWidth }) => typeof imageWidth === 'string' ? imageWidth : `${imageWidth}px`};
+  height: ${({ imageHeight }) => typeof imageHeight === 'string' ? imageHeight : `${imageHeight}px`};
+  border-radius: ${({ borderRadius }) => typeof borderRadius === 'string' ? borderRadius : `${borderRadius}px`};
 `;
 
 const StaffName = styled.Text`

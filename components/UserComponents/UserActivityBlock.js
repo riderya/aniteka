@@ -104,6 +104,7 @@ const TooltipBox = styled.View`
   padding: 6px 10px;
   align-items: center;
   width: 70px;
+  z-index: 1000;
 `;
 
 const TooltipText = styled.Text`

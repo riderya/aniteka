@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   ActivityIndicator, 
   TouchableOpacity, 
@@ -26,6 +26,26 @@ const CONTENT_TYPES = [
 ];
 
 const ITEMS_PER_PAGE = 21;
+
+// Кеш для API запитів
+const apiCache = new Map();
+
+// Дебаунс функція
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 const createStyles = (theme) => StyleSheet.create({
   container: {
@@ -187,10 +207,13 @@ const FavoritesBlock = ({ username }) => {
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
 
-  const getContentTypeLabel = (type) => {
+  // Дебаунс для зміни типу контенту
+  const debouncedContentType = useDebounce(selectedContentType, 300);
+
+  const getContentTypeLabel = useCallback((type) => {
     const contentType = CONTENT_TYPES.find(ct => ct.key === type);
     return contentType ? contentType.label : type;
-  };
+  }, []);
 
 const fetchFavorites = async (contentType = selectedContentType, page = 1, append = false) => {
   try {
@@ -198,6 +221,33 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
     else setLoadingMore(true);
 
     setError(null);
+
+    // Створюємо ключ для кешу
+    const cacheKey = `${contentType}_${username}_${page}`;
+    
+    // Перевіряємо кеш
+    if (apiCache.has(cacheKey)) {
+      const cachedData = apiCache.get(cacheKey);
+      const newItems = cachedData.list || [];
+      const pagination = cachedData.pagination || {};
+      const totalItems = pagination.total || 0;
+      const totalPages = pagination.pages || 1;
+
+      setTotalCount(totalItems);
+      setCurrentPage(page);
+      
+      if (append) {
+        setFavorites(prev => [...prev, ...newItems]);
+        setHasMore(page < totalPages);
+      } else {
+        setFavorites(newItems);
+        setHasMore(page < totalPages);
+      }
+      
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
 
     const response = await fetch(
       `https://api.hikka.io/favourite/${contentType}/${username}/list?page=${page}&size=${ITEMS_PER_PAGE}`,
@@ -215,6 +265,16 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
     }
 
     const data = await response.json();
+    
+    // Зберігаємо в кеш
+    apiCache.set(cacheKey, data);
+    
+    // Очищаємо старий кеш (залишаємо тільки останні 50 запитів)
+    if (apiCache.size > 50) {
+      const firstKey = apiCache.keys().next().value;
+      apiCache.delete(firstKey);
+    }
+
     const newItems = data.list || [];
     const pagination = data.pagination || {};
     const totalItems = pagination.total || 0;
@@ -244,34 +304,34 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
 };
 
 
-  const loadMoreFavorites = () => {
+  const loadMoreFavorites = useCallback(() => {
     if (!loadingMore && hasMore && !loading) {
       const nextPage = currentPage + 1;
       fetchFavorites(selectedContentType, nextPage, true);
     }
-  };
+  }, [loadingMore, hasMore, loading, currentPage, selectedContentType]);
 
   useEffect(() => {
     setCurrentPage(1);
     setHasMore(true);
     setFavorites([]);
     fetchFavorites();
-  }, [username, selectedContentType]);
+  }, [username, debouncedContentType]); // Використовуємо дебаунс
 
-  const toggleViewMode = () => {
+  const toggleViewMode = useCallback(() => {
     setIsGridView(!isGridView);
-  };
+  }, [isGridView]);
 
-  const handleContentTypeSelect = (contentType) => {
+  const handleContentTypeSelect = useCallback((contentType) => {
     setSelectedContentType(contentType);
     setShowDropdown(false);
-  };
+  }, []);
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     fetchFavorites();
-  };
+  }, []);
 
-  const renderGridItem = ({ item }) => (
+  const renderGridItem = useCallback(({ item }) => (
     <View style={{ 
       flex: selectedContentType === 'collection' ? 0 : 1,
       width: selectedContentType === 'collection' ? '100%' : undefined,
@@ -312,9 +372,9 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
         />
       )}
     </View>
-  );
+  ), [selectedContentType, navigation]);
 
-  const renderListItem = ({ item }) => {
+  const renderListItem = useCallback(({ item }) => {
     switch (selectedContentType) {
       case 'anime':
         return (
@@ -350,9 +410,9 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
           />
         );
     }
-  };
+  }, [selectedContentType, navigation]);
 
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (loadingMore) {
       return (
         <View style={styles.loadingMoreContainer}>
@@ -371,8 +431,65 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
     }
     
     return null;
-  };
+  }, [loadingMore, hasMore, favorites.length, getContentTypeLabel, selectedContentType, styles, theme.colors.primary]);
+
+  const keyExtractor = useCallback((item, index) => `${item.slug || item.id || 'item'}-${index}`, []);
   
+  const flatListKey = useMemo(() => 
+    `${isGridView ? 'grid' : 'list'}-${selectedContentType}-${isGridView ? (selectedContentType === 'collection' ? 1 : 3) : 1}`, 
+    [isGridView, selectedContentType]
+  );
+
+  const numColumns = useMemo(() => 
+    isGridView ? (selectedContentType === 'collection' ? 1 : 3) : 1, 
+    [isGridView, selectedContentType]
+  );
+
+  const columnWrapperStyle = useMemo(() => 
+    isGridView && selectedContentType !== 'collection' ? styles.gridContainer : undefined, 
+    [isGridView, selectedContentType, styles.gridContainer]
+  );
+
+  const contentContainerStyle = useMemo(() => ({
+    paddingVertical: 8,
+    paddingHorizontal: isGridView && selectedContentType !== 'collection' ? 8 : 0
+  }), [isGridView, selectedContentType]);
+
+  // Оптимізація для різних типів контенту
+  const flatListProps = useMemo(() => {
+    const baseProps = {
+      removeClippedSubviews: true,
+      showsVerticalScrollIndicator: false,
+      scrollEnabled: true,
+      onEndReached: loadMoreFavorites,
+      onEndReachedThreshold: 0.1,
+      ListFooterComponent: renderFooter,
+      updateCellsBatchingPeriod: 50,
+      disableVirtualization: false,
+    };
+
+    if (selectedContentType === 'collection') {
+      return {
+        ...baseProps,
+        maxToRenderPerBatch: 3,
+        windowSize: 5,
+        initialNumToRender: 6,
+        getItemLayout: (data, index) => ({
+          length: 220, // висота колекції + відступи
+          offset: 220 * index,
+          index,
+        }),
+      };
+    }
+
+    return {
+      ...baseProps,
+      maxToRenderPerBatch: 10,
+      windowSize: 10,
+      initialNumToRender: ITEMS_PER_PAGE,
+    };
+  }, [selectedContentType, loadMoreFavorites, renderFooter]);
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -473,24 +590,13 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
       ) : (
         <FlatList
           data={favorites}
-          keyExtractor={(item, index) => `${item.slug || item.id || 'item'}-${index}`}
+          keyExtractor={keyExtractor}
           renderItem={isGridView ? renderGridItem : renderListItem}
-          key={`${isGridView ? 'grid' : 'list'}-${selectedContentType}-${isGridView ? (selectedContentType === 'collection' ? 1 : 3) : 1}`}
-          numColumns={isGridView ? (selectedContentType === 'collection' ? 1 : 3) : 1}
-          columnWrapperStyle={isGridView && selectedContentType !== 'collection' ? styles.gridContainer : undefined}
-          contentContainerStyle={{ 
-            paddingVertical: 8,
-            paddingHorizontal: isGridView && selectedContentType !== 'collection' ? 8 : 0
-          }}
-          showsVerticalScrollIndicator={false}
-          scrollEnabled={true}
-          onEndReached={loadMoreFavorites}
-          onEndReachedThreshold={0.1}
-          ListFooterComponent={renderFooter}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-          initialNumToRender={ITEMS_PER_PAGE}
+          key={flatListKey}
+          numColumns={numColumns}
+          columnWrapperStyle={columnWrapperStyle}
+          contentContainerStyle={contentContainerStyle}
+          {...flatListProps}
         />
       )}
     </View>

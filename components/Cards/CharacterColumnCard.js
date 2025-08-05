@@ -1,8 +1,8 @@
 // components/Cards/MainCharacterCard.js
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import styled from 'styled-components/native';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, Image } from 'react-native';
 import avatarFallback from '../../assets/image/image404.png';
 import { useNavigation } from '@react-navigation/native';
 
@@ -11,7 +11,7 @@ const Card = styled.View`
   width: ${({ cardWidth }) => cardWidth || '90px'};
 `;
 
-const CharacterImage = styled.Image`
+const CharacterImage = styled(Image)`
   width: ${({ width }) => width || '90px'};
   height: ${({ height }) => height || '120px'};
   border-radius: ${({ borderRadius }) => borderRadius || '24px'};
@@ -24,7 +24,7 @@ const CharacterName = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const CharacterColumnCard = ({
+const CharacterColumnCard = React.memo(({
   character,
   width = '90px',
   height = '120px',
@@ -37,7 +37,7 @@ const CharacterColumnCard = ({
 }) => {
   const navigation = useNavigation();
 
-  const handlePress = () => {
+  const handlePress = useCallback(() => {
     if (onPress) {
       onPress();
     } else {
@@ -46,7 +46,7 @@ const CharacterColumnCard = ({
         name_ua: character.name_ua,
       });
     }
-  };
+  }, [onPress, navigation, character.slug, character.name_ua]);
 
   return (
     <TouchableOpacity onPress={handlePress}>
@@ -60,6 +60,7 @@ const CharacterColumnCard = ({
               ? { uri: character.image }
               : avatarFallback
           }
+          resizeMode="cover"
         />
         <CharacterName fontSize={fontSize} marginTop={marginTop} numberOfLines={1}>
           {character.name_ua || character.name_en}
@@ -67,6 +68,8 @@ const CharacterColumnCard = ({
       </Card>
     </TouchableOpacity>
   );
-};
+});
+
+CharacterColumnCard.displayName = 'CharacterColumnCard';
 
 export default CharacterColumnCard;

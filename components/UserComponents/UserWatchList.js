@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   ActivityIndicator, 
   TouchableOpacity, 
@@ -21,8 +21,8 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const createStyles = (theme) => StyleSheet.create({
   container: {
     backgroundColor: theme.colors.card,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 12,
     marginBottom: 16,
   },
   headerContainer: {
@@ -41,10 +41,12 @@ const createStyles = (theme) => StyleSheet.create({
     justifyContent: 'space-between',
     flex: 1,
     marginRight: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   statusSelectorText: {
     color: theme.colors.text,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   statusCountBadge: {
@@ -58,10 +60,20 @@ const createStyles = (theme) => StyleSheet.create({
     gap: 8,
   },
   actionButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    height: 36,
+    width: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
-
+  gridContainer: {
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   loadingContainer: {
     padding: 20,
     alignItems: 'center',
@@ -98,14 +110,14 @@ const createStyles = (theme) => StyleSheet.create({
   },
   dropdownContainer: {
     position: 'absolute',
-    top: 65,
+    top: 60,
     left: 16,
-    right: 16,
     backgroundColor: theme.colors.background,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.colors.border,
     zIndex: 1000,
+    minWidth: 250,
   },
   dropdownOption: {
     flexDirection: 'row',
@@ -119,8 +131,8 @@ const createStyles = (theme) => StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   radioButton: {
-    width: 24,
-    height: 24,
+    width: 16,
+    height: 16,
     borderRadius: 12,
     borderWidth: 2,
     marginRight: 16,
@@ -143,7 +155,7 @@ const createStyles = (theme) => StyleSheet.create({
   },
   dropdownOptionText: {
     color: theme.colors.text,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     flex: 1,
   },
@@ -171,7 +183,7 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(watchStatus);
   const [statusCounts, setStatusCounts] = useState({});
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' або 'list'
+  const [isGridView, setIsGridView] = useState(true);
 
   const statusOptions = [
     { key: 'planned', title: 'Заплановано' },
@@ -340,32 +352,31 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const toggleViewMode = () => {
-    setViewMode(viewMode === 'grid' ? 'list' : 'grid');
-  };
+  const toggleViewMode = useCallback(() => {
+    setIsGridView(!isGridView);
+  }, [isGridView]);
 
-  const handleRandomAnime = () => {
+  const handleRandomAnime = useCallback(() => {
     if (animeList.length > 0) {
       const randomIndex = Math.floor(Math.random() * animeList.length);
       const randomAnime = animeList[randomIndex];
       navigation.navigate('AnimeDetails', { slug: randomAnime.anime.slug });
     }
-  };
+  }, [animeList, navigation]);
 
-  const loadMoreAnime = () => {
+  const loadMoreAnime = useCallback(() => {
     if (!loadingMore && hasMore && !loading) {
-
       fetchWatchList(currentPage + 1, true);
     }
-  };
+  }, [loadingMore, hasMore, loading, currentPage]);
 
 
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     fetchWatchList();
-  };
+  }, []);
 
-  const renderGridItem = ({ item }) => (
+  const renderGridItem = useCallback(({ item }) => (
     <View style={{ 
       flex: 1,
       marginHorizontal: 4,
@@ -387,11 +398,12 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
         badgeBottom={5}
         badgeLeft={5}
         badgeRight={5}
+        onPress={() => navigation.navigate('AnimeDetails', { slug: item.anime.slug })}
       />
     </View>
-  );
+  ), [navigation]);
 
-  const renderListItem = ({ item }) => (
+  const renderListItem = useCallback(({ item }) => (
     <AnimeRowCard
       anime={{
         ...item.anime,
@@ -407,10 +419,11 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
       descriptionFontSize={13}
       statusFontSize={11}
       marginBottom={16}
+      onPress={() => navigation.navigate('AnimeDetails', { slug: item.anime.slug })}
     />
-  );
+  ), [navigation]);
 
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (loadingMore) {
       return (
         <View style={styles.loadingContainer}>
@@ -429,7 +442,30 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
     }
     
     return null;
-  };
+  }, [loadingMore, hasMore, animeList.length, styles, theme.colors.primary]);
+
+  // Оптимізація для FlatList
+  const flatListKey = useMemo(() => 
+    `${isGridView ? 'grid' : 'list'}-${currentStatus}`, 
+    [isGridView, currentStatus]
+  );
+
+  const numColumns = useMemo(() => 
+    isGridView ? 3 : 1, 
+    [isGridView]
+  );
+
+  const columnWrapperStyle = useMemo(() => 
+    isGridView ? styles.gridContainer : undefined, 
+    [isGridView, styles.gridContainer]
+  );
+
+  const contentContainerStyle = useMemo(() => ({
+    paddingVertical: 8,
+    paddingHorizontal: isGridView ? 8 : 0
+  }), [isGridView]);
+
+  const keyExtractor = useCallback((item) => item.reference, []);
 
   if (loading) {
     return (
@@ -457,8 +493,62 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
   if (animeList.length === 0) {
     return (
       <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.statusSelector} onPress={toggleDropdown}>
+            <Text style={styles.statusSelectorText}>
+              {getStatusTitle(currentStatus)}
+              <Text style={styles.statusCountBadge}>({totalCount})</Text>
+            </Text>
+            <Ionicons 
+              name={isDropdownOpen ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color={theme.colors.gray} 
+            />
+          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.actionButton} onPress={toggleViewMode}>
+              <Ionicons 
+                name={isGridView ? 'list' : 'grid'} 
+                size={20} 
+                color={theme.colors.text} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleRandomAnime}>
+              <Ionicons name="shuffle" size={20} color={theme.colors.gray} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {isDropdownOpen && (
+          <View style={styles.dropdownContainer}>
+            {statusOptions.map((option, index) => (
+              <TouchableOpacity
+                key={option.key}
+                style={[
+                  styles.dropdownOption,
+                  index === statusOptions.length - 1 && styles.dropdownOptionLast
+                ]}
+                onPress={() => handleStatusSelect(option.key)}
+              >
+                <View style={[
+                  styles.radioButton,
+                  currentStatus === option.key 
+                    ? styles.radioButtonSelected 
+                    : styles.radioButtonUnselected
+                ]}>
+                  {currentStatus === option.key && <View style={styles.radioButtonInner} />}
+                </View>
+                <Text style={styles.dropdownOptionText}>{option.title}</Text>
+                <Text style={styles.dropdownOptionCount}>
+                  ({statusCounts[option.key] || 0})
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Немає аніме у списку</Text>
+          <Text style={styles.emptyText}>У користувача немає аніме у списку</Text>
         </View>
       </View>
     );
@@ -481,20 +571,13 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.actionButton} onPress={toggleViewMode}>
             <Ionicons 
-              name="list" 
-              size={24} 
-              color={viewMode === 'list' ? theme.colors.primary : theme.colors.gray} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={toggleViewMode}>
-            <Ionicons 
-              name="grid" 
+              name={isGridView ? 'list' : 'grid'} 
               size={20} 
-              color={viewMode === 'grid' ? theme.colors.primary : theme.colors.gray} 
+              color={theme.colors.text} 
             />
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={handleRandomAnime}>
-            <Ionicons name="shuffle" size={26} color={theme.colors.gray} />
+            <Ionicons name="shuffle" size={20} color={theme.colors.gray} />
           </TouchableOpacity>
         </View>
       </View>
@@ -529,22 +612,20 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
 
       <FlatList
         data={animeList}
-        keyExtractor={(item) => item.reference}
-        renderItem={viewMode === 'grid' ? renderGridItem : renderListItem}
-        numColumns={viewMode === 'grid' ? 3 : 1}
+        keyExtractor={keyExtractor}
+        renderItem={isGridView ? renderGridItem : renderListItem}
+        key={flatListKey}
+        numColumns={numColumns}
+        columnWrapperStyle={columnWrapperStyle}
+        contentContainerStyle={contentContainerStyle}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ 
-          paddingVertical: 8,
-          paddingHorizontal: viewMode === 'grid' ? 8 : 0
-        }}
-        columnWrapperStyle={viewMode === 'grid' ? { 
-          justifyContent: 'space-between',
-          marginBottom: 4
-        } : undefined}
         onEndReached={loadMoreAnime}
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}
-        key={viewMode} // Важливо для правильного оновлення при зміні режиму
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={limit}
       />
     </View>
   );

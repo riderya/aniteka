@@ -14,7 +14,7 @@ import FollowStatsBlock from '../components/UserComponents/FollowStatsBlock';
 import UserActivityBlock from '../components/UserComponents/UserActivityBlock';
 import StatsDonutBlock from '../components/UserComponents/StatsDonutBlock';
 import UserWatchList from '../components/UserComponents/UserWatchList';
-import MyCollectionsBlock from '../components/UserComponents/MyCollectionsBlock';
+import UserCollectionsBlock from '../components/UserComponents/UserCollectionsBlock';
 import AnimeHistoryBlock from '../components/UserComponents/AnimeHistoryBlock';
 import FavoritesBlock from '../components/UserComponents/FavoritesBlock';
 import { useTheme } from '../context/ThemeContext';
@@ -59,9 +59,8 @@ const FollowButton = styled.TouchableOpacity`
 `;
 
 const FollowButtonText = styled.Text`
-  /* color: ${({ isFollowed, theme }) => 
-    isFollowed ? theme.colors.text : theme.colors.background}; */
-  color: #ffffff;
+  color: ${({ isFollowed, theme }) => 
+    isFollowed ? theme.colors.text : '#ffffff'};
   font-weight: 600;
   font-size: 16px;
 `;
@@ -240,8 +239,6 @@ const UserProfile = () => {
 
   const handleTabPress = (tabName) => {
     setActiveTab(tabName);
-    // Тут можна додати логіку для завантаження відповідних даних
-    console.log('Tab pressed:', tabName);
   };
 
   // Оновлюємо renderData коли змінюється activeTab
@@ -613,9 +610,9 @@ const UserProfile = () => {
                  <>
                    <FollowButtonIconWrapper>
                      {!isFollowed ? (
-                       <Ionicons name="person-add-outline" size={20} color='#ffffff'  />
+                       <Ionicons name="person-add-outline" size={20} color="#ffffff"  />
                      ) : (
-                       <Ionicons name="person-remove-outline" size={20} color='#ffffff' />
+                       <Ionicons name="person-remove-outline" size={20} color={theme.colors.text} />
                      )}
                    </FollowButtonIconWrapper>
                    <FollowButtonText isFollowed={isFollowed}>
@@ -651,9 +648,6 @@ const UserProfile = () => {
                 username={username}
                 watchStatus="completed"
                 limit={21}
-                onStatusChange={(newStatus) => {
-                  console.log('Status changed to:', newStatus);
-                }}
               />
             </View>
           );
@@ -668,14 +662,14 @@ const UserProfile = () => {
         case 'collections':
           return (
             <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
-              <MyCollectionsBlock username={username} />
+              <UserCollectionsBlock username={username} reference={userData?.reference} />
             </View>
           );
         
         case 'history':
           return (
             <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
-              <AnimeHistoryBlock username={username} />
+              <AnimeHistoryBlock username={username} limit={21} />
             </View>
           );
        
@@ -721,7 +715,7 @@ const UserProfile = () => {
         setFollowStats(newStats);
         
                  Toast.show({
-           type: isFollowed ? 'error' : 'success',
+           type: isFollowed ? 'success' : 'success',
            text1: isFollowed ? 'Відписано' : 'Підписано',
            text2: isFollowed 
              ? 'Ви більше не стежите за цим користувачем' 

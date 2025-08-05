@@ -1,6 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import styled from 'styled-components/native';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, Image, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as SecureStore from 'expo-secure-store';
@@ -31,6 +30,59 @@ const getStatusColors = (theme) => ({
   dropped: hexToRgba(theme.colors.dropped, 0.8),
 });
 
+// Функція для форматування дії історії
+const formatHistoryAction = (historyData) => {
+  if (!historyData) return null;
+  
+  const { history_type, data } = historyData;
+  const after = data?.after;
+  const ep = after?.episodes;
+  const list = after?.status;
+  const score = after?.score;
+
+  const mapListStatus = (key) => {
+    switch (key) {
+      case 'planned': return 'Заплановане';
+      case 'watching': return 'Дивлюсь';
+      case 'completed': return 'Завершено';
+      case 'on_hold': return 'В очікуванні';
+      case 'dropped': return 'Закинуто';
+      default: return key;
+    }
+  };
+
+  switch (history_type) {
+    case 'watch':
+      if (list && ep && ep > 0) {
+        const statusText = mapListStatus(list);
+        return `${statusText}, Переглянуто ${ep} епізод${ep === 1 ? '' : ep < 5 ? 'и' : 'ів'}`;
+      }
+      if (ep && ep > 0) {
+        return `Переглянуто ${ep} епізод${ep === 1 ? '' : ep < 5 ? 'и' : 'ів'}`;
+      }
+      if (list) {
+        return mapListStatus(list);
+      }
+      return 'Дивлюсь';
+    case 'list':
+      if (list) {
+        return mapListStatus(list);
+      }
+      return 'Змінено список';
+    case 'score':
+      if (score) {
+        return `Оцінено на ${score}`;
+      }
+      return 'Оцінено';
+    case 'favorite':
+      return 'Додано до улюблених';
+    case 'unfavorite':
+      return 'Видалено з улюблених';
+    default:
+      return mapListStatus(history_type) || 'Активність';
+  }
+};
+
 const AnimeColumnCard = React.memo(({
   anime,
   onPress,
@@ -46,6 +98,9 @@ const AnimeColumnCard = React.memo(({
   badgeRight = 10,
   marginTop = 0,
   marginBottom = 0,
+  historyData = null, // Новий опціональний проп для історії
+  imageBorderRadius = 24, // Новий проп для border radius картинки
+  titleNumberOfLines = 2 // Новий проп для кількості рядків заголовка
 }) => {
   const navigation = useNavigation();
   const { theme } = useTheme();
@@ -53,6 +108,27 @@ const AnimeColumnCard = React.memo(({
   
   // Memoize status colors to prevent recalculation
   const statusColors = useMemo(() => getStatusColors(theme), [theme]);
+
+  // Create styles based on props
+  const styles = useMemo(() => createStyles(theme, {
+    cardWidth: typeof cardWidth === 'string' ? undefined : cardWidth,
+    imageWidth: typeof imageWidth === 'string' ? undefined : imageWidth,
+    imageHeight,
+    titleFontSize,
+    footerFontSize,
+    badgeFontSize,
+    badgePadding,
+    badgeBottom,
+    badgeLeft,
+    badgeRight,
+    marginTop,
+    marginBottom,
+    imageBorderRadius,
+    titleNumberOfLines
+  }), [theme, cardWidth, imageWidth, imageHeight, titleFontSize, footerFontSize, badgeFontSize, badgePadding, badgeBottom, badgeLeft, badgeRight, marginTop, marginBottom, imageBorderRadius, titleNumberOfLines]);
+
+  // Форматуємо дію історії
+  const historyAction = useMemo(() => formatHistoryAction(historyData), [historyData]);
 
   // Fetch user status from API like AnimeRowCard does
   useEffect(() => {
@@ -93,111 +169,111 @@ const AnimeColumnCard = React.memo(({
 
   return (
     <TouchableOpacity onPress={handlePress}>
-      <Item 
-        cardWidth={cardWidth} 
-        marginTop={marginTop} 
-        marginBottom={marginBottom}
-      >
-        <PosterWrapper>
-          <Poster
+      <View style={[
+        styles.item,
+        typeof cardWidth === 'string' && { width: cardWidth }
+      ]}>
+        <View style={styles.posterWrapper}>
+          <Image
             source={{ uri: anime.image }}
+            style={[
+              styles.poster,
+              typeof imageWidth === 'string' && { width: imageWidth }
+            ]}
             resizeMode="cover"
-            imageWidth={imageWidth}
-            imageHeight={imageHeight}
           />
           {userStatus && (
-            <StatusBadge
-              color={statusColors[userStatus] || '#666'}
-              badgePadding={badgePadding}
-              bottom={badgeBottom}
-              left={badgeLeft}
-              right={badgeRight}
-            >
-              <StatusText badgeFontSize={badgeFontSize}>
+            <View style={[styles.statusBadge, { backgroundColor: statusColors[userStatus] || '#666' }]}>
+              <Text style={styles.statusText}>
                 {statusLabels[userStatus] || userStatus}
-              </StatusText>
-            </StatusBadge>
+              </Text>
+            </View>
           )}
-        </PosterWrapper>
+        </View>
 
-        <Title numberOfLines={2} cardWidth={cardWidth} titleFontSize={titleFontSize}>
-          {anime.title_ua || anime.title_en || anime.title_ja || '?'}
-        </Title>
+                 <Text numberOfLines={titleNumberOfLines} style={[
+           styles.title,
+           typeof cardWidth === 'string' && { width: cardWidth }
+         ]}>
+           {anime.title_ua || anime.title_en || anime.title_ja || '?'}
+         </Text>
 
-        <RowFooter>
-          <TextFooter footerFontSize={footerFontSize}>
+        {/* Показуємо дію історії, якщо вона є */}
+        {historyAction && (
+          <Text style={styles.historyActionText} numberOfLines={1}>
+            {historyAction}
+          </Text>
+        )}
+
+        <View style={styles.rowFooter}>
+          <Text style={styles.textFooter}>
             {anime.episodes_released ?? '?'} з {anime.episodes_total ?? '?'} еп
-          </TextFooter>
-          <StyledIcon name="circle" size={4} />
-          <TextFooter footerFontSize={footerFontSize}>
+          </Text>
+          <FontAwesome name="circle" size={4} color={theme.colors.gray} />
+          <Text style={styles.textFooter}>
             {anime.score ?? '?'}
-          </TextFooter>
-        </RowFooter>
-      </Item>
+          </Text>
+        </View>
+      </View>
     </TouchableOpacity>
   );
+});
+
+const createStyles = (theme, props) => StyleSheet.create({
+  item: {
+    width: props.cardWidth,
+    marginTop: props.marginTop,
+    marginBottom: props.marginBottom,
+  },
+  posterWrapper: {
+    position: 'relative',
+  },
+  poster: {
+    width: props.imageWidth,
+    height: props.imageHeight,
+    borderRadius: props.imageBorderRadius,
+  },
+  title: {
+    marginTop: 10,
+    fontSize: props.titleFontSize,
+    width: props.cardWidth,
+    color: theme.colors.text,
+    fontWeight: '600',
+  },
+  statusBadge: {
+    position: 'absolute',
+    bottom: props.badgeBottom,
+    left: props.badgeLeft,
+    right: props.badgeRight,
+    padding: props.badgePadding,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusText: {
+    color: 'white',
+    fontSize: props.badgeFontSize,
+    fontWeight: '500',
+  },
+  historyActionText: {
+    fontSize: props.footerFontSize,
+    color: theme.colors.primary,
+    fontWeight: '500',
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  rowFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  textFooter: {
+    fontSize: props.footerFontSize,
+    color: theme.colors.gray,
+  },
 });
 
 AnimeColumnCard.displayName = 'AnimeColumnCard';
 
 export default AnimeColumnCard;
-
-// styled components
-
-const Item = styled.View`
-  width: ${({ cardWidth }) => cardWidth}px;
-  margin-top: ${({ marginTop }) => marginTop}px;
-  margin-bottom: ${({ marginBottom }) => marginBottom}px;
-`;
-
-const PosterWrapper = styled.View`
-  position: relative;
-`;
-
-const Poster = styled.Image`
-  width: ${({ imageWidth }) => imageWidth}px;
-  height: ${({ imageHeight }) => imageHeight}px;
-  border-radius: 24px;
-`;
-
-const Title = styled.Text`
-  margin-top: 10px;
-  font-size: ${({ titleFontSize }) => titleFontSize}px;
-  width: ${({ cardWidth }) => cardWidth}px;
-  color: ${({ theme }) => theme.colors.text};
-  font-weight: 600;
-`;
-
-const StatusBadge = styled.View`
-  position: absolute;
-  bottom: ${({ bottom = 10 }) => bottom}px;
-  left: ${({ left = 10 }) => left}px;
-  right: ${({ right = 10 }) => right}px;
-  background-color: ${({ color }) => color};
-  padding: 4px;
-  border-radius: 12px;
-  justify-content: center;
-  align-items: center;
-`;
-
-const StatusText = styled.Text`
-  color: white;
-  font-size: ${({ badgeFontSize }) => badgeFontSize}px;
-  font-weight: 500;
-`;
-
-const RowFooter = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
-  margin-top: 8px;
-`;
-
-const TextFooter = styled.Text`
-  font-size: ${({ footerFontSize }) => footerFontSize}px;
-  color: ${({ theme }) => theme.colors.gray};
-`;
-
-const StyledIcon = styled(FontAwesome)`
-  color: ${({ theme }) => theme.colors.gray};
-`;

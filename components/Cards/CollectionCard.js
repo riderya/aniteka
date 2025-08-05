@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Dimensions, Pressable } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Dimensions, Pressable, Image } from 'react-native';
 import styled from 'styled-components/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -9,21 +9,28 @@ import { useNavigation } from '@react-navigation/native'; // 🔹 додаємо
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const CollectionCard = ({ item, compact = false, cardWidth: customCardWidth }) => {
+const CollectionCard = React.memo(({ item, compact = false, cardWidth: customCardWidth }) => {
   const { theme } = useTheme();
   const navigation = useNavigation(); // 🔹 отримуємо navigation
 
   const cardWidth = customCardWidth || (compact ? SCREEN_WIDTH * 0.6 : SCREEN_WIDTH - 24);
   const imageHeight = cardWidth * 0.6;
 
-  const animeList = item.collection?.map(col => col.content).filter(Boolean) || [];
-  const first = animeList[0];
-  const second = animeList[1];
-  const moreCount = animeList.length - 2;
+  const { animeList, first, second, moreCount } = useMemo(() => {
+    const list = item.collection?.map(col => col.content).filter(Boolean) || [];
+    return {
+      animeList: list,
+      first: list[0],
+      second: list[1],
+      moreCount: list.length - 2
+    };
+  }, [item.collection]);
 
-  const handlePress = () => {
+  const handlePress = useMemo(() => () => {
     navigation.navigate('CollectionDetailScreen', { reference: item.reference });
-  };
+  }, [navigation, item.reference]);
+
+  const gradientColors = useMemo(() => ['transparent', theme.colors.card], [theme.colors.card]);
 
   return (
     <Pressable onPress={handlePress}>
@@ -50,14 +57,26 @@ const CollectionCard = ({ item, compact = false, cardWidth: customCardWidth }) =
 
         <CardWrapper style={{ paddingTop: imageHeight }}>
           <AnimeStack>
-            {first && <FirstImage source={{ uri: first.image }} style={{ height: imageHeight }} resizeMode="cover" />}
-            {second && <SecondImage source={{ uri: second.image }} style={{ height: imageHeight }} resizeMode="cover" />}
+            {first && (
+              <FirstImage 
+                source={{ uri: first.image }} 
+                style={{ height: imageHeight }} 
+                resizeMode="cover"
+              />
+            )}
+            {second && (
+              <SecondImage 
+                source={{ uri: second.image }} 
+                style={{ height: imageHeight }} 
+                resizeMode="cover"
+              />
+            )}
           </AnimeStack>
 
           <FolderBackground style={{ height: imageHeight + 30 }} />
 
           <LinearGradient
-            colors={['transparent', theme.colors.card]}
+            colors={gradientColors}
             style={{
               position: 'absolute',
               bottom: 0,
@@ -81,7 +100,9 @@ const CollectionCard = ({ item, compact = false, cardWidth: customCardWidth }) =
       </Card>
     </Pressable>
   );
-};
+});
+
+CollectionCard.displayName = 'CollectionCard';
 
 export default CollectionCard;
 
@@ -93,7 +114,6 @@ const Card = styled.View`
   overflow: hidden;
   border: 2px;
   border-color: ${({ theme }) => theme.colors.border};
-  ${(props) => props.compact && 'margin-right: 12px;'}
 `;
 
 const CardWrapper = styled.View`
@@ -116,7 +136,7 @@ const AnimeStack = styled.View`
   width: 100%;
 `;
 
-const FirstImage = styled.Image`
+const FirstImage = styled(Image)`
   width: 100%;
   border-radius: 24px;
   position: absolute;
@@ -124,7 +144,7 @@ const FirstImage = styled.Image`
   z-index: 2;
 `;
 
-const SecondImage = styled.Image`
+const SecondImage = styled(Image)`
   width: 100%;
   border-radius: 24px;
   position: absolute;

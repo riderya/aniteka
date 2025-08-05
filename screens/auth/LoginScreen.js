@@ -16,7 +16,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 const CLIENT_ID = '55d85f78-487b-4915-8614-b8f6df4a6245';
 const CLIENT_SECRET = 'EPM2WO2I-o816nQNRnEwQbqlElnd46bb-BqUnuwbEe6fnkfLoC3O159gt4g-Vcei1Jr3s4rzw_NAD_YcvlNJpDRz5dtR2nUDbvZF2JZDxmqKlsb9U_jhKYhItN5BcJIq';
-const REDIRECT_URI = 'exp+yummyanimelist://expo-development-client/';
+const REDIRECT_URI = 'yummyanimelist://';
 const TOKEN_KEY = 'hikka_token';
 const USER_REFERENCE_KEY = 'hikka_user_reference';
 

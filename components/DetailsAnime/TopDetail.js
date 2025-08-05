@@ -5,8 +5,6 @@ import { Alert, View, StyleSheet, Modal } from 'react-native';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import styled from 'styled-components/native';
 import * as Clipboard from 'expo-clipboard';
-import * as MediaLibrary from 'expo-media-library';
-import * as FileSystem from 'expo-file-system';
 import Markdown from 'react-native-markdown-display';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
@@ -19,7 +17,6 @@ import LikeAnimeButton from './LikeAnimeButton';
 import MoreButton from './MoreButton';
 import EpisodesCounter from './EpisodesCounter';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Entypo from '@expo/vector-icons/Entypo';
@@ -109,32 +106,7 @@ const TopDetail = ({ anime }) => {
     },
   });
 
-  const downloadImage = async (imageUrl) => {
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Помилка', 'Немає дозволу на доступ до галереї');
-        return;
-      }
-  
-      const filename = imageUrl.split('/').pop();
-      const fileUri = FileSystem.documentDirectory + filename;
-  
-      const downloadResumable = FileSystem.createDownloadResumable(
-        imageUrl,
-        fileUri
-      );
-  
-      const { uri } = await downloadResumable.downloadAsync();
-  
-      const asset = await MediaLibrary.createAssetAsync(uri);
-      await MediaLibrary.createAlbumAsync('Anime', asset, false);
-  
-      Alert.alert('✅ Успішно', '🎉 Зображення збережено в галереї');
-    } catch (error) {
-      Alert.alert('❌ Помилка', '⚠️ Не вдалося зберегти зображення');
-    }
-  };
+
   
 
   const imageUris = [anime.image, ...bannerUrls];
@@ -168,16 +140,21 @@ const TopDetail = ({ anime }) => {
 
       <Content>
         <Container>
-        <TouchableOpacity onPress={() => setImageViewerVisible(true)}>
-  <Poster source={{ uri: anime.image }} resizeMode="cover" />
-</TouchableOpacity>
+                 <TouchableOpacity onPress={() => setImageViewerVisible(true)}>
+   <Poster 
+     source={{ uri: anime.image }} 
+     resizeMode="cover"
+     onError={() => console.log('Помилка завантаження зображення')}
+     defaultSource={fallbackImage}
+   />
+ </TouchableOpacity>
 
         </Container>
 
         <Block>
           <TouchableOpacity onPress={() => setInfoModalVisible(true)}>
             <Row>
-              <StyledIconInfo name="info" />
+              <StyledIconInfo name="information-circle-sharp" />
               <Column>
                 <Title>{anime.title_ua || anime.title_ja || 'Назва відсутня'}</Title>
                 <Subtitle>{anime.title_en || anime.title_ja || 'English title missing'}</Subtitle>
@@ -257,13 +234,15 @@ const TopDetail = ({ anime }) => {
       }
       style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}
     >
-      <StudioLogo
-        source={
-          studios[0].company.image
-            ? { uri: studios[0].company.image }
-            : fallbackImage
-        }
-      />
+             <StudioLogo
+         source={
+           studios[0].company.image
+             ? { uri: studios[0].company.image }
+             : fallbackImage
+         }
+         onError={() => console.log('Помилка завантаження логотипу студії')}
+         defaultSource={fallbackImage}
+       />
       {/* <StudioName>{studios[0].company.name}</StudioName> */}
     </TouchableOpacity>
 
@@ -382,13 +361,15 @@ const TopDetail = ({ anime }) => {
               }}
             >
               <InfoRow style={{ gap: 12 }}>
-                <StudioLogo
-                  source={
-                    studioItem.company.image
-                      ? { uri: studioItem.company.image }
-                      : fallbackImage
-                  }
-                />
+                                 <StudioLogo
+                   source={
+                     studioItem.company.image
+                       ? { uri: studioItem.company.image }
+                       : fallbackImage
+                   }
+                   onError={() => console.log('Помилка завантаження логотипу студії')}
+                   defaultSource={fallbackImage}
+                 />
                 <StudioName>{studioItem.company.name}</StudioName>
               </InfoRow >
             </TouchableOpacity>
@@ -401,30 +382,27 @@ const TopDetail = ({ anime }) => {
   onRequestClose={() => setImageViewerVisible(false)}
   transparent={true}
 >
-  <View style={{ flex: 1, backgroundColor: theme.colors.transparentBackground }}>
-    <View style={styles.header}>
-      <TouchableOpacity
-        onPress={() => downloadImage(imagesToView[0].url)}
-        style={styles.closeBtn}
-      >
-        <Feather name="download" size={24} color={theme.colors.gray} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => setImageViewerVisible(false)}
-        style={styles.closeBtn}
-      >
-        <Ionicons name="close" size={28} color={theme.colors.gray} />
-      </TouchableOpacity>
-    </View>
+     <View style={{ flex: 1, backgroundColor: theme.colors.transparentBackground }}>
+     <View style={styles.header}>
+       <TouchableOpacity
+         onPress={() => setImageViewerVisible(false)}
+         style={styles.closeBtn}
+       >
+         <Ionicons name="close" size={28} color={theme.colors.gray} />
+       </TouchableOpacity>
+     </View>
 
-    <ImageViewer
-      imageUrls={imagesToView}
-      index={0}
-      enableSwipeDown
-      onSwipeDown={() => setImageViewerVisible(false)}
-      backgroundColor={theme.colors.transparentBackground}
-      saveToLocalByLongPress={false}
-    />
+         <ImageViewer
+       imageUrls={imagesToView}
+       index={0}
+       enableSwipeDown={true}
+       onSwipeDown={() => setImageViewerVisible(false)}
+       backgroundColor={theme.colors.transparentBackground}
+       saveToLocalByLongPress={false}
+       onImageLoadError={() => console.log('Помилка завантаження зображення в ImageViewer')}
+       enableImageZoom={true}
+       swipeDownThreshold={50}
+     />
   </View>
 </Modal>
 
@@ -571,7 +549,7 @@ const StyledIcon = styled(Ionicons)`
   font-size: 14px;
 `;
 
-const StyledIconInfo = styled(Feather)`
+const StyledIconInfo = styled(Ionicons)`
   color: ${({ theme }) => theme.colors.gray};
   font-size: 20px;
   margin-top: 4px;

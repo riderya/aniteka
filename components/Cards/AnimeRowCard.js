@@ -1,13 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import styled from 'styled-components/native';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import PropTypes from 'prop-types';
-import { Animated } from 'react-native';
+import { Animated, Image, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 import Octicons from '@expo/vector-icons/Octicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-import { TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const TOKEN_KEY = 'hikka_token';
@@ -70,7 +68,60 @@ const getStatusColors = (theme) => ({
   dropped: hexToRgba(theme.colors.dropped, 0.8),
 });
 
-const AnimeRowCard = ({ 
+// Функція для форматування дії історії
+const formatHistoryAction = (historyData) => {
+  if (!historyData) return null;
+  
+  const { history_type, data } = historyData;
+  const after = data?.after;
+  const ep = after?.episodes;
+  const list = after?.status;
+  const score = after?.score;
+
+  const mapListStatus = (key) => {
+    switch (key) {
+      case 'planned': return 'Заплановане';
+      case 'watching': return 'Дивлюсь';
+      case 'completed': return 'Завершено';
+      case 'on_hold': return 'В очікуванні';
+      case 'dropped': return 'Закинуто';
+      default: return key;
+    }
+  };
+
+  switch (history_type) {
+    case 'watch':
+      if (list && ep && ep > 0) {
+        const statusText = mapListStatus(list);
+        return `${statusText}, Переглянуто ${ep} епізод${ep === 1 ? '' : ep < 5 ? 'и' : 'ів'}`;
+      }
+      if (ep && ep > 0) {
+        return `Переглянуто ${ep} епізод${ep === 1 ? '' : ep < 5 ? 'и' : 'ів'}`;
+      }
+      if (list) {
+        return mapListStatus(list);
+      }
+      return 'Дивлюсь';
+    case 'list':
+      if (list) {
+        return mapListStatus(list);
+      }
+      return 'Змінено список';
+    case 'score':
+      if (score) {
+        return `Оцінено на ${score}`;
+      }
+      return 'Оцінено';
+    case 'favorite':
+      return 'Додано до улюблених';
+    case 'unfavorite':
+      return 'Видалено з улюблених';
+    default:
+      return mapListStatus(history_type) || 'Активність';
+  }
+};
+
+const AnimeRowCard = React.memo(({ 
   anime,
   imageWidth = 90,
   imageHeight = 120,
@@ -80,7 +131,10 @@ const AnimeRowCard = ({
   descriptionFontSize = 13,
   statusFontSize = 12,
   marginBottom = 20,
-  isLoading = false
+  isLoading = false,
+  historyData = null, // Новий опціональний проп для історії
+  imageBorderRadius = 24, // Новий проп для border radius картинки
+  titleNumberOfLines = 2 // Новий проп для кількості рядків заголовка
 }) => {
   const navigation = useNavigation();
   const [isFavourite, setIsFavourite] = useState(false);
@@ -93,6 +147,23 @@ const AnimeRowCard = ({
   
   // Memoize status colors to prevent recalculation
   const statusColors = useMemo(() => getStatusColors(theme), [theme]);
+
+  // Create styles based on props
+  const styles = useMemo(() => createStyles(theme, {
+    imageWidth,
+    imageHeight,
+    titleFontSize,
+    episodesFontSize,
+    scoreFontSize,
+    descriptionFontSize,
+    statusFontSize,
+    marginBottom,
+    imageBorderRadius,
+    titleNumberOfLines
+  }), [theme, imageWidth, imageHeight, titleFontSize, episodesFontSize, scoreFontSize, descriptionFontSize, statusFontSize, marginBottom, imageBorderRadius, titleNumberOfLines]);
+
+  // Форматуємо дію історії
+  const historyAction = useMemo(() => formatHistoryAction(historyData), [historyData]);
 
   // Анимация скелетона
   useEffect(() => {
@@ -116,47 +187,51 @@ const AnimeRowCard = ({
     }
   }, [isLoading, animatedValue]);
 
-  // Fetch anime description from API
+  // Fetch anime description
   useEffect(() => {
     const fetchAnimeDescription = async () => {
       try {
         const response = await fetch(`https://api.hikka.io/anime/${anime.slug}`);
         if (response.ok) {
           const data = await response.json();
-          const rawDescription = data.synopsis_ua || data.synopsis_en || 'Опис відсутній';
-          const processedDescription = parseMarkdown(rawDescription);
-          setAnimeDescription(processedDescription);
-        } else {
-          setAnimeDescription('Опис відсутній');
+          const description = parseMarkdown(data.description_ua || data.description_en || '');
+          setAnimeDescription(description);
         }
       } catch (error) {
-        setAnimeDescription('Опис відсутній');
+        console.error('Error fetching anime description:', error);
       }
     };
 
-    fetchAnimeDescription();
+    if (anime.slug) {
+      fetchAnimeDescription();
+    }
   }, [anime.slug]);
 
-  // Перевірка фаворитів (як було)
+  // Check if anime is in favourites
   useEffect(() => {
     const checkFavourite = async () => {
       try {
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
-        if (!token) return;
+        if (!token) {
+          setIsFavourite(false);
+          return;
+        }
 
-        const res = await fetch(`https://api.hikka.io/favourite/anime/${anime.slug}`, {
+        const response = await fetch(`https://api.hikka.io/favourite/anime/${anime.slug}`, {
           headers: { auth: token }
         });
-        setIsFavourite(res.status === 200);
-      } catch {
+        setIsFavourite(response.ok);
+      } catch (error) {
         setIsFavourite(false);
       }
     };
 
-    checkFavourite();
+    if (anime.slug) {
+      checkFavourite();
+    }
   }, [anime.slug]);
 
-  // Новий useEffect для статусу користувача з /watch/{slug}
+  // Fetch user status
   useEffect(() => {
     const fetchUserStatus = async () => {
       try {
@@ -166,249 +241,224 @@ const AnimeRowCard = ({
           return;
         }
 
-        const res = await fetch(`https://api.hikka.io/watch/${anime.slug}`, {
+        const response = await fetch(`https://api.hikka.io/watch/${anime.slug}`, {
           headers: { auth: token }
         });
 
-        if (!res.ok) {
+        if (response.ok) {
+          const data = await response.json();
+          setUserStatus(data.status || null);
+        } else {
           setUserStatus(null);
-          return;
         }
-
-        const data = await res.json();
-        setUserStatus(data.status || null);
-      } catch {
+      } catch (error) {
         setUserStatus(null);
       }
     };
 
-    fetchUserStatus();
+    if (anime.slug) {
+      fetchUserStatus();
+    }
   }, [anime.slug]);
 
-  const renderWatchStatus = (status) => {
-    switch (status) {
-      case 'watching':
-        return 'Дивлюсь';
-      case 'planned':
-        return 'В планах';
-      case 'dropped':
-        return 'Закинуто';
-      case 'on_hold':
-        return 'Відкладено';
-      case 'completed':
-        return 'Переглянуто';
-      case 'favourite':
-        return 'Улюблене';
-      default:
-        return '';
-    }
-  };
-
-  const handlePress = () => {
-    if (!isLoading) {
-      navigation.navigate('AnimeDetails', { slug: anime.slug });
-    }
-  };
-
-  const opacity = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
-  });
+  const handlePress = useCallback(() => {
+    navigation.navigate('AnimeDetails', { slug: anime.slug });
+  }, [navigation, anime.slug]);
 
   if (isLoading) {
+    const opacity = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.3, 0.7],
+    });
+
     return (
-      <Card marginBottom={marginBottom}>
-        <ImageWrapper imageWidth={imageWidth}>
-          <SkeletonImage 
-            imageWidth={imageWidth}
-            imageHeight={imageHeight}
-            style={{ opacity }}
-          />
-        </ImageWrapper>
-        <Info>
-          <TitleRow>
-            <SkeletonTitle 
-              titleFontSize={titleFontSize}
-              style={{ opacity }}
-            />
-          </TitleRow>
-          <Row>
-            <SkeletonText 
-              episodesFontSize={episodesFontSize}
-              style={{ opacity }}
-            />
-            <SkeletonDot style={{ opacity }} />
-            <SkeletonText 
-              scoreFontSize={scoreFontSize}
-              style={{ opacity }}
-            />
-          </Row>
-          <SkeletonDescription 
-            descriptionFontSize={descriptionFontSize}
-            style={{ opacity }}
-          />
-        </Info>
-      </Card>
+      <View style={styles.container}>
+        <Animated.View style={[styles.skeletonImage, { opacity }]} />
+        <View style={styles.info}>
+          <Animated.View style={[styles.skeletonTitle, { opacity }]} />
+          <View style={styles.row}>
+            <Animated.View style={[styles.skeletonText, { opacity }]} />
+            <Animated.View style={[styles.skeletonDot, { opacity }]} />
+            <Animated.View style={[styles.skeletonText, { opacity }]} />
+          </View>
+          <Animated.View style={[styles.skeletonDescription, { opacity }]} />
+        </View>
+      </View>
     );
   }
 
   return (
-    <TouchableOpacity onPress={handlePress}>
-      <Card marginBottom={marginBottom}>
-        <ImageWrapper imageWidth={imageWidth}>
-          <AnimeImage 
-            source={{ uri: anime.image }} 
-            resizeMode="cover" 
-            imageWidth={imageWidth}
-            imageHeight={imageHeight}
-          />
-          {userStatus && (
-            <StatusText 
-              color={statusColors[userStatus] || '#666'} 
-              statusFontSize={statusFontSize}
-            >
-              {renderWatchStatus(userStatus)}
-            </StatusText>
-          )}
-        </ImageWrapper>
-        <Info>
-          <TitleRow>
-            <AnimeTitle numberOfLines={2} titleFontSize={titleFontSize}>{anime.title_ua || anime.title_en || 'Без назви'}</AnimeTitle>
-          </TitleRow>
-          <Row>
-            <EpisodesText episodesFontSize={episodesFontSize}>{anime.episodes_released || '?'} / {anime.episodes_total || '?'} еп</EpisodesText>
-            <FontAwesome name="circle" size={6} color={theme.colors.gray} />
-            <ScoreText scoreFontSize={scoreFontSize}>{anime.score || '—'}</ScoreText>
-            <Octicons style={{ marginLeft: -6 }} name="star-fill" size={12} color={theme.colors.gray} />
-            {isFavourite && <FavouriteMark name="heart-fill" size={24} color={theme.colors.error} />}
-          </Row>
+    <TouchableOpacity onPress={handlePress} style={styles.container}>
+      <View style={styles.imageWrapper}>
+        <Image
+          source={{ uri: anime.image }}
+          style={styles.animeImage}
+          resizeMode="cover"
+        />
+        {userStatus && (
+          <View style={[styles.statusBadge, { backgroundColor: statusColors[userStatus] || 'rgba(51, 51, 51, 0.7)' }]}>
+            <Text style={styles.statusText}>
+              {userStatus}
+            </Text>
+          </View>
+        )}
+      </View>
 
-          <DescriptionText numberOfLines={3} descriptionFontSize={descriptionFontSize}>
+      <View style={styles.info}>
+                 <View style={styles.titleRow}>
+           <Text style={styles.animeTitle} numberOfLines={titleNumberOfLines}>
+             {anime.title_ua || anime.title_en || anime.title_ja || '?'}
+           </Text>
+         </View>
+
+        <View style={styles.row}>
+          <Text style={styles.episodesText}>
+            {anime.episodes_released ?? '?'} з {anime.episodes_total ?? '?'} еп
+          </Text>
+          <FontAwesome name="circle" size={4} color={theme.colors.gray} />
+          <Text style={styles.scoreText}>
+            {anime.score ?? '?'}
+          </Text>
+          {isFavourite && (
+            <Octicons name="heart-fill" size={14} color={theme.colors.error} />
+          )}
+        </View>
+
+        {/* Показуємо дію історії, якщо вона є */}
+        {historyAction && (
+          <Text style={styles.historyActionText}>
+            {historyAction}
+          </Text>
+        )}
+
+        {animeDescription && (
+          <Text style={styles.descriptionText} numberOfLines={3}>
             {animeDescription}
-          </DescriptionText>
-        </Info>
-      </Card>
+          </Text>
+        )}
+      </View>
     </TouchableOpacity>
   );
+});
+
+const createStyles = (theme, props) => StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    marginBottom: props.marginBottom,
+  },
+  imageWrapper: {
+    position: 'relative',
+    width: props.imageWidth,
+    marginRight: 15,
+  },
+  animeImage: {
+    width: props.imageWidth,
+    height: props.imageHeight,
+    borderRadius: props.imageBorderRadius,
+  },
+  info: {
+    flex: 1,
+    justifyContent: 'flex-start',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  animeTitle: {
+    fontSize: props.titleFontSize,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 6,
+  },
+  statusBadge: {
+    position: 'absolute',
+    bottom: 5,
+    left: 5,
+    right: 5,
+    padding: 4,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusText: {
+    fontSize: props.statusFontSize,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  episodesText: {
+    fontSize: props.episodesFontSize,
+    color: theme.colors.gray,
+  },
+  scoreText: {
+    fontSize: props.scoreFontSize,
+    color: theme.colors.gray,
+  },
+  historyActionText: {
+    fontSize: props.descriptionFontSize,
+    color: theme.colors.primary,
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  descriptionText: {
+    fontSize: props.descriptionFontSize,
+    color: theme.colors.gray,
+  },
+  // Скелетон стилі
+  skeletonImage: {
+    width: props.imageWidth,
+    height: props.imageHeight,
+    borderRadius: 12,
+    backgroundColor: theme.colors.background,
+  },
+  skeletonTitle: {
+    width: '80%',
+    height: props.titleFontSize * 1.2,
+    backgroundColor: theme.colors.background,
+    borderRadius: 4,
+    marginBottom: 6,
+  },
+  skeletonText: {
+    width: 60,
+    height: props.episodesFontSize,
+    backgroundColor: theme.colors.background,
+    borderRadius: 4,
+  },
+  skeletonDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.background,
+  },
+  skeletonDescription: {
+    width: '100%',
+    height: props.descriptionFontSize * 3.6,
+    backgroundColor: theme.colors.background,
+    borderRadius: 4,
+  },
+});
+
+AnimeRowCard.propTypes = {
+  anime: PropTypes.object.isRequired,
+  imageWidth: PropTypes.number,
+  imageHeight: PropTypes.number,
+  titleFontSize: PropTypes.number,
+  episodesFontSize: PropTypes.number,
+  scoreFontSize: PropTypes.number,
+  descriptionFontSize: PropTypes.number,
+  statusFontSize: PropTypes.number,
+  marginBottom: PropTypes.number,
+  isLoading: PropTypes.bool,
+  historyData: PropTypes.object, // Новий проп для історії
+  imageBorderRadius: PropTypes.number, // Новий проп для border radius картинки
+  titleNumberOfLines: PropTypes.number, // Новий проп для кількості рядків заголовка
 };
 
+AnimeRowCard.displayName = 'AnimeRowCard';
+
 export default AnimeRowCard;
-
-// ... стилі залишаються без змін
-
-
-const Card = styled.View`
-  flex-direction: row;
-  margin-bottom: ${({ marginBottom }) => marginBottom}px;
-  align-items: flex-start;
-`;
-
-const ImageWrapper = styled.View`
-  position: relative;
-  width: ${({ imageWidth }) => imageWidth}px;
-  margin-right: 15px;
-`;
-
-const AnimeImage = styled.Image`
-  width: ${({ imageWidth }) => imageWidth}px;
-  height: ${({ imageHeight }) => imageHeight}px;
-  border-radius: 12px;
-`;
-
-const Info = styled.View`
-  flex: 1;
-  justify-content: flex-start;
-`;
-
-const TitleRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-`;
-
-const AnimeTitle = styled.Text`
-  font-size: ${({ titleFontSize }) => titleFontSize}px;
-  font-weight: bold;
-  color: ${({ theme }) => theme.colors.text};
-  margin-bottom: 6px;
-`;
-
-const StatusText = styled.Text`
-  position: absolute;
-  text-align: center;
-  bottom: 5px;
-  left: 5px;
-  right: 5px;
-  padding: 4px;
-  font-size: ${({ statusFontSize }) => statusFontSize}px;
-  font-weight: 500;
-  color: #fff;
-  border-radius: 8px;
-  background-color: ${({ color }) => color || 'rgba(51, 51, 51, 0.7)'};
-`;
-
-
-
-const Row = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-`;
-
-const EpisodesText = styled.Text`
-  font-size: ${({ episodesFontSize }) => episodesFontSize}px;
-  color: ${({ theme }) => theme.colors.gray};
-`;
-
-const ScoreText = styled.Text`
-  font-size: ${({ scoreFontSize }) => scoreFontSize}px;
-  color: ${({ theme }) => theme.colors.gray};
-`;
-
-const FavouriteMark = styled(Octicons)`
-  font-size: 15px;
-  color: ${({ theme }) => theme.colors.error};
-  margin-left: 8px;
-`;
-
-const DescriptionText = styled.Text`
-  font-size: ${({ descriptionFontSize }) => descriptionFontSize}px;
-  color: ${({ theme }) => theme.colors.gray};
-`;
-
-// Скелетон компоненти
-const SkeletonImage = styled(Animated.View)`
-  width: ${({ imageWidth }) => imageWidth}px;
-  height: ${({ imageHeight }) => imageHeight}px;
-  border-radius: 12px;
-  background-color: ${({ theme }) => theme.colors.background};
-`;
-
-const SkeletonTitle = styled(Animated.View)`
-  width: 80%;
-  height: ${({ titleFontSize }) => titleFontSize * 1.2}px;
-  background-color: ${({ theme }) => theme.colors.background};
-  border-radius: 4px;
-  margin-bottom: 6px;
-`;
-
-const SkeletonText = styled(Animated.View)`
-  width: 60px;
-  height: ${({ episodesFontSize }) => episodesFontSize}px;
-  background-color: ${({ theme }) => theme.colors.background};
-  border-radius: 4px;
-`;
-
-const SkeletonDot = styled(Animated.View)`
-  width: 6px;
-  height: 6px;
-  border-radius: 3px;
-  background-color: ${({ theme }) => theme.colors.background};
-`;
-
-const SkeletonDescription = styled(Animated.View)`
-  width: 100%;
-  height: ${({ descriptionFontSize }) => descriptionFontSize * 3.6}px;
-  background-color: ${({ theme }) => theme.colors.background};
-  border-radius: 4px;
-`;

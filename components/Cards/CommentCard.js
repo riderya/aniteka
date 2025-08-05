@@ -67,7 +67,7 @@ const ModalButtonText = styled.Text`
 `;
 
 // === Внутрішній компонент SpoilerText ===
-const SpoilerText = ({ text }) => {
+const SpoilerText = ({ text, theme }) => {
   const [revealed, setRevealed] = useState(false);
 
   const toggleSpoiler = () => {
@@ -77,7 +77,7 @@ const SpoilerText = ({ text }) => {
   return (
     <TouchableOpacity onPress={toggleSpoiler} activeOpacity={0.8} style={{ width: '100%', marginVertical: 4 }}>
       {revealed ? (
-        <RevealedContainer>
+        <RevealedContainer theme={theme}>
           <Markdown 
             style={{
               body: {
@@ -94,12 +94,12 @@ const SpoilerText = ({ text }) => {
           </Markdown>
         </RevealedContainer>
       ) : (
-        <SpoilerContainer>
+        <SpoilerContainer theme={theme}>
           <HiddenText>{text}</HiddenText>
-          <SpoilerOverlay>
+          <SpoilerOverlay theme={theme}>
             <SpoilerMessage>
-              <SpoilerMessageLine>Цей текст може містити спойлер.</SpoilerMessageLine>
-              <SpoilerMessageLineBold>Натисніть, щоб прочитати</SpoilerMessageLineBold>
+              <SpoilerMessageLine theme={theme}>Цей текст може містити спойлер.</SpoilerMessageLine>
+              <SpoilerMessageLineBold theme={theme}>Натисніть, щоб прочитати</SpoilerMessageLineBold>
             </SpoilerMessage>
           </SpoilerOverlay>
         </SpoilerContainer>
@@ -301,7 +301,7 @@ const CommentCard = ({
           </Markdown>
         );
       } else if (block.type === 'spoiler') {
-        return <SpoilerText key={`spoiler-${key}`} text={block.content} />;
+        return <SpoilerText key={`spoiler-${key}`} text={block.content} theme={theme} />;
       }
       return null;
     });
