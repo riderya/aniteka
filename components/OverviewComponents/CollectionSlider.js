@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList } from 'react-native';
+import { FlatList, View } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
@@ -59,6 +59,7 @@ const CollectionSlider = () => {
         showsHorizontalScrollIndicator={false}
         decelerationRate="fast"
         contentContainerStyle={{ paddingHorizontal: 12 }}
+        ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
         renderItem={({ item }) => <CollectionCard item={item} compact />}
       />
     </Container>

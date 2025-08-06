@@ -274,7 +274,7 @@ const TopDetail = ({ anime }) => {
           </InfoContent>
         </Block>
 
-        <Column>
+        <Column style={{ marginTop: 12 }}>
           <MeasuredWrapper
             onLayout={e => {
               const height = e.nativeEvent.layout.height;

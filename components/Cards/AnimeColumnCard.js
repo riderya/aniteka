@@ -231,7 +231,7 @@ const createStyles = (theme, props) => StyleSheet.create({
   poster: {
     width: props.imageWidth,
     height: props.imageHeight,
-    borderRadius: props.imageBorderRadius,
+    borderRadius: props.imageBorderRadius || 24,
   },
   title: {
     marginTop: 10,

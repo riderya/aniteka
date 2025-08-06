@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
 import Markdown from 'react-native-markdown-display';
-import { View, Modal, TouchableOpacity, Pressable, Alert, Text } from 'react-native';
+import { View, Modal, TouchableOpacity, Pressable, Alert, Text, ActivityIndicator } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -69,8 +69,15 @@ const ModalButtonText = styled.Text`
 // === Внутрішній компонент SpoilerText ===
 const SpoilerText = ({ text, theme }) => {
   const [revealed, setRevealed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const toggleSpoiler = () => {
+  const toggleSpoiler = async () => {
+    if (!revealed) {
+      setLoading(true);
+      // Імітуємо завантаження для кращого UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setLoading(false);
+    }
     setRevealed(prev => !prev);
   };
 
@@ -98,8 +105,17 @@ const SpoilerText = ({ text, theme }) => {
           <HiddenText>{text}</HiddenText>
           <SpoilerOverlay theme={theme}>
             <SpoilerMessage>
-              <SpoilerMessageLine theme={theme}>Цей текст може містити спойлер.</SpoilerMessageLine>
-              <SpoilerMessageLineBold theme={theme}>Натисніть, щоб прочитати</SpoilerMessageLineBold>
+              {loading ? (
+                <>
+                  <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginBottom: 8 }} />
+                  <SpoilerMessageLine theme={theme}>Завантаження...</SpoilerMessageLine>
+                </>
+              ) : (
+                <>
+                  <SpoilerMessageLine theme={theme}>Цей текст може містити спойлер.</SpoilerMessageLine>
+                  <SpoilerMessageLineBold theme={theme}>Натисніть, щоб прочитати</SpoilerMessageLineBold>
+                </>
+              )}
             </SpoilerMessage>
           </SpoilerOverlay>
         </SpoilerContainer>

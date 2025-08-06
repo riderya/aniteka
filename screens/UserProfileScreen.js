@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components/native';
 import { FlatList, ActivityIndicator, Alert, RefreshControl, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -215,6 +216,7 @@ const UserProfile = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [userData, setUserData] = useState(null);
   const [activityData, setActivityData] = useState([]);
   const [animeHours, setAnimeHours] = useState(0);
@@ -364,6 +366,7 @@ const UserProfile = () => {
         const data = await response.json();
         return data;
       }
+      console.log('Follow stats response not ok:', response.status);
       return { followers: 0, following: 0 };
     } catch (err) {
       console.error('Error fetching follow stats:', err);
@@ -469,13 +472,13 @@ const UserProfile = () => {
     const promises = [
       fetchUserProfile(), 
       fetchUserActivity(),
-      fetchWatchStats().then(stats => setWatchStats(stats))
+      fetchWatchStats().then(stats => setWatchStats(stats)),
+      fetchFollowStats().then(stats => setFollowStats(stats))
     ];
     
-    // Only load follow data if authenticated
+    // Only load follow status if authenticated
     if (token) {
       promises.push(
-        fetchFollowStats().then(stats => setFollowStats(stats)),
         checkFollowStatus().then(status => setIsFollowed(status))
       );
     }
@@ -592,7 +595,7 @@ const UserProfile = () => {
              case 'followStats':
          return (
            <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
-             <FollowStatsBlock stats={followStats} />
+             <FollowStatsBlock stats={followStats} username={username} />
            </View>
          );
        
@@ -684,7 +687,7 @@ const UserProfile = () => {
          // Check if user is authenticated
      if (!isAuthenticated) {
        Toast.show({
-         type: 'error',
+         type: 'info',
          text1: 'Потрібна авторизація',
          text2: 'Щоб підписатися на користувача, потрібно увійти в акаунт.',
          position: 'bottom',
@@ -803,7 +806,7 @@ const UserProfile = () => {
           />
         }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 20 + insets.bottom }}
       />
       <Toast config={toastConfig} position="bottom" />
     </View>

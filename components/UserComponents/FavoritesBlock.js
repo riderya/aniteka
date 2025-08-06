@@ -52,7 +52,6 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 12,
-    marginBottom: 16,
   },
   headerContainer: {
     flexDirection: 'row',

@@ -72,7 +72,7 @@ const BarFill = styled.View`
   height: 100%;
   background-color: ${({ theme }) => theme.colors.primary};
   border-radius: 6px;
-  width: ${({ width }) => width};
+  width: ${({ width }) => width || '0%'};
 `;
 
 const CountLabel = styled.Text`
@@ -116,7 +116,7 @@ const AnimeRatingStats = ({ stats, score, slug }) => {
         <RightCol>
           {displayScores.map((score) => {
             const count = stats[`score_${score}`] || 0;
-            const percent = totalVotes === 0 ? 0 : count / totalVotes;
+            const percent = totalVotes === 0 ? 0 : Math.max(0, Math.min(1, count / totalVotes));
             const isActive = activeScore === score;
 
             return (

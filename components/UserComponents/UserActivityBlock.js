@@ -11,7 +11,6 @@ const Card = styled.View`
   border-radius: 16px;
   padding: 12px 0px;
   width: 100%;
-  margin-bottom: 20px;
 `;
 
 const StatRow = styled.View`
@@ -72,8 +71,10 @@ const Bar = styled.View`
   position: relative;
   width: 15px;
   border-radius: 999px;
-  background-color: ${({ theme }) => theme.colors.primary};
-  height: ${props => props.height}%;
+  background-color: ${({ theme, hasData }) => 
+    hasData ? theme.colors.primary : 'rgba(128, 128, 128, 0.3)'
+  };
+  height: ${props => props.height || 0}%;
 `;
 
 const BarBackground = styled.View`
@@ -84,26 +85,15 @@ const BarBackground = styled.View`
   border-radius: 999px;
 `;
 
-const DateRow = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  padding: 0 4px;
-  margin-top: 4px;
-`;
 
-const DateLabel = styled.Text`
-  font-size: 10px;
-  color: ${({ theme }) => theme.colors.gray};
-  text-align: center;
-`;
 
 const TooltipBox = styled.View`
   position: absolute;
   background-color: ${({ theme }) => theme.colors.background};
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   align-items: center;
-  width: 70px;
+  width: 90px;
   z-index: 1000;
 `;
 
@@ -244,19 +234,72 @@ const UserActivityBlock = ({ activity, animeHours = 0 }) => {
 
   const animeTimeDisplay = calculateAnimeTimeDisplay(animeHours);
   const progress = Math.min((animeHours / (365 * 24)) * 100, 100);
-  // Calculate max actions only from recent activity (last 7 days) to avoid old high values affecting scale
-  const recentActivity = activity.slice(-7);
-  const maxActions = Math.max(...recentActivity.map(item => item.actions || 0), 1);
+  
+  // Створюємо масив для перших 8 днів активності
+  const generateFirst8Days = () => {
+    if (!activity || activity.length === 0) {
+      // Якщо немає активності, показуємо останні 8 днів
+      const days = [];
+      const now = new Date();
+      
+      for (let i = 7; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        const timestamp = Math.floor(date.getTime() / 1000);
+        
+        days.push({
+          timestamp,
+          actions: 0,
+          hasData: false
+        });
+      }
+      
+      return days;
+    }
 
-  const extendedActivity = activity.slice(-9);
+    // Сортуємо активність за датою (від найдавнішої до найновішої)
+    const sortedActivity = [...activity].sort((a, b) => a.timestamp - b.timestamp);
+    
+    // Беремо перші 8 днів активності
+    const first8Activity = sortedActivity.slice(0, 8);
+    
+    // Якщо активності менше 8 днів, додаємо пусті дні
+    const days = [];
+    
+    for (let i = 0; i < 8; i++) {
+      if (i < first8Activity.length) {
+        days.push({
+          timestamp: first8Activity[i].timestamp,
+          actions: first8Activity[i].actions,
+          hasData: true
+        });
+      } else {
+        // Додаємо пустий день після останньої активності
+        const lastActivity = first8Activity[first8Activity.length - 1];
+        const lastDate = new Date(lastActivity.timestamp * 1000);
+        const emptyDate = new Date(lastDate);
+        emptyDate.setDate(lastDate.getDate() + (i - first8Activity.length + 1));
+        
+        days.push({
+          timestamp: Math.floor(emptyDate.getTime() / 1000),
+          actions: 0,
+          hasData: false
+        });
+      }
+    }
+    
+    return days;
+  };
+
+  const first8Days = generateFirst8Days();
+  const maxActions = Math.max(...first8Days.map(item => item.actions), 1);
 
   const barWidth = 24;
   const containerWidth = Dimensions.get('window').width - 32;
-  const gap = (containerWidth - barWidth * extendedActivity.length) / (extendedActivity.length - 1);
+  const gap = (containerWidth - barWidth * first8Days.length) / (first8Days.length - 1);
 
   return (
-    <>
-      {/* Anime Time */}
+    <View style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <Card>
         <RowLineHeader title="Час аніме"/>
         <StatRow>
@@ -290,8 +333,8 @@ const UserActivityBlock = ({ activity, animeHours = 0 }) => {
         <RowLineHeader title="Активність"/>
         <BarChartWrapper>
           <BarContainer>
-            {extendedActivity.map((item, index) => {
-              const height = (item.actions / maxActions) * 100;
+            {first8Days.map((item, index) => {
+              const height = maxActions > 0 ? Math.max(0, Math.min(100, (item.actions / maxActions) * 100)) : 0;
 
               return (
                 <TouchableOpacity
@@ -299,31 +342,30 @@ const UserActivityBlock = ({ activity, animeHours = 0 }) => {
                   onPress={() => setTooltipIndex(index === tooltipIndex ? null : index)}
                   style={{ alignItems: 'center', width: barWidth, position: 'relative' }}
                 >
-                  {tooltipIndex === index && (
-                    <TooltipBox style={{ bottom: height + 10 }}>
-                      <TooltipText numberOfLines={1}>{item.actions} дій</TooltipText>
-                    </TooltipBox>
-                  )}
+                                     {tooltipIndex === index && (
+                     <TooltipBox style={{ bottom: height + 10 }}>
+                       <TooltipText numberOfLines={1} style={{ textAlign: 'center' }}>
+                         {item.hasData ? `${item.actions} дій` : 'Немає активності'}
+                       </TooltipText>
+                       <TooltipText numberOfLines={1} style={{ fontSize: 11, marginTop: 2, textAlign: 'center' }}>
+                         {format(new Date(item.timestamp * 1000), 'dd.MM.yyyy', { locale: uk })}
+                       </TooltipText>
+                     </TooltipBox>
+                   )}
                                      <View style={{ height: 100, justifyContent: 'flex-end' }}>
                      <BarBackground />
-                     <Bar height={height} />
+                     <Bar 
+                       height={height} 
+                       hasData={item.hasData}
+                     />
                    </View>
                 </TouchableOpacity>
               );
             })}
-          </BarContainer>
-
-          {/* Dates under bars */}
-          <DateRow>
-            {extendedActivity.map((item, index) => (
-              <DateLabel key={index}>
-                {format(new Date(item.timestamp * 1000), 'dd.MM', { locale: uk })}
-              </DateLabel>
-            ))}
-          </DateRow>
+                     </BarContainer>
         </BarChartWrapper>
       </Card>
-    </>
+    </View>
   );
 };
 

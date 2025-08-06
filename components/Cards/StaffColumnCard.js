@@ -12,7 +12,7 @@ const StaffCard = styled.View`
 const StaffImage = styled.Image`
   width: ${({ imageWidth }) => typeof imageWidth === 'string' ? imageWidth : `${imageWidth}px`};
   height: ${({ imageHeight }) => typeof imageHeight === 'string' ? imageHeight : `${imageHeight}px`};
-  border-radius: ${({ borderRadius }) => typeof borderRadius === 'string' ? borderRadius : `${borderRadius}px`};
+  border-radius: ${({ borderRadius }) => borderRadius || 24}px;
 `;
 
 const StaffName = styled.Text`
@@ -34,7 +34,7 @@ const StaffColumnCard = ({
   cardWidth = '90px',
   imageWidth = '90px',
   imageHeight = '120px',
-  borderRadius = '24px',
+  borderRadius = 24,
   marginRight = '15px',
 }) => {
   const navigation = useNavigation();

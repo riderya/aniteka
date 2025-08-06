@@ -288,17 +288,7 @@ const SpoilerWrapper = ({ children }) => {
         </TagContainer>
 
         {renderDocument(article.document)}
-
-        {/* <ContentBlock>
-          <Text>🎞 Пов'язане аніме:</Text>
-          {article?.content?.image && (
-            <Image
-              source={{ uri: article.content.image }}
-              style={{ height: 180, marginVertical: 10, borderRadius: 8 }}
-            />
-          )}
-          <Text>{article?.content?.title_ua || article?.content?.title_en || ''}</Text>
-        </ContentBlock> */}
+        
       </ScrollView>
 
       <ImageViewing

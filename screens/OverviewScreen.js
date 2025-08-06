@@ -24,7 +24,7 @@ const OverviewScreen = () => {
       <StyledScrollView
         paddingTopValue={insets.top + 70}
         contentContainerStyle={{
-          paddingBottom: insets.bottom + 75,
+          paddingBottom: insets.bottom + 205,
         }}
       >
         <TrendingSlider />

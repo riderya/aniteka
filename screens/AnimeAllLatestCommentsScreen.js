@@ -13,6 +13,9 @@ import { useNavigation } from '@react-navigation/native';
 const AnimeAllLatestComments = () => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -37,17 +40,39 @@ const AnimeAllLatestComments = () => {
   useEffect(() => {
     const fetchComments = async () => {
       try {
-        const response = await axios.get('https://api.hikka.io/comments/list?page=1&size=20');
-        setComments(response.data.list || []);
+        const response = await axios.get(`https://api.hikka.io/comments/list?page=${page}&size=20`);
+        const newComments = response.data.list || [];
+        
+        // Фільтруємо коментарі, щоб показувати тільки аніме (не новел і манги)
+        const filteredComments = newComments.filter(
+          comment => comment.content_type === 'anime'
+        );
+        
+        if (page === 1) {
+          setComments(filteredComments);
+        } else {
+          setComments(prev => [...prev, ...filteredComments]);
+        }
+        
+        // Перевіряємо чи є ще дані для завантаження
+        setHasMore(newComments.length === 20);
       } catch (error) {
         console.error('Помилка при завантаженні коментарів:', error);
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     };
 
     fetchComments();
-  }, []);
+  }, [page]);
+
+  const loadMoreComments = () => {
+    if (!loadingMore && hasMore) {
+      setLoadingMore(true);
+      setPage(prev => prev + 1);
+    }
+  };
 
   const parseCommentText = (text) => {
     const regex = /:::spoiler\s*\n([\s\S]*?)\n:::/g;
@@ -101,8 +126,27 @@ const AnimeAllLatestComments = () => {
   }
 
     const handleNavigate = (item) => {
-    if (item.content_type === 'anime' && item.preview?.slug) {
-      navigation.navigate('AnimeDetails', { slug: item.preview.slug });
+    const preview = item.preview || {};
+    
+    switch (item.content_type) {
+      case 'anime':
+        if (preview.slug) {
+          navigation.navigate('AnimeDetails', { slug: preview.slug });
+        }
+        break;
+      case 'article':
+        if (preview.slug) {
+          navigation.navigate('ArticleDetailScreen', { slug: preview.slug });
+        }
+        break;
+      case 'collection':
+        if (preview.slug) {
+          navigation.navigate('CollectionDetailScreen', { slug: preview.slug });
+        }
+        break;
+      default:
+        // Для інших типів контенту не робимо перехід
+        break;
     }
   };
 
@@ -121,6 +165,15 @@ const AnimeAllLatestComments = () => {
           paddingTop: 100,
           paddingBottom: 20 + insets.bottom,
         }}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const paddingToBottom = 20;
+          if (layoutMeasurement.height + contentOffset.y >= 
+              contentSize.height - paddingToBottom) {
+            loadMoreComments();
+          }
+        }}
+        scrollEventThrottle={400}
       >
         {comments.map((item, index) => {
           const avatar = item.author?.avatar || 'https://ui-avatars.com/api/?name=?';
@@ -129,7 +182,7 @@ const AnimeAllLatestComments = () => {
           const preview = item.preview || {};
 
           return (
-            <CommentCard key={index}>
+            <CommentCard key={`${item.id || index}-${page}`}>
               <Row>
                 <CommentIndex>#{index + 1}</CommentIndex>
                 <Avatar source={{ uri: avatar }} />
@@ -163,6 +216,19 @@ const AnimeAllLatestComments = () => {
             </CommentCard>
           );
         })}
+        
+        {loadingMore && (
+          <LoadingMoreContainer>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <LoadingText>Завантаження...</LoadingText>
+          </LoadingMoreContainer>
+        )}
+        
+        {!hasMore && comments.length > 0 && (
+          <EndOfListContainer>
+            <EndOfListText>Це всі коментарі</EndOfListText>
+          </EndOfListContainer>
+        )}
       </Container>
     </ScreenContainer>
   );
@@ -285,4 +351,28 @@ const TypeTag = styled.Text`
   font-weight: 500;
   padding: 5px 16px;
   border-radius: 999px;
+`;
+
+const LoadingMoreContainer = styled.View`
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  gap: 10px;
+`;
+
+const LoadingText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+`;
+
+const EndOfListContainer = styled.View`
+  padding: 20px;
+  align-items: center;
+`;
+
+const EndOfListText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+  font-style: italic;
 `;

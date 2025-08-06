@@ -14,7 +14,7 @@ const Card = styled.View`
 const CharacterImage = styled(Image)`
   width: ${({ width }) => width || '90px'};
   height: ${({ height }) => height || '120px'};
-  border-radius: ${({ borderRadius }) => borderRadius || '24px'};
+  border-radius: ${({ borderRadius }) => borderRadius || 24}px;
 `;
 
 const CharacterName = styled.Text`
@@ -28,7 +28,7 @@ const CharacterColumnCard = React.memo(({
   character,
   width = '90px',
   height = '120px',
-  borderRadius = '24px',
+  borderRadius = 24,
   fontSize = '14px',
   cardWidth = '90px',
   cardMarginRight = '15px',

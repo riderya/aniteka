@@ -1,4 +1,8 @@
 import { createStackNavigator } from '@react-navigation/stack';
+import { ActivityIndicator, View } from 'react-native';
+import styled from 'styled-components/native';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import TabNavigator from './TabNavigator';
 import SearchScreen from '../screens/SearchScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -15,7 +19,7 @@ import CompanyDetailScreen from '../screens/CompanyDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnimeFilterScreen from '../screens/AnimeFilterScreen';
 import AnimeScheduleScreen from '../screens/AnimeScheduleScreen';
-import AnimeAllLatestComments from '../screens/AnimeAllLatestComments';
+import AnimeAllLatestCommentsScreen from '../screens/AnimeAllLatestCommentsScreen';
 import AnimeCollectionsScreen from '../screens/AnimeCollectionsScreen';
 import AnimeAllArticlesScreen from '../screens/AnimeAllArticlesScreen';
 import ArticleDetailScreen from '../screens/ArticleDetailScreen';
@@ -24,9 +28,28 @@ import UserProfileScreen from '../screens/UserProfileScreen';
 
 const RootStack = createStackNavigator();
 
+const LoadingContainer = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
 export default function RootNavigator() {
+  const { isLoading } = useAuth();
+  const { theme } = useTheme();
+
+  if (isLoading) {
+    return (
+      <LoadingContainer theme={theme}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </LoadingContainer>
+    );
+  }
+
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      {/* Завжди показуємо Tabs як початковий екран */}
       <RootStack.Screen name="Tabs" component={TabNavigator} />
       <RootStack.Screen name="Search" component={SearchScreen} />
       <RootStack.Screen name="Settings" component={SettingsScreen} />
@@ -43,7 +66,7 @@ export default function RootNavigator() {
       <RootStack.Screen name="ProfileScreen" component={ProfileScreen} />
       <RootStack.Screen name="AnimeFilterScreen" component={AnimeFilterScreen} />
       <RootStack.Screen name="AnimeScheduleScreen" component={AnimeScheduleScreen} />
-      <RootStack.Screen name="AnimeAllLatestComments" component={AnimeAllLatestComments} />
+      <RootStack.Screen name="AnimeAllLatestCommentsScreen" component={AnimeAllLatestCommentsScreen} />
       <RootStack.Screen name="AnimeCollectionsScreen" component={AnimeCollectionsScreen} />
       <RootStack.Screen name="AnimeAllArticlesScreen" component={AnimeAllArticlesScreen} />
       <RootStack.Screen name="ArticleDetailScreen" component={ArticleDetailScreen} />

@@ -132,7 +132,7 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
     return null;
   }
 
-  const progressPercent = episodes_total ? (episodes / episodes_total) * 100 : 0;
+  const progressPercent = episodes_total && episodes_total > 0 ? Math.max(0, Math.min(100, (episodes / episodes_total) * 100)) : 0;
 
   return (
     <Container>

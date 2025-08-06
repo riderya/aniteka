@@ -57,7 +57,8 @@
     "react-native-walkthrough-tooltip": "^1.6.0",
     "react-native-webview": "^13.13.5",
     "react-native-youtube-iframe": "^2.4.1",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.1.19",
+    "expo-dev-client": "~5.2.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

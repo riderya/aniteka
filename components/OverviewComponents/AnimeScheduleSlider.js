@@ -81,7 +81,10 @@ const AnimeScheduleSlider = () => {
           isToday(item.airing_at)
         );
 
-        setAnimeList(todayList);
+        // Обмежуємо кількість карток до максимум 8
+        const limitedList = todayList.slice(0, 8);
+
+        setAnimeList(limitedList);
       } finally {
         setLoading(false);
       }

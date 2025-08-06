@@ -178,6 +178,7 @@ const UserCollectionsBlock = ({ username, reference }) => {
       return (
         <LoadingContainer>
           <ActivityIndicator size="small" color={theme.colors.primary} />
+          <EmptyText style={{ marginTop: 8 }}>Завантаження...</EmptyText>
         </LoadingContainer>
       );
     }

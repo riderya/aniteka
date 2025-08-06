@@ -12,7 +12,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
-import * as SecureStore from 'expo-secure-store';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/uk';
@@ -30,7 +29,6 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 12,
-    marginBottom: 16,
   },
   headerContainer: {
     flexDirection: 'row',
@@ -130,16 +128,12 @@ const AnimeHistoryBlock = ({ username, limit = 21 }) => {
       }
       setError(null);
 
-      const token = await SecureStore.getItemAsync('hikka_token');
-      if (!token || !username) {
-        throw new Error('Необхідна авторизація');
+      if (!username) {
+        throw new Error('Не вказано користувача');
       }
 
       const response = await fetch(
-        `https://api.hikka.io/history/user/${username}?page=${page}&size=${limit}`,
-        {
-          headers: { auth: token },
-        }
+        `https://api.hikka.io/history/user/${username}?page=${page}&size=${limit}`
       );
 
       if (!response.ok) {
@@ -333,10 +327,10 @@ const AnimeHistoryBlock = ({ username, limit = 21 }) => {
     return (
       <View style={styles.container}>
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>
-            Історія
-            <Text style={styles.historyCountBadge}>({totalCount})</Text>
-          </Text>
+                  <Text style={styles.headerTitle}>
+          {username ? `Історія ${username}` : 'Історія'}
+          <Text style={styles.historyCountBadge}>({totalCount})</Text>
+        </Text>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.actionButton} onPress={toggleViewMode}>
               <Ionicons 
@@ -352,7 +346,9 @@ const AnimeHistoryBlock = ({ username, limit = 21 }) => {
         </View>
 
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>У користувача немає історії</Text>
+          <Text style={styles.emptyText}>
+            {username ? `У користувача ${username} немає історії` : 'Виберіть користувача для перегляду історії'}
+          </Text>
         </View>
       </View>
     );
@@ -362,7 +358,7 @@ const AnimeHistoryBlock = ({ username, limit = 21 }) => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>
-          Історія
+          {username ? `Історія ${username}` : 'Історія'}
           <Text style={styles.historyCountBadge}>({totalCount})</Text>
         </Text>
         <View style={styles.headerActions}>

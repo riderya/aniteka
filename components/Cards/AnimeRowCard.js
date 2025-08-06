@@ -354,7 +354,7 @@ const createStyles = (theme, props) => StyleSheet.create({
   animeImage: {
     width: props.imageWidth,
     height: props.imageHeight,
-    borderRadius: props.imageBorderRadius,
+    borderRadius: props.imageBorderRadius || 24,
   },
   info: {
     flex: 1,
@@ -442,22 +442,6 @@ const createStyles = (theme, props) => StyleSheet.create({
     borderRadius: 4,
   },
 });
-
-AnimeRowCard.propTypes = {
-  anime: PropTypes.object.isRequired,
-  imageWidth: PropTypes.number,
-  imageHeight: PropTypes.number,
-  titleFontSize: PropTypes.number,
-  episodesFontSize: PropTypes.number,
-  scoreFontSize: PropTypes.number,
-  descriptionFontSize: PropTypes.number,
-  statusFontSize: PropTypes.number,
-  marginBottom: PropTypes.number,
-  isLoading: PropTypes.bool,
-  historyData: PropTypes.object, // Новий проп для історії
-  imageBorderRadius: PropTypes.number, // Новий проп для border radius картинки
-  titleNumberOfLines: PropTypes.number, // Новий проп для кількості рядків заголовка
-};
 
 AnimeRowCard.displayName = 'AnimeRowCard';
 

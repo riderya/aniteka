@@ -405,7 +405,7 @@ const checkVoteStatus = async () => {
             character={content}
             width={`${cardWidth}px`}
             height={`${cardWidth * 1.3}px`}
-            borderRadius="24px"
+            borderRadius={24}
             fontSize="14px"
             cardWidth={`${cardWidth}px`}
           />
@@ -417,7 +417,7 @@ const checkVoteStatus = async () => {
             cardWidth={`${cardWidth}px`}
             imageWidth={`${cardWidth}px`}
             imageHeight={`${cardWidth * 1.3}px`}
-            borderRadius="24px"
+            borderRadius={24}
           />
         )}
       </CardWrapper>

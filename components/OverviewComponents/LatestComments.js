@@ -6,6 +6,7 @@ import RowLineHeader from '../DetailsAnime/RowLineHeader';
 import Entypo from '@expo/vector-icons/Entypo';
 import { useNavigation } from '@react-navigation/native';
 import SpoilerText from '../../components/CommentForm/SpoilerText';
+import * as WebBrowser from 'expo-web-browser';
 
 const LatestComments = () => {
   const [comments, setComments] = useState([]);
@@ -16,8 +17,9 @@ const LatestComments = () => {
     edit: 'Правка',
     article: 'Стаття',
     anime: 'Аніме',
-    manga: 'Манґа',
     novel: 'Ранобе',
+    character: 'Персонаж',
+    person: 'Особа',
   };
 
   const timeAgo = (created) => {
@@ -31,8 +33,12 @@ const LatestComments = () => {
   useEffect(() => {
     const fetchComments = async () => {
       try {
-        const response = await axios.get('https://api.hikka.io/comments/latest');
-        setComments(response.data);
+        const response = await axios.get('https://api.hikka.io/comments/list');
+        // Фільтруємо коментарі, виключаючи manga та novel, і обмежуємо до 5
+        const filteredComments = response.data.list.filter(comment => 
+          comment.content_type !== 'manga' && comment.content_type !== 'novel'
+        ).slice(0, 5);
+        setComments(filteredComments);
       } catch (error) {
         console.error('Помилка при завантаженні коментарів:', error);
       }
@@ -42,8 +48,36 @@ const LatestComments = () => {
   }, []);
 
   const handleNavigate = (item) => {
-    if (item.content_type === 'anime' && item.preview?.slug) {
-      navigation.navigate('AnimeDetails', { slug: item.preview.slug });
+    const { content_type, preview } = item;
+    
+    if (!preview?.slug) return;
+
+    switch (content_type) {
+      case 'anime':
+        navigation.navigate('AnimeDetails', { slug: preview.slug });
+        break;
+      case 'novel':
+        // Для ранобе відкриваємо в браузері
+        WebBrowser.openBrowserAsync(`https://hikka.io/novel/${preview.slug}`);
+        break;
+      case 'article':
+        navigation.navigate('ArticleDetailScreen', { slug: preview.slug });
+        break;
+      case 'collection':
+        navigation.navigate('CollectionDetailScreen', { reference: preview.slug });
+        break;
+      case 'character':
+        navigation.navigate('AnimeCharacterDetailsScreen', { slug: preview.slug });
+        break;
+      case 'person':
+        navigation.navigate('AnimePeopleDetailsScreen', { slug: preview.slug });
+        break;
+      case 'edit':
+        // Для правок поки що не робимо перехід, оскільки немає відповідного екрану
+        console.log('Перехід на правку не реалізований');
+        break;
+      default:
+        console.log(`Невідомий тип контенту: ${content_type}`);
     }
   };
 
@@ -89,7 +123,7 @@ const LatestComments = () => {
 
   return (
     <Container>
-      <RowLineHeader title="Коментарі" onPress={() => navigation.navigate('AnimeAllLatestComments')} />
+      <RowLineHeader title="Коментарі" onPress={() => navigation.navigate('AnimeAllLatestCommentsScreen')} />
       <Column>
         {comments.map((item, index) => {
           const avatar = item.author?.avatar || 'https://ui-avatars.com/api/?name=?';
@@ -124,9 +158,11 @@ const LatestComments = () => {
 
               <TagsRow>
                 <TypeTag>{commentType[item.content_type]}</TypeTag>
-                <TouchableOpacity onPress={() => handleNavigate(item)}>
-                  <LinkTag numberOfLines={1}>{preview.title || 'Без назви'}</LinkTag>
-                </TouchableOpacity>
+                {preview?.slug && (
+                  <TouchableOpacity onPress={() => handleNavigate(item)}>
+                    <LinkTag numberOfLines={1}>{preview.title || 'Без назви'}</LinkTag>
+                  </TouchableOpacity>
+                )}
               </TagsRow>
             </CommentCard>
           );
@@ -215,6 +251,7 @@ const LinkTag = styled.Text`
   padding: 5px 0px;
   font-weight: 500;
   max-width: 260px;
+  text-decoration-line: underline;
 `;
 
 const TypeTag = styled.Text`

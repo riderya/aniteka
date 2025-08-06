@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
-import TagComponent from '../Custom/TagComponent';
 import { useNavigation } from '@react-navigation/native';
+import { getArticleImage } from '../../utils/imageFallback';
 
 const TouchableCard = styled(TouchableOpacity)`
   width: ${({ cardWidth }) => (cardWidth ? `${cardWidth}px` : '100%')};
@@ -99,9 +99,19 @@ const CATEGORY_TRANSLATIONS = {
 
 const ArticleCard = ({ item, theme, cardWidth }) => {
   const navigation = useNavigation();
+  const [imageError, setImageError] = React.useState(false);
+
+  // Скидаємо помилку при зміні статті
+  React.useEffect(() => {
+    setImageError(false);
+  }, [item.slug]);
 
   const handlePress = () => {
     navigation.navigate('ArticleDetailScreen', { slug: item.slug });
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
   };
 
   return (
@@ -132,11 +142,17 @@ const ArticleCard = ({ item, theme, cardWidth }) => {
         </AuthorRow>
       </TopRow>
 
-      <Title numberOfLines={2}>{item.title}</Title>
+      <Title numberOfLines={1}>{item.title}</Title>
 
       <StyledImage
-        source={item.content?.image ? { uri: item.content.image } : null}
+        source={
+          !imageError && getArticleImage(item) 
+            ? { uri: getArticleImage(item) } 
+            : require('../../assets/image/image404.png')
+        }
         resizeMode="cover"
+        onError={handleImageError}
+
       />
 
       <RowSpaceBetween>
