@@ -163,7 +163,7 @@ const TopDetail = ({ anime }) => {
           </TouchableOpacity>
 
           <ButtonsRow>
-            <StatusDropdown slug={anime.slug} />
+            <StatusDropdown slug={anime.slug} episodes_total={anime.episodes_total} />
 
             <LikeAnimeButton slug={anime.slug} />
 

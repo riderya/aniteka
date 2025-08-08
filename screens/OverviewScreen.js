@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header/Header';
-import TrendingSlider from '../components/OverviewComponents/TrendingSlider';
 import OverviewButtons from '../components/OverviewComponents/OverviewButtons';
 import ArticlesSlider from '../components/OverviewComponents/ArticlesSlider';
 import CollectionSlider from '../components/OverviewComponents/CollectionSlider';
@@ -15,19 +14,28 @@ const StyledScrollView = styled.ScrollView`
   background: ${({ theme }) => theme.colors.background};
 `;
 
-const OverviewScreen = () => {
+const OverviewScreen = React.memo(() => {
   const insets = useSafeAreaInsets();
+
+  const paddingTopValue = useMemo(() => insets.top + 70, [insets.top]);
+  const paddingBottomValue = useMemo(() => insets.bottom + 205, [insets.bottom]);
+
+  const contentContainerStyle = useMemo(() => ({
+    paddingBottom: paddingBottomValue,
+  }), [paddingBottomValue]);
 
   return (
     <>
       <Header />
       <StyledScrollView
-        paddingTopValue={insets.top + 70}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 205,
-        }}
+        paddingTopValue={paddingTopValue}
+        contentContainerStyle={contentContainerStyle}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        windowSize={10}
+        initialNumToRender={3}
       >
-        <TrendingSlider />
         <OverviewButtons />
         <ArticlesSlider />
         <CollectionSlider />
@@ -36,7 +44,8 @@ const OverviewScreen = () => {
       </StyledScrollView>
     </>
   );
-};
+});
 
+OverviewScreen.displayName = 'OverviewScreen';
 
 export default OverviewScreen;

@@ -14,9 +14,9 @@ const Button = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 15px 12px; /* більше відступу зверху */
-  padding-bottom: ${({ bottomInset }) => 25 + (bottomInset || 0)}px;
-  min-height: 90px; /* мінімальна висота замість фіксованої */
+  padding: 20px 12px;
+  padding-bottom: ${({ bottomInset }) => 30 + (bottomInset || 0)}px;
+  min-height: 90px;
 `;
 
 const ButtonText = styled.Text`

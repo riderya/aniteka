@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { TouchableOpacity, Image, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useWatchStatus } from '../../context/WatchStatusContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
@@ -105,6 +106,7 @@ const AnimeColumnCard = React.memo(({
   const navigation = useNavigation();
   const { theme } = useTheme();
   const [userStatus, setUserStatus] = useState(null);
+  const { getAnimeStatus } = useWatchStatus();
   
   // Memoize status colors to prevent recalculation
   const statusColors = useMemo(() => getStatusColors(theme), [theme]);
@@ -133,6 +135,13 @@ const AnimeColumnCard = React.memo(({
   // Fetch user status from API like AnimeRowCard does
   useEffect(() => {
     const fetchUserStatus = async () => {
+      // Спочатку перевіряємо глобальний стан
+      const globalStatus = getAnimeStatus(anime.slug);
+      if (globalStatus) {
+        setUserStatus(globalStatus);
+        return;
+      }
+
       try {
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
         if (!token) {
@@ -157,7 +166,7 @@ const AnimeColumnCard = React.memo(({
     };
 
     fetchUserStatus();
-  }, [anime.slug]);
+  }, [anime.slug, getAnimeStatus]);
 
   const handlePress = () => {
     if (onPress) {

@@ -16,7 +16,6 @@ import AnimeCharacterDetailsScreen from '../screens/AnimeCharacterDetailsScreen'
 import AnimePeopleDetailsScreen from '../screens/AnimePeopleDetailsScreen';
 import AnimeCommentsDetailsScreen from '../screens/AnimeCommentsDetailsScreen';
 import CompanyDetailScreen from '../screens/CompanyDetailScreen';
-import ProfileScreen from '../screens/ProfileScreen';
 import AnimeFilterScreen from '../screens/AnimeFilterScreen';
 import AnimeScheduleScreen from '../screens/AnimeScheduleScreen';
 import AnimeAllLatestCommentsScreen from '../screens/AnimeAllLatestCommentsScreen';
@@ -63,7 +62,6 @@ export default function RootNavigator() {
       <RootStack.Screen name="AnimePeopleDetailsScreen" component={AnimePeopleDetailsScreen} />
       <RootStack.Screen name="AnimeCommentsDetailsScreen" component={AnimeCommentsDetailsScreen} />
       <RootStack.Screen name="CompanyDetailScreen" component={CompanyDetailScreen} />
-      <RootStack.Screen name="ProfileScreen" component={ProfileScreen} />
       <RootStack.Screen name="AnimeFilterScreen" component={AnimeFilterScreen} />
       <RootStack.Screen name="AnimeScheduleScreen" component={AnimeScheduleScreen} />
       <RootStack.Screen name="AnimeAllLatestCommentsScreen" component={AnimeAllLatestCommentsScreen} />

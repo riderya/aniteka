@@ -87,7 +87,7 @@ export default function HomeScreen() {
               sort: ['score:desc', 'scored_by:desc'],
             }}
             titleLineText="Популярні"
-            descriptionText="Актуальні аніме, які варто переглянути."
+            descriptionText="Найкращі аніме з високим рейтингом та великою кількістю оцінок."
           />
           <AnimeSlider
             key={`slider2-${refreshKey}`}
@@ -97,7 +97,7 @@ export default function HomeScreen() {
               media_type: ['tv'],
             }}
             titleLineText="Онґоінґи"
-            descriptionText="Актуальні аніме, які варто переглянути."
+            descriptionText="Аніме, які зараз виходять та оновлюються щотижня."
           />
           <AnimeSlider
             key={`slider3-${refreshKey}`}
@@ -107,7 +107,7 @@ export default function HomeScreen() {
               media_type: ['tv'],
             }}
             titleLineText="Завершені"
-            descriptionText="Актуальні аніме, які варто переглянути."
+            descriptionText="Повністю завершені аніме, які можна дивитися від початку до кінця."
           />
           <AnimeSlider
             key={`slider4-${refreshKey}`}
@@ -117,7 +117,7 @@ export default function HomeScreen() {
               media_type: ['tv'],
             }}
             titleLineText="Анонси"
-            descriptionText="Актуальні аніме, які варто переглянути."
+            descriptionText="Нові аніме, які скоро вийдуть та варто додати до списку очікування."
           />
         </ColumnBlock>
       </Container>

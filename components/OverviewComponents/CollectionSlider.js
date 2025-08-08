@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { FlatList, View } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
@@ -13,7 +13,7 @@ const Container = styled.View`
   padding: 12px 0px;
 `;
 
-const CollectionSlider = () => {
+const CollectionSlider = React.memo(() => {
   const { theme } = useTheme();
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +44,20 @@ const CollectionSlider = () => {
     fetchCollections();
   }, []);
 
+  const renderItem = useCallback(({ item }) => (
+    <CollectionCard item={item} compact />
+  ), []);
+
+  const keyExtractor = useCallback((item, index) => `collection-${index}`, []);
+
+  const ItemSeparator = useCallback(() => <View style={{ width: 12 }} />, []);
+
+  const getItemLayout = useCallback((data, index) => ({
+    length: 200, // Приблизна ширина картки
+    offset: 200 * index + 12 * index, // 12px відступ між картками
+    index,
+  }), []);
+
   if (loading || !collections || collections.length === 0) return null;
 
   return (
@@ -54,16 +68,23 @@ const CollectionSlider = () => {
       />
       <FlatList
         data={collections}
-        keyExtractor={(item, index) => `collection-${index}`}
+        keyExtractor={keyExtractor}
         horizontal
         showsHorizontalScrollIndicator={false}
         decelerationRate="fast"
         contentContainerStyle={{ paddingHorizontal: 12 }}
-        ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-        renderItem={({ item }) => <CollectionCard item={item} compact />}
+        ItemSeparatorComponent={ItemSeparator}
+        renderItem={renderItem}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        windowSize={10}
+        initialNumToRender={3}
+        getItemLayout={getItemLayout}
       />
     </Container>
   );
-};
+});
+
+CollectionSlider.displayName = 'CollectionSlider';
 
 export default CollectionSlider;

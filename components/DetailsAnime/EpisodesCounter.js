@@ -124,6 +124,11 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
     return null;
   }
 
+  // Не показуємо компонент, якщо в аніме немає епізодів
+  if (!episodes_total || episodes_total <= 0) {
+    return null;
+  }
+
   if (loading && episodes === null) {
     return <Text style={{ color: 'white' }}>Loading episodes...</Text>;
   }

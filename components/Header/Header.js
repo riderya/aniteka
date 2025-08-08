@@ -1,7 +1,7 @@
 import React from 'react';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import styled from 'styled-components/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
 import { TouchableOpacity } from 'react-native';
@@ -10,10 +10,10 @@ import { useNavigation } from '@react-navigation/native';
 const Header = () => {
   const { isDark } = useTheme();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaContainer edges={['top']}>
-      <FixedContainer>
+      <FixedContainer topInset={insets.top + 10}>
         <Touchable onPress={() => navigation.navigate('Search')} activeOpacity={0.7}>
           <BlurButton experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
             <IconText name="search1" />
@@ -33,24 +33,21 @@ const Header = () => {
           </BlurIconButton>
         </TouchableOpacity>
       </FixedContainer>
-    </SafeAreaContainer>
   );
 };
 
 export default Header;
 
-const SafeAreaContainer = styled(SafeAreaView)`
+const FixedContainer = styled.View`
+  margin: 0px 12px;
+  padding-top: ${({ topInset }) => topInset}px;
+  flex-direction: row;
+  gap: 10px;
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   z-index: 999;
-`;
-
-const FixedContainer = styled.View`
-  margin: 0px 12px;
-  flex-direction: row;
-  gap: 10px;
 `;
 
 const Touchable = styled(TouchableOpacity)`

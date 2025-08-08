@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useWatchStatus } from '../../context/WatchStatusContext';
 import PropTypes from 'prop-types';
 import { Animated, Image, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
@@ -141,6 +142,7 @@ const AnimeRowCard = React.memo(({
   const [userStatus, setUserStatus] = useState(null);
   const [animeDescription, setAnimeDescription] = useState('');
   const { theme, isDark } = useTheme();
+  const { getAnimeStatus } = useWatchStatus();
   
   // Анимация для скелетона
   const animatedValue = useMemo(() => new Animated.Value(0), []);
@@ -234,6 +236,13 @@ const AnimeRowCard = React.memo(({
   // Fetch user status
   useEffect(() => {
     const fetchUserStatus = async () => {
+      // Спочатку перевіряємо глобальний стан
+      const globalStatus = getAnimeStatus(anime.slug);
+      if (globalStatus) {
+        setUserStatus(globalStatus);
+        return;
+      }
+
       try {
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
         if (!token) {
@@ -259,7 +268,7 @@ const AnimeRowCard = React.memo(({
     if (anime.slug) {
       fetchUserStatus();
     }
-  }, [anime.slug]);
+  }, [anime.slug, getAnimeStatus]);
 
   const handlePress = useCallback(() => {
     navigation.navigate('AnimeDetails', { slug: anime.slug });

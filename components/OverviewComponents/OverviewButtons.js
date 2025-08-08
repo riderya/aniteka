@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import styled, { useTheme } from 'styled-components/native';
 import { AntDesign, MaterialIcons, Entypo, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -14,30 +14,29 @@ const buttonsData = [
   { key: 'articles', label: 'Статті', iconName: 'article', iconLib: MaterialIcons },
 ];
 
-const OverviewButtons = () => {
+const OverviewButtons = React.memo(() => {
   const theme = useTheme();
   const navigation = useNavigation();
 
-const handlePress = async (key) => {
-  if (key === 'filter') {
-    navigation.navigate('AnimeFilterScreen');
-  } if (key === 'schedule') {
-    navigation.navigate('AnimeScheduleScreen');
-  } if (key === 'collections') {
-    navigation.navigate('AnimeCollectionsScreen');
-  } if (key === 'articles') {
-    navigation.navigate('AnimeAllArticlesScreen');
-  } else if (key === 'random') {
-      const maxPages = 1000;
-      const randomPage = Math.floor(Math.random() * maxPages) + 1;
-      const response = await axios.post(`https://api.hikka.io/anime?page=${randomPage}&size=1`, {
-      });
-      const animeList = response.data.list;
-      const randomAnime = animeList[0];
-      navigation.navigate('AnimeDetails', { slug: randomAnime.slug });
-  }
-};
-
+  const handlePress = useCallback(async (key) => {
+    if (key === 'filter') {
+      navigation.navigate('AnimeFilterScreen');
+    } if (key === 'schedule') {
+      navigation.navigate('AnimeScheduleScreen');
+    } if (key === 'collections') {
+      navigation.navigate('AnimeCollectionsScreen');
+    } if (key === 'articles') {
+      navigation.navigate('AnimeAllArticlesScreen');
+    } else if (key === 'random') {
+        const maxPages = 1000;
+        const randomPage = Math.floor(Math.random() * maxPages) + 1;
+        const response = await axios.post(`https://api.hikka.io/anime?page=${randomPage}&size=1`, {
+        });
+        const animeList = response.data.list;
+        const randomAnime = animeList[0];
+        navigation.navigate('AnimeDetails', { slug: randomAnime.slug });
+    }
+  }, [navigation]);
 
   return (
     <Container>
@@ -51,7 +50,9 @@ const handlePress = async (key) => {
       ))}
     </Container>
   );
-};
+});
+
+OverviewButtons.displayName = 'OverviewButtons';
 
 export default OverviewButtons;
 

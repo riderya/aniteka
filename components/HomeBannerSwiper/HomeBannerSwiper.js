@@ -244,7 +244,7 @@ const TitleEn = styled.Text`
 font-size: 14px;
 font-weight: 500;
 margin-bottom: 12px;
-color: #ccc;
+color: ${({ theme }) => theme.colors.gray};
 `;
 
 const EpisodeBlock = styled.View`
@@ -257,7 +257,7 @@ const EpisodeText = styled.Text`
   padding: 4px 12px;
   background-color: ${({ theme }) => theme.colors.primary};
   align-self: flex-start; 
-  border-radius: 4px; 
+  border-radius: 999px; 
   color: ${({ theme }) => theme.colors.background};
   margin-bottom: 8px;
 `;
@@ -304,7 +304,7 @@ const InfoBlock = styled.View`
 
 const InfoText = styled.Text`
   font-size: 14px;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-weight: 600;
 `;
 
@@ -316,14 +316,14 @@ const GenresRow = styled.View`
 
 const GenreText = styled.Text`
   font-size: 14px;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-weight: 600;
 `;
 
 
 const Description = styled.Text`
   font-size: 14px;
-  color: #ccc;
+  color: ${({ theme }) => theme.colors.gray};
   line-height:   19.6px;
   margin-bottom: 16px;
 `;

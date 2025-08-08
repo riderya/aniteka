@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, TouchableOpacity } from 'react-native';
+import { Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
@@ -25,7 +25,7 @@ const statusApiMapping = {
   Закинуто: 'dropped',
 };
 
-const StatusDropdown = ({ slug }) => {
+const StatusDropdown = ({ slug, episodes_total }) => {
   const { theme } = useTheme();
   const {
     status: selectedStatus,
@@ -33,10 +33,13 @@ const StatusDropdown = ({ slug }) => {
     score,
     episodes,
     setEpisodes,
+    updateAnimeStatus,
   } = useWatchStatus();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [authToken, setAuthToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const statusColors = {
     Дивлюсь: theme.colors.watching,
@@ -44,7 +47,16 @@ const StatusDropdown = ({ slug }) => {
     Переглянуто: theme.colors.completed,
     Відкладено: theme.colors.on_hold,
     Закинуто: theme.colors.dropped,
-    'Не дивлюсь': '#888',
+    'Не дивлюсь': theme.colors.gray,
+  };
+
+  const statusBorderColors = {
+    Дивлюсь: theme.colors.watching,
+    'В планах': theme.colors.planned,
+    Переглянуто: theme.colors.completed,
+    Відкладено: theme.colors.on_hold,
+    Закинуто: theme.colors.dropped,
+    'Не дивлюсь': theme.colors.borderInput,
   };
 
   useEffect(() => {
@@ -56,9 +68,13 @@ const StatusDropdown = ({ slug }) => {
   }, [slug]);
 
   useEffect(() => {
-    if (!authToken || !slug) return;
+    if (!authToken || !slug) {
+      setIsLoading(false);
+      return;
+    }
 
     const fetchStatus = async () => {
+      setIsLoading(true);
       try {
         const res = await fetch(`https://api.hikka.io/watch/${slug}`, {
           headers: { auth: authToken },
@@ -66,6 +82,7 @@ const StatusDropdown = ({ slug }) => {
 
         if (res.status === 404) {
           setSelectedStatus('Не дивлюсь');
+          updateAnimeStatus(slug, null);
           return;
         }
 
@@ -76,8 +93,13 @@ const StatusDropdown = ({ slug }) => {
           ) || 'Не дивлюсь';
 
         setSelectedStatus(uiStatus);
+        // Зберігаємо статус у глобальному стані
+        updateAnimeStatus(slug, data.status);
       } catch {
         setSelectedStatus('Не дивлюсь');
+        updateAnimeStatus(slug, null);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -87,7 +109,7 @@ const StatusDropdown = ({ slug }) => {
   const showLoginToast = () => {
     Toast.show({
       type: 'info',
-      position: 'top',
+      position: 'bottom',
       text1: 'Авторизуйтеся, будь ласка',
       text2: 'Щоб змінювати статус перегляду, будь ласка, увійдіть у свій акаунт.',
       visibilityTime: 4000,
@@ -101,6 +123,20 @@ const StatusDropdown = ({ slug }) => {
       return;
     }
 
+    // Якщо встановлюється статус "Переглянуто" і є інформація про кількість епізодів
+    let episodesToSet = episodes;
+    if (newStatus === 'Переглянуто') {
+      if (episodes_total && episodes_total > 0) {
+        // Якщо є епізоди, встановлюємо максимальну кількість
+        episodesToSet = episodes_total;
+        setEpisodes(episodes_total);
+      } else {
+        // Якщо епізодів немає, встановлюємо 0
+        episodesToSet = 0;
+        setEpisodes(0);
+      }
+    }
+
     const bodyData =
       newStatus !== 'Не дивлюсь'
         ? {
@@ -108,7 +144,7 @@ const StatusDropdown = ({ slug }) => {
             score,
             rewatches: 0,
             note: null,
-            ...(episodes !== null ? { episodes } : {}),
+            ...(episodesToSet !== null && episodesToSet !== undefined ? { episodes: episodesToSet } : {}),
           }
         : null;
 
@@ -129,11 +165,13 @@ const StatusDropdown = ({ slug }) => {
       }
 
       setSelectedStatus(newStatus);
+      // Оновлюємо глобальний стан для цього аніме
+      updateAnimeStatus(slug, newStatus === 'Не дивлюсь' ? null : statusApiMapping[newStatus]);
       setModalVisible(false);
 
       Toast.show({
         type: 'success',
-        position: 'top',
+        position: 'bottom',
         text1: 'Статус оновлено',
         text2: `Встановлено статус: "${newStatus}"`,
         visibilityTime: 3000,
@@ -141,7 +179,7 @@ const StatusDropdown = ({ slug }) => {
     } catch (e) {
       Toast.show({
         type: 'error',
-        position: 'top',
+        position: 'bottom',
         text1: 'Помилка',
         text2: e.message || 'Не вдалося оновити статус.',
         visibilityTime: 4000,
@@ -159,13 +197,19 @@ const StatusDropdown = ({ slug }) => {
 
   return (
     <Wrapper>
-      <Button onPress={onOpenModal} borderColor={statusColors[selectedStatus]}>
-        <Ionicons
-          name="chevron-down-outline"
-          size={16}
-          color={statusColors[selectedStatus]}
-        />
-        <ButtonText color={statusColors[selectedStatus]}>{selectedStatus}</ButtonText>
+      <Button onPress={onOpenModal} borderColor={isLoading ? theme.colors.gray : statusBorderColors[selectedStatus]}>
+        {isLoading ? (
+          <ActivityIndicator size="small" color={theme.colors.gray} />
+        ) : (
+          <>
+            <Ionicons
+              name="chevron-down-outline"
+              size={16}
+              color={statusColors[selectedStatus]}
+            />
+            <ButtonText color={statusColors[selectedStatus]}>{selectedStatus}</ButtonText>
+          </>
+        )}
       </Button>
 
       <Modal
@@ -178,12 +222,12 @@ const StatusDropdown = ({ slug }) => {
           <TouchableOpacity style={{ flex: 1, width: '100%' }} onPress={() => setModalVisible(false)} />
           <Content background={theme.colors.card}>
             {statuses.map((st) => (
-              <Item key={st} onPress={() => updateStatus(st)}>
-                <Indicator borderColor={statusColors[st]}>
-                  {selectedStatus === st && <Filled color={statusColors[st]} />}
-                </Indicator>
-                <ItemText color={statusColors[st]}>{st}</ItemText>
-              </Item>
+                             <Item key={st} onPress={() => updateStatus(st)}>
+                 <Indicator borderColor={statusBorderColors[st]}>
+                   {selectedStatus === st && <Filled color={statusColors[st]} />}
+                 </Indicator>
+                 <ItemText color={statusColors[st]}>{st}</ItemText>
+               </Item>
             ))}
             <Close onPress={() => setModalVisible(false)} bg={theme.colors.inputBackground}>
               <CloseText color={theme.colors.gray}>Закрити</CloseText>

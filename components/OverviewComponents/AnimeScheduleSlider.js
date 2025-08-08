@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import styled from 'styled-components/native';
 import { FlatList, Text, TouchableOpacity  } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -49,13 +49,12 @@ const Episode = styled.Text`
   margin-top: 6px;
 `;
 
-const AnimeScheduleSlider = () => {
+const AnimeScheduleSlider = React.memo(() => {
   const navigation = useNavigation();
   const [animeList, setAnimeList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-
-  const isToday = (timestamp) => {
+  const isToday = useCallback((timestamp) => {
     const airingDate = new Date(timestamp * 1000);
     const now = new Date();
     return (
@@ -63,7 +62,7 @@ const AnimeScheduleSlider = () => {
       airingDate.getUTCMonth() === now.getUTCMonth() &&
       airingDate.getUTCDate() === now.getUTCDate()
     );
-  };
+  }, []);
 
   useEffect(() => {
     const fetchSchedule = async () => {
@@ -91,36 +90,47 @@ const AnimeScheduleSlider = () => {
     };
 
     fetchSchedule();
+  }, [isToday]);
+
+  const formatTimeLeft = useCallback((time_left) => {
+    const totalHours = Math.floor(time_left / 3600);
+    const remainingMinutes = Math.floor((time_left % 3600) / 60);
+    return `${totalHours} год. ${remainingMinutes} хв.`;
   }, []);
 
-const renderItem = ({ item }) => {
-  const { anime, time_left, episode } = item;
+  const handlePress = useCallback((slug) => {
+    navigation.navigate('AnimeDetails', { slug });
+  }, [navigation]);
 
-  const totalHours = Math.floor(time_left / 3600);
-  const remainingMinutes = Math.floor((time_left % 3600) / 60);
-  const timeText = `${totalHours} год. ${remainingMinutes} хв.`;
+  const renderItem = useCallback(({ item }) => {
+    const { anime, time_left, episode } = item;
+    const timeText = formatTimeLeft(time_left);
 
-  const handlePress = () => {
-    navigation.navigate('AnimeDetails', { slug: anime.slug });
-  };
+    return (
+      <TouchableOpacity onPress={() => handlePress(anime.slug)}>
+        <Card>
+          <AnimeImage source={{ uri: anime.image }} resizeMode="cover" />
+          <InfoWrapper>
+            <AnimeTitle numberOfLines={1}>
+              {anime.title_ua || anime.title_en || anime.title_ja || 'Без назви'}
+            </AnimeTitle>
+            <TimeLeft>{timeText}</TimeLeft>
+            <Episode>
+              <Episode style={{ fontWeight: '700' }}>{episode}</Episode> епізод
+            </Episode>
+          </InfoWrapper>
+        </Card>
+      </TouchableOpacity>
+    );
+  }, [formatTimeLeft, handlePress]);
 
-  return (
-    <TouchableOpacity onPress={handlePress}>
-      <Card>
-        <AnimeImage source={{ uri: anime.image }} resizeMode="cover" />
-        <InfoWrapper>
-          <AnimeTitle numberOfLines={1}>
-            {anime.title_ua || anime.title_en || anime.title_ja || 'Без назви'}
-          </AnimeTitle>
-          <TimeLeft>{timeText}</TimeLeft>
-          <Episode>
-            <Episode style={{ fontWeight: '700' }}>{episode}</Episode> епізод
-          </Episode>
-        </InfoWrapper>
-      </Card>
-    </TouchableOpacity>
-  );
-};
+  const keyExtractor = useCallback((item, index) => index.toString(), []);
+
+  const getItemLayout = useCallback((data, index) => ({
+    length: 312, // 300px ширина картки + 12px відступ
+    offset: 312 * index,
+    index,
+  }), []);
 
   return (
     <Container>
@@ -137,15 +147,22 @@ const renderItem = ({ item }) => {
       ) : (
         <FlatList
           data={animeList}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={keyExtractor}
           renderItem={renderItem}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingLeft: 12 }}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={4}
+          windowSize={8}
+          initialNumToRender={3}
+          getItemLayout={getItemLayout}
         />
       )}
     </Container>
   );
-};
+});
+
+AnimeScheduleSlider.displayName = 'AnimeScheduleSlider';
 
 export default AnimeScheduleSlider;
