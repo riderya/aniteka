@@ -9,6 +9,7 @@ import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import Toast from 'react-native-toast-message';
 
 
 dayjs.extend(isToday);
@@ -187,6 +188,7 @@ const CommentCard = ({
   setSpoilerOpen,
   parseTextWithSpoilers,
   onDelete,
+  navigation,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [voteScore, setVoteScore] = useState(item.vote_score);
@@ -234,6 +236,13 @@ const CommentCard = ({
         );
         setVoteScore((prev) => prev - userVote);
         setUserVote(0);
+        
+        // Показуємо тост про скасування голосу
+        Toast.show({
+          type: 'info',
+          text1: 'Голос скасовано',
+          text2: 'Ваш голос було видалено',
+        });
       } else {
         await axios.put(
           `https://api.hikka.io/vote/comment/${commentSlug}`,
@@ -242,9 +251,28 @@ const CommentCard = ({
         );
         setVoteScore((prev) => prev - userVote + score);
         setUserVote(score);
+        
+        // Показуємо тост відповідно до типу голосу
+        if (score === 1) {
+          Toast.show({
+            type: 'success',
+            text1: 'Лайк поставлено!',
+            text2: 'Ви поставили позитивну оцінку',
+          });
+        } else if (score === -1) {
+          Toast.show({
+            type: 'success',
+            text1: 'Дизлайк поставлено',
+            text2: 'Ви поставили негативну оцінку',
+          });
+        }
       }
     } catch (e) {
-      Alert.alert('Помилка', 'Не вдалося проголосувати. Спробуйте пізніше.');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка голосування',
+        text2: 'Не вдалося проголосувати. Спробуйте пізніше.',
+      });
     }
   };
 
@@ -256,11 +284,19 @@ const CommentCard = ({
         headers: { auth: token },
       });
 
-      Alert.alert('Готово', 'Коментар видалено.');
+      Toast.show({
+        type: 'success',
+        text1: 'Коментар видалено',
+        text2: 'Ваш коментар успішно видалено',
+      });
       closeModal();
       if (onDelete) onDelete(commentSlug);
     } catch (e) {
-      Alert.alert('Помилка', 'Не вдалося видалити коментар.');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка видалення',
+        text2: 'Не вдалося видалити коментар',
+      });
     }
   };
 
@@ -274,7 +310,11 @@ const CommentCard = ({
 
   const handleCopy = () => {
     Clipboard.setString(item.text || '');
-    Alert.alert('Скопійовано', 'Текст коментаря скопійовано в буфер обміну.');
+    Toast.show({
+      type: 'success',
+      text1: 'Скопійовано',
+      text2: 'Текст коментаря скопійовано в буфер обміну',
+    });
     closeModal();
   };
 
@@ -285,12 +325,18 @@ const CommentCard = ({
     ? `вчора о ${createdDate.format('HH:mm')}`
     : createdDate.format('D MMM о HH:mm');
 
+  const handleUserPress = () => {
+    if (navigation && item.author?.username) {
+      navigation.navigate('UserProfileScreen', { username: item.author.username });
+    }
+  };
+
   const fullText = item.text || '';
   const parsed = parseTextWithSpoilers(fullText);
 
-  // Обробник для визначення чи текст довший за 5 рядків
+  // Обробник для визначення чи текст довший за 4 рядки
   const onTextLayout = (e) => {
-    if (e.nativeEvent.lines.length > 5) {
+    if (e.nativeEvent.lines.length > 4) {
       setTextTooLong(true);
     } else {
       setTextTooLong(false);
@@ -298,12 +344,35 @@ const CommentCard = ({
   };
 
   const renderMarkdownWithSpoilers = () => {
-    const textBlocks = parsed.map((block, idx) => {
-      const key = `${index}-${idx}`;
-      if (block.type === 'text') {
-        return (
+    // Простіша реалізація - показуємо весь текст як один блок
+    if (!isExpanded) {
+      return (
+        <>
+          <Text
+            onTextLayout={onTextLayout}
+            numberOfLines={4}
+            ellipsizeMode="tail"
+            style={{
+              color: theme.colors.text,
+              fontSize: 14,
+              lineHeight: 18,
+              marginVertical: 4,
+            }}
+          >
+            {fullText}
+          </Text>
+
+          {textTooLong && (
+            <TouchableOpacity onPress={() => setIsExpanded(true)}>
+              <ShowText style={{ marginTop: 4 }}>Показати більше...</ShowText>
+            </TouchableOpacity>
+          )}
+        </>
+      );
+    } else {
+      return (
+        <>
           <Markdown
-            key={`text-${key}`}
             style={{
               body: {
                 color: theme.colors.text,
@@ -313,56 +382,10 @@ const CommentCard = ({
               link: { color: theme.colors.primary },
             }}
           >
-            {block.content}
+            {fullText}
           </Markdown>
-        );
-      } else if (block.type === 'spoiler') {
-        return <SpoilerText key={`spoiler-${key}`} text={block.content} theme={theme} />;
-      }
-      return null;
-    });
-
-    if (!isExpanded) {
-      return (
-        <>
-          <View
-            style={{
-              maxHeight: 17 * 5, // приблизно 5 рядків * lineHeight
-              overflow: 'hidden',
-            }}
-          >
-            {/* Прихований текст для підрахунку рядків */}
-            <Text
-              onTextLayout={onTextLayout}
-              style={{
-                position: 'absolute',
-                opacity: 0,
-                fontSize: 14,
-                lineHeight: 18,
-                width: '100%',
-              }}
-              numberOfLines={undefined}
-            >
-              {fullText}
-            </Text>
-
-            {/* Відображення Markdown та спойлерів */}
-            {textBlocks}
-          </View>
-
-          {textTooLong && (
-            <TouchableOpacity onPress={() => setIsExpanded(true)}>
-              <ShowText style={{ marginTop: 8 }}>Показати більше...</ShowText>
-            </TouchableOpacity>
-          )}
-        </>
-      );
-    } else {
-      return (
-        <>
-          {textBlocks}
           <TouchableOpacity onPress={() => setIsExpanded(false)}>
-            <ShowText style={{ marginTop: 8 }}>Згорнути</ShowText>
+            <ShowText style={{ marginTop: 4 }}>Згорнути</ShowText>
           </TouchableOpacity>
         </>
       );
@@ -374,19 +397,23 @@ const CommentCard = ({
       <TouchableOpacity onPress={handleLongPress} activeOpacity={0.9}>
         <CommentCardWrapper>
           <RowInfo>
-            <Avatar
-              source={{
-                uri:
-                  item.author?.avatar && item.author.avatar !== 'string'
-                    ? item.author.avatar
-                    : 'https://i.ibb.co/THsRK3W/avatar.jpg',
-              }}
-            />
+            <TouchableOpacity onPress={handleUserPress} activeOpacity={0.7}>
+              <Avatar
+                source={{
+                  uri:
+                    item.author?.avatar && item.author.avatar !== 'string'
+                      ? item.author.avatar
+                      : 'https://i.ibb.co/THsRK3W/avatar.jpg',
+                }}
+              />
+            </TouchableOpacity>
             <CommentBody>
-              <RowInfoTitle>
-                <Username>{item.author?.username || 'Користувач'}</Username>
-                <DateText>{formattedDate}</DateText>
-              </RowInfoTitle>
+              <TouchableOpacity onPress={handleUserPress} activeOpacity={0.7}>
+                <RowInfoTitle>
+                  <Username>{item.author?.username || 'Користувач'}</Username>
+                  <DateText>{formattedDate}</DateText>
+                </RowInfoTitle>
+              </TouchableOpacity>
 
               {renderMarkdownWithSpoilers()}
 
@@ -426,10 +453,6 @@ const CommentCard = ({
       <Modal animationType="fade" transparent visible={modalVisible} onRequestClose={closeModal}>
         <ModalBackdrop onPress={closeModal}>
           <ModalContainer>
-            <ModalButton onPress={closeModal}>
-              <Ionicons name="star" size={20} color={theme.colors.gray} style={{ marginRight: 10 }} />
-              <ModalButtonText>Оцінили</ModalButtonText>
-            </ModalButton>
             <ModalButton onPress={handleCopy}>
               <Ionicons name="copy" size={20} color={theme.colors.gray} style={{ marginRight: 10 }} />
               <ModalButtonText>Скопіювати</ModalButtonText>
@@ -446,7 +469,11 @@ const CommentCard = ({
               isLast
               onPress={() => {
                 closeModal();
-                Alert.alert('Скарга', 'Скаргу надіслано.');
+                Toast.show({
+                  type: 'info',
+                  text1: 'Скарга надіслана',
+                  text2: 'Ваша скарга передана на розгляд',
+                });
               }}
             >
               <Ionicons

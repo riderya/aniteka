@@ -8,6 +8,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../../context/ThemeContext';
+import RulesModal from './RulesModal';
 
 const getAuthToken = async () => {
   const token = await SecureStore.getItemAsync('hikka_token');
@@ -139,23 +140,7 @@ export default function CommentForm({ content_type, slug }) {
       </Modal>
 
       {/* Модалка: Правила */}
-<Modal transparent visible={rulesModalVisible} animationType="fade">
-    <ModalContainer>
-      <ModalContent>
-        <ModalTitle>Правила</ModalTitle>
-        <ContentText>
-          Заборонено:
-          {'\n\n'}• Спойлери без позначки;
-          {'\n'}• Образи, погрози, конфлікти, нецензурщина;
-          {'\n'}• Флуд, спам, випрошування вподобайок;
-          {'\n\n'}Повна версія — в розділі "Налаштування" → "Правила спільноти".
-        </ContentText>
-        <CloseButton onPress={() => setRulesModalVisible(false)}>
-          <CloseButtonText>Закрити</CloseButtonText>
-        </CloseButton>
-      </ModalContent>
-    </ModalContainer>
-</Modal>
+      <RulesModal visible={rulesModalVisible} onClose={() => setRulesModalVisible(false)} />
 
     </>
   );
@@ -173,7 +158,7 @@ const RowTop = styled.View`
   align-items: center;
   justify-content: space-between;
   height: 30px;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
+  background-color: ${({ theme }) => theme.colors.card};
   padding: 0px 12px;
 `;
 
@@ -207,8 +192,9 @@ const Row = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  background-color: ${({ theme }) => theme.colors.card};
+  background-color: ${({ theme }) => theme.colors.inputBackground};
   padding: 0px 12px;
+  height: 60px;
 `;
 
 const CommentInput = styled.TextInput`
@@ -235,12 +221,6 @@ const ModalContent = styled.View`
   width: 90%;
 `;
 
-const ContentText = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 14px;
-  line-height: 20px;
-  margin-bottom: 16px;
-`;
 
 const ModalTitle = styled.Text`
   font-weight: bold;

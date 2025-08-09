@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components/native';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
 
 const AvatarWrapper = styled.View`
@@ -44,16 +45,40 @@ const UsernameContainer = styled.View`
   gap: 8px;
 `;
 
-const UserBadge = styled.View`
+const UserBadge = styled.TouchableOpacity`
   background-color: ${({ theme }) => theme.colors.primary};
   padding: 4px 8px;
   border-radius: 12px;
+  position: relative;
 `;
 
 const UserBadgeText = styled.Text`
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
+`;
+
+const TooltipContainer = styled.View`
+  position: absolute;
+  top: -50px;
+  left: -60px;
+  background-color: ${({ theme }) => theme.colors.text};
+  padding: 8px 12px;
+  border-radius: 8px;
+  z-index: 1000;
+  min-width: 120px;
+  width: auto;
+  align-items: center;
+  flex-shrink: 0;
+`;
+
+const TooltipText = styled.Text`
+  color: ${({ theme }) => theme.colors.background};
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  flex-shrink: 0;
 `;
 
 const EmailWrapper = styled.TouchableOpacity`
@@ -91,6 +116,44 @@ const ActivityTextGray = styled.Text`
   line-height: 18px;
 `;
 
+// Function to render role icon
+const getRoleIcon = (role, theme) => {
+  switch (role?.toLowerCase()) {
+    case 'admin':
+    case 'адмін':
+    case 'administrator':
+      return <MaterialIcons name="admin-panel-settings" size={16} color="#ffffff" />;
+    case 'moderator':
+    case 'модератор':
+    case 'mod':
+      return <MaterialIcons name="verified-user" size={16} color="#ffffff" />;
+    default:
+      return null; // Для звичайних користувачів нічого не показуємо
+  }
+};
+
+// Function to check if user should have badge
+const shouldShowRoleBadge = (role) => {
+  const validRoles = ['admin', 'адмін', 'administrator', 'moderator', 'модератор', 'mod'];
+  return validRoles.includes(role?.toLowerCase());
+};
+
+// Function to get role text for tooltip
+const getRoleText = (role) => {
+  switch (role?.toLowerCase()) {
+    case 'admin':
+    case 'адмін':
+    case 'administrator':
+      return 'Адміністратор';
+    case 'moderator':
+    case 'модератор':
+    case 'mod':
+      return 'Модератор';
+    default:
+      return '';
+  }
+};
+
 // Helper function to format time ago
 const formatTimeAgo = (timestamp) => {
   if (!timestamp) return 'невідомо';
@@ -123,6 +186,18 @@ export default function UserAvatar({ userData, showEmailButton = true, showUserB
   const { theme } = useTheme();
   const [showEmail, setShowEmail] = useState(false);
   const [showExpandedInfo, setShowExpandedInfo] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  // Auto-hide tooltip after 3 seconds
+  useEffect(() => {
+    if (showTooltip) {
+      const timeout = setTimeout(() => {
+        setShowTooltip(false);
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [showTooltip]);
 
   return (
     <>
@@ -140,9 +215,28 @@ export default function UserAvatar({ userData, showEmailButton = true, showUserB
       <ColumnInfo>
         <UsernameContainer>
           <Username>{userData.username}</Username>
-          {showUserBadge && (
-            <UserBadge>
-              <UserBadgeText>{userData.role}</UserBadgeText>
+          {showUserBadge && shouldShowRoleBadge(userData.role) && (
+            <UserBadge 
+              onPress={() => setShowTooltip(!showTooltip)}
+              activeOpacity={0.8}
+            >
+              {getRoleIcon(userData.role, theme)}
+              {showTooltip && (
+                <TooltipContainer 
+                  style={{
+                    shadowColor: '#000',
+                    shadowOffset: {
+                      width: 0,
+                      height: 2,
+                    },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3.84,
+                    elevation: 5,
+                  }}
+                >
+                  <TooltipText>{getRoleText(userData.role)}</TooltipText>
+                </TooltipContainer>
+              )}
             </UserBadge>
           )}
         </UsernameContainer>

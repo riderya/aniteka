@@ -107,17 +107,17 @@ const LikeAnimeButton = ({ slug }) => {
   
   
 
-  if (loading) {
-    return <ActivityIndicator size="small" color={theme.colors.textSecondary || '#fff'} />
-  }
-
   return (
-    <TouchableOpacityStyled onPress={toggleFavourite} liked={liked}>
-      <Ionicons
-        name={liked ? 'heart' : 'heart-outline'}
-        size={20}
-        color={liked ? theme.colors.favourite : theme.colors.gray}
-      />
+    <TouchableOpacityStyled onPress={loading ? null : toggleFavourite} liked={liked} disabled={loading}>
+      {loading ? (
+        <ActivityIndicator size="small" color={theme.colors.textSecondary || '#fff'} />
+      ) : (
+        <Ionicons
+          name={liked ? 'heart' : 'heart-outline'}
+          size={20}
+          color={liked ? theme.colors.favourite : theme.colors.gray}
+        />
+      )}
     </TouchableOpacityStyled>
   )
 }

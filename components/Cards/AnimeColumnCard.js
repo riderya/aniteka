@@ -255,7 +255,7 @@ const createStyles = (theme, props) => StyleSheet.create({
     left: props.badgeLeft,
     right: props.badgeRight,
     padding: props.badgePadding,
-    borderRadius: 12,
+    borderRadius: 999,
     justifyContent: 'center',
     alignItems: 'center',
   },

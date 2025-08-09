@@ -20,6 +20,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Entypo from '@expo/vector-icons/Entypo';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import AnimatedModal from './AnimatedModalBottom';
 
@@ -154,7 +155,7 @@ const TopDetail = ({ anime }) => {
         <Block>
           <TouchableOpacity onPress={() => setInfoModalVisible(true)}>
             <Row>
-              <StyledIconInfo name="information-circle-sharp" />
+              <StyledIconInfo name="information-outline" />
               <Column>
                 <Title>{anime.title_ua || anime.title_ja || 'Назва відсутня'}</Title>
                 <Subtitle>{anime.title_en || anime.title_ja || 'English title missing'}</Subtitle>
@@ -549,10 +550,10 @@ const StyledIcon = styled(Ionicons)`
   font-size: 14px;
 `;
 
-const StyledIconInfo = styled(Ionicons)`
+const StyledIconInfo = styled(MaterialCommunityIcons)`
   color: ${({ theme }) => theme.colors.gray};
   font-size: 20px;
-  margin-top: 4px;
+  margin-top: 6px;
 `;
 
 const InfoContent = styled.View`

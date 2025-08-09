@@ -390,7 +390,7 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
         }}
         cardWidth="100%"
         imageWidth="100%"
-        imageHeight={140}
+        imageHeight={155}
         titleFontSize={13}
         footerFontSize={11}
         badgeFontSize={12}

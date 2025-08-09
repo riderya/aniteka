@@ -1,22 +1,59 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import RulesModal from '../CommentForm/RulesModal';
 
 const LineGray = styled.View`
   height: 1px;
   background-color: ${({ theme }) => theme.colors.borderInput};
 `;
 
-const Button = styled.TouchableOpacity`
+const TopBar = styled.TouchableOpacity`
+  padding: 5px 12px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: ${({ theme }) => theme.colors.card};
+`;
+
+const SpoilerWrap = styled.View`
+  flex-direction: row;
+  align-items: center;
+`;
+
+const SpoilerOk = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-weight: 700;
+`;
+
+const SpoilerWord = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  margin-left: 6px;
+`;
+
+const RulesButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+`;
+
+const RulesText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 4px;
+`;
+
+const ClipboardIcon = styled(FontAwesome)`
+  color: ${({ theme }) => theme.colors.gray};
+`;
+
+const InputButton = styled.TouchableOpacity`
   background-color: ${({ theme }) => theme.colors.inputBackground};
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   padding: 20px 12px;
-  padding-bottom: ${({ bottomInset }) => 30 + (bottomInset || 0)}px;
-  min-height: 90px;
 `;
 
 const ButtonText = styled.Text`
@@ -24,20 +61,33 @@ const ButtonText = styled.Text`
   font-size: 16px;
 `;
 
-const StyledIcon = styled(Ionicons)`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 24px;
-`;
+// Modal styles moved to separate component RulesModal
 
 const AnimeSendButton = ({ slug, title, commentsCount }) => {
   const navigation = useNavigation();
-  const { bottom } = useSafeAreaInsets();
+  const [rulesVisible, setRulesVisible] = useState(false);
 
   return (
     <>
       <LineGray />
-      <Button
-        bottomInset={bottom}
+      <TopBar         onPress={() =>
+          navigation.navigate('AnimeCommentsDetailsScreen', {
+            slug,
+            title,
+            commentsCount,
+          })
+        }
+        activeOpacity={0.8}>
+        <SpoilerWrap>
+          <SpoilerOk>Не містить</SpoilerOk>
+          <SpoilerWord>спойлер</SpoilerWord>
+        </SpoilerWrap>
+        <RulesButton onPress={() => setRulesVisible(true)} activeOpacity={0.8}>
+          <ClipboardIcon name="clipboard" size={14} />
+            <RulesText>Правила</RulesText>
+        </RulesButton>
+      </TopBar>
+      <InputButton
         onPress={() =>
           navigation.navigate('AnimeCommentsDetailsScreen', {
             slug,
@@ -47,9 +97,11 @@ const AnimeSendButton = ({ slug, title, commentsCount }) => {
         }
         activeOpacity={0.8}
       >
-        <ButtonText>Відправити коментар...</ButtonText>
-        <StyledIcon name="send" />
-      </Button>
+        <ButtonText>Ваш коментар</ButtonText>
+          <Ionicons name="send" size={24} color={`#888`} />
+      </InputButton>
+
+      <RulesModal visible={rulesVisible} onClose={() => setRulesVisible(false)} />
     </>
   );
 };

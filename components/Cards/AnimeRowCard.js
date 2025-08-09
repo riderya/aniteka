@@ -385,7 +385,7 @@ const createStyles = (theme, props) => StyleSheet.create({
     left: 5,
     right: 5,
     padding: 4,
-    borderRadius: 8,
+    borderRadius: 999,
     justifyContent: 'center',
     alignItems: 'center',
   },

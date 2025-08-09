@@ -38,6 +38,7 @@ const StatusDropdown = ({ slug, episodes_total }) => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [authToken, setAuthToken] = useState(null);
+  const [tokenChecked, setTokenChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -60,15 +61,27 @@ const StatusDropdown = ({ slug, episodes_total }) => {
   };
 
   useEffect(() => {
-    SecureStore.getItemAsync('hikka_token').then(setAuthToken);
+    SecureStore.getItemAsync('hikka_token').then((token) => {
+      setAuthToken(token);
+      setTokenChecked(true);
+    });
   }, []);
 
   useEffect(() => {
-    setEpisodes(null); // ❗ Очистити епізоди при зміні slug
+    // При зміні аніме скидаємо епізоди та статус, показуємо спінер до завершення перевірки токена/фетчу
+    setEpisodes(null);
+    setSelectedStatus('Не дивлюсь');
+    setIsLoading(true);
   }, [slug]);
 
   useEffect(() => {
-    if (!authToken || !slug) {
+    // Чекаємо доки перевіриться токен. Поки не перевірено — лишаємо спінер.
+    if (!tokenChecked || !slug) return;
+
+    // Якщо користувач не авторизований — фіксуємо стан "Не дивлюсь" і вимикаємо спінер
+    if (!authToken) {
+      setSelectedStatus('Не дивлюсь');
+      updateAnimeStatus(slug, null);
       setIsLoading(false);
       return;
     }
@@ -104,7 +117,7 @@ const StatusDropdown = ({ slug, episodes_total }) => {
     };
 
     fetchStatus();
-  }, [authToken, slug]);
+  }, [authToken, slug, tokenChecked]);
 
   const showLoginToast = () => {
     Toast.show({
@@ -118,22 +131,43 @@ const StatusDropdown = ({ slug, episodes_total }) => {
   };
 
   const updateStatus = async (newStatus) => {
+    if (isUpdating) return;
     if (!authToken) {
       showLoginToast();
       return;
     }
 
-    // Якщо встановлюється статус "Переглянуто" і є інформація про кількість епізодів
+    setIsUpdating(true);
+
+    // Підготуємо значення епізодів, щоб не втратити прогрес
     let episodesToSet = episodes;
+
+    // 1) Якщо обираємо "Переглянуто" — виставляємо повну кількість
     if (newStatus === 'Переглянуто') {
       if (episodes_total && episodes_total > 0) {
-        // Якщо є епізоди, встановлюємо максимальну кількість
         episodesToSet = episodes_total;
         setEpisodes(episodes_total);
       } else {
-        // Якщо епізодів немає, встановлюємо 0
         episodesToSet = 0;
         setEpisodes(0);
+      }
+    } else if (newStatus !== 'Не дивлюсь') {
+      // 2) Для інших статусів — якщо прогрес ще не завантажено, підвантажимо його перед оновленням статусу
+      if (episodesToSet === null || episodesToSet === undefined) {
+        try {
+          const currentRes = await fetch(`https://api.hikka.io/watch/${slug}`, {
+            headers: { auth: authToken },
+          });
+          if (currentRes.ok) {
+            const currentData = await currentRes.json();
+            if (currentData && currentData.episodes !== null && currentData.episodes !== undefined) {
+              episodesToSet = currentData.episodes;
+              setEpisodes(currentData.episodes);
+            }
+          }
+        } catch (_) {
+          // мовчки ігноруємо, якщо не вдалось дістати поточний прогрес — просто не будемо передавати episodes
+        }
       }
     }
 
@@ -161,11 +195,10 @@ const StatusDropdown = ({ slug, episodes_total }) => {
       }
 
       if (newStatus === 'Не дивлюсь') {
-        setEpisodes(null); // ❗ Очистити епізоди, якщо прибрали зі списку
+        setEpisodes(null);
       }
 
       setSelectedStatus(newStatus);
-      // Оновлюємо глобальний стан для цього аніме
       updateAnimeStatus(slug, newStatus === 'Не дивлюсь' ? null : statusApiMapping[newStatus]);
       setModalVisible(false);
 
@@ -184,10 +217,13 @@ const StatusDropdown = ({ slug, episodes_total }) => {
         text2: e.message || 'Не вдалося оновити статус.',
         visibilityTime: 4000,
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const onOpenModal = () => {
+    if (isLoading || isUpdating) return;
     if (!authToken) {
       showLoginToast();
       return;
@@ -197,7 +233,11 @@ const StatusDropdown = ({ slug, episodes_total }) => {
 
   return (
     <Wrapper>
-      <Button onPress={onOpenModal} borderColor={isLoading ? theme.colors.gray : statusBorderColors[selectedStatus]}>
+      <Button
+        onPress={onOpenModal}
+        disabled={isLoading || isUpdating}
+        borderColor={isLoading ? theme.colors.gray : statusBorderColors[selectedStatus]}
+      >
         {isLoading ? (
           <ActivityIndicator size="small" color={theme.colors.gray} />
         ) : (
@@ -222,7 +262,7 @@ const StatusDropdown = ({ slug, episodes_total }) => {
           <TouchableOpacity style={{ flex: 1, width: '100%' }} onPress={() => setModalVisible(false)} />
           <Content background={theme.colors.card}>
             {statuses.map((st) => (
-                             <Item key={st} onPress={() => updateStatus(st)}>
+                             <Item key={st} disabled={isUpdating} onPress={() => updateStatus(st)}>
                  <Indicator borderColor={statusBorderColors[st]}>
                    {selectedStatus === st && <Filled color={statusColors[st]} />}
                  </Indicator>

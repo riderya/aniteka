@@ -55,7 +55,6 @@ export default LatestComments;
 // --- Styled Components ---
 
 const Container = styled.View`
-  margin-top: 25px;
   flex-direction: column;
   padding: 0 12px;
 `;

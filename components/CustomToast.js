@@ -1,10 +1,12 @@
 import React from 'react';
 import styled from 'styled-components/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 
 const ToastComponent = ({ type, text1, text2 }) => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   
   const getIconConfig = () => {
     switch (type) {
@@ -21,7 +23,7 @@ const ToastComponent = ({ type, text1, text2 }) => {
   const iconConfig = getIconConfig();
 
   return (
-    <Container theme={theme}>
+    <Container theme={theme} insets={insets}>
       <IconContainer type={type}>
         <MaterialCommunityIcons name={iconConfig.name} size={20} color={iconConfig.color} />
       </IconContainer>
@@ -45,7 +47,9 @@ const Container = styled.View`
   flex-direction: row;
   padding: 16px 20px;
   border-radius: 20px;
-  margin: 10px 15px 0 15px;
+  margin-bottom: ${({ insets }) => `${insets.bottom - 25}px`};
+  margin-left: 12px;
+  margin-right: 12px;
   align-items: center;
   background-color: ${({ theme }) => theme.colors.card};
   shadow-color: ${({ theme }) => theme.isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.15)'};

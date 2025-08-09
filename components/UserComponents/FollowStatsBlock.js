@@ -4,7 +4,6 @@ import { TouchableOpacity } from 'react-native';
 import FollowersModal from './FollowersModal';
 
 const FollowStats = styled.View`
-  margin: 12px 0px;
   flex-direction: row;
   justify-content: center;
 `;

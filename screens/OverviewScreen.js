@@ -7,11 +7,18 @@ import ArticlesSlider from '../components/OverviewComponents/ArticlesSlider';
 import CollectionSlider from '../components/OverviewComponents/CollectionSlider';
 import AnimeScheduleSlider from '../components/OverviewComponents/AnimeScheduleSlider';
 import LatestComments from '../components/OverviewComponents/LatestComments';
+import SocialLinks from '../components/OverviewComponents/SocialLinks';
 
 const StyledScrollView = styled.ScrollView`
   flex-grow: 1;
   padding-top: ${({ paddingTopValue }) => paddingTopValue}px;
   background: ${({ theme }) => theme.colors.background};
+`;
+
+const Divider = styled.View`
+  height: 1px;
+  background-color: ${({ theme }) => theme.colors.border};
+  margin: 20px 12px;
 `;
 
 const OverviewScreen = React.memo(() => {
@@ -37,9 +44,18 @@ const OverviewScreen = React.memo(() => {
         initialNumToRender={3}
       >
         <OverviewButtons />
-        <ArticlesSlider />
+        <Divider />
         <CollectionSlider />
+        <Divider />
+        <ArticlesSlider />
+        <Divider />
+        <SocialLinks 
+          telegramUrl="https://t.me/YummyAnimeList"
+          discordUrl="https://discord.gg/5truHDdzEq"
+        />
+        <Divider />
         <AnimeScheduleSlider />
+        <Divider />
         <LatestComments />
       </StyledScrollView>
     </>

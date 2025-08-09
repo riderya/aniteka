@@ -7,7 +7,7 @@ import ArticleCard from '../Cards/ArticleCard';
 import { useNavigation } from '@react-navigation/native';
 
 const Container = styled.View`
-  margin-top: 25px;
+  margin-top: 0px;
 `;
 
 const SCREEN_WIDTH = Dimensions.get('window').width;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import RootNavigator from './navigation/RootNavigator';
@@ -10,16 +11,18 @@ import { WatchStatusProvider } from './context/WatchStatusContext';
 
 export default function App() {
   return (
-    <AppThemeProvider>
-      <AuthProvider>
-        <WatchStatusProvider>
-          <NavigationContainer>
-            <AppWithStatusBar />
-          </NavigationContainer>
-          <Toast config={toastConfig} position="bottom" />
-        </WatchStatusProvider>
-      </AuthProvider>
-    </AppThemeProvider>
+    <SafeAreaProvider>
+      <AppThemeProvider>
+        <AuthProvider>
+          <WatchStatusProvider>
+            <NavigationContainer>
+              <AppWithStatusBar />
+            </NavigationContainer>
+            <Toast config={toastConfig} position="bottom" />
+          </WatchStatusProvider>
+        </AuthProvider>
+      </AppThemeProvider>
+    </SafeAreaProvider>
   );
 }
 

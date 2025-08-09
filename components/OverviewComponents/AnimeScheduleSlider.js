@@ -6,7 +6,7 @@ import axios from 'axios';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
 
 const Container = styled.View`
-  margin-top: 25px;
+  margin-top: 0px;
 `;
 
 const Card = styled.View`

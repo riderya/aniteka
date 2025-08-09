@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import styled from 'styled-components/native';
 import axios from 'axios';
@@ -7,6 +8,7 @@ import TopDetail from '../components/DetailsAnime/TopDetail';
 import BackButton from '../components/DetailsAnime/BackButton';
 import AnimeMainCharacters from '../components/DetailsAnime/AnimeMainCharacters';
 import VideoSlider from '../components/DetailsAnime/VideoSlider';
+import MusicSlider from '../components/DetailsAnime/MusicSlider';
 import AnimeRatingStats from '../components/DetailsAnime/AnimeRatingStats';
 import AnimeStatusStats from '../components/DetailsAnime/AnimeStatusStats';
 import AnimeFranchiseList from '../components/DetailsAnime/AnimeFranchiseList';
@@ -19,6 +21,7 @@ const AnimeDetailsScreen = ({ route }) => {
   const [anime, setAnime] = useState(null);
   const [loading, setLoading] = useState(true);
   const { theme, isDark } = useTheme();
+  const { bottom } = useSafeAreaInsets();
 
   useEffect(() => {
     const fetchAnimeDetails = async () => {
@@ -46,13 +49,14 @@ const AnimeDetailsScreen = ({ route }) => {
         <BackButton />
       </FixedBackButtonWrapper>
 
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: bottom }}>
         <TopDetail anime={anime} />
         <AnimeMainCharacters anime={anime}/>
         <AnimeRatingStats stats={anime.stats} score={anime.score} slug={anime.slug} />
         <AnimeStatusStats anime={anime} />
         <AnimeFranchiseList slug={anime.slug} />
         <VideoSlider anime={anime} />
+        <MusicSlider anime={anime} />
         <AnimeStaffSlider slug={anime.slug} title={anime.title_ua || anime.title_en || anime.title_ja || '?'} />
         <AnimeRecommendationsSlider slug={anime.slug} />
         <AnimeSendButton slug={anime.slug} title={anime.title_ua || anime.title_en || anime.title_ja || '?'} commentsCount={anime.comments_count} />

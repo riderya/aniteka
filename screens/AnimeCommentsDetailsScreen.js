@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import styled from 'styled-components/native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,6 +68,7 @@ const FilterButton = styled.TouchableOpacity`
   height: 50px;
   border-radius: 999px;
   background-color: ${({ theme }) => theme.colors.inputBackground};
+  opacity: 0.5;
 `;
 
 const FilterText = styled.Text`
@@ -110,6 +111,7 @@ const parseTextWithSpoilers = (text) => {
 // ---------- Main Component ----------
 const AnimeCommentsDetailsScreen = () => {
   const { slug, title, commentsCount } = useRoute().params;
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
 
@@ -154,7 +156,7 @@ const AnimeCommentsDetailsScreen = () => {
     setIsFetching(true);
     try {
       const res = await axios.get(
-        `https://api.hikka.io/comments/anime/${slug}/list?page=${page}&size=100`
+        `https://api.hikka.io/comments/anime/${slug}/list?page=${page}&size=15`
       );
       let newComments = res.data.list || [];
 
@@ -187,7 +189,7 @@ const AnimeCommentsDetailsScreen = () => {
       setPage(1);
       setHasMore(true);
       const res = await axios.get(
-        `https://api.hikka.io/comments/anime/${slug}/list?page=1&size=100`
+        `https://api.hikka.io/comments/anime/${slug}/list?page=1&size=15`
       );
       let newComments = res.data.list || [];
       newComments.sort((a, b) => {
@@ -217,7 +219,7 @@ const AnimeCommentsDetailsScreen = () => {
   const renderListHeader = () => (
     <CommentsHeader style={{ paddingTop: headerHeight }}>
       <CommentCount>{commentsCount} Всього</CommentCount>
-      <FilterButton onPress={toggleSortOrder}>
+      <FilterButton disabled={true}>
         <Ionicons name="filter" size={18} color={theme.colors.gray} />
         <FilterText>
           {sortOrder === 'desc' ? 'Спочатку нові' : 'Спочатку старі'}
@@ -242,6 +244,7 @@ const AnimeCommentsDetailsScreen = () => {
       shouldTruncate={shouldTruncate}
       onDelete={handleDeleteComment}
       currentUserRef={currentUserRef}
+      navigation={navigation}
     />
   );
 
@@ -260,7 +263,7 @@ const AnimeCommentsDetailsScreen = () => {
       keyboardVerticalOffset={40}
     >
       <Container>
-        <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+        <BlurOverlay experimentalBlurMethod="dimezis"  intensity={100} tint={isDark ? 'dark' : 'light'}>
           <HeaderTitleBar title={`Коментарі: ${title}`} />
         </BlurOverlay>
 

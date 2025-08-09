@@ -105,7 +105,7 @@ return (
   <Slide key={`slide-${item.slug || item.id || Math.random().toString(36).substr(2, 9)}`}>
     <GradientBlock />
     <BackgroundImage source={{ uri: imageUrl }} />
-    <StyledBlurView intensity={30} tint={isDark ? 'dark' : 'light'} />
+    <StyledBlurView experimentalBlurMethod="dimezis" intensity={30} tint={isDark ? 'dark' : 'light'} />
     <Content>
       <Info>
         <Title numberOfLines={2}>{item.title_ua || 'Назва відсутня'}</Title>
@@ -198,7 +198,7 @@ width: ${SLIDE_WIDTH}px;
 margin-right: ${SPACING}px;
 flex: 1;
 overflow: hidden;
-background-color: #000;
+
 `;
 
 const BackgroundImage = styled.Image`
@@ -237,7 +237,7 @@ const Title = styled.Text`
 font-size: 34px;
 font-weight: 900;
 margin-bottom: 8px;
-color: #fff;
+color: ${({ theme }) => theme.colors.text};
 `;
 
 const TitleEn = styled.Text`
@@ -281,13 +281,13 @@ const RatingBlock = styled.View`
 `;
 
 const StyledStar = styled(AntDesign)`
-  color: gold;
+  color: ${({ theme }) => theme.colors.warning};
   font-weight: 600;
   font-size: 14px;
 `;
 
 const RatingText = styled.Text`
-  color: gold;
+  color: ${({ theme }) => theme.colors.warning};
   font-size: 14px;
   font-weight: 600;
 `;
@@ -366,8 +366,10 @@ const DetailButton = styled(TouchableOpacity)`
   height: 48px;
   margin-top: 5px;
   background-color: #30303066;
+  border: 1px solid ${({ theme }) => theme.colors.borderInput};
   padding: 0px 32px;
   border-radius: 999px;
+  margin-left: 4px;
 `;
 
 const StyledInfo = styled(MaterialIcons)`

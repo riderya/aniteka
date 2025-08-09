@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, View } from 'react-native';
 import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
 import RowLineHeader from './RowLineHeader';
+import AnimeColumnCard from '../Cards/AnimeColumnCard';
 
 const Container = styled.View`
   background-color: ${({ theme }) => theme.colors.border};
@@ -15,23 +16,7 @@ const LineGray = styled.View`
   background-color: ${({ theme }) => theme.colors.border};
 `;
 
-const Card = styled(TouchableOpacity)`
-  width: 120px;
-`;
-
-const Poster = styled.Image`
-  width: 100%;
-  height: 170px;
-  border-radius: 24px;
-  background-color: ${({ theme }) => theme.colors.card};
-`;
-
-const Title = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 14px;
-  font-weight: 600;
-  margin-top: 8px;
-`;
+// Відтепер використовуємо готову картку AnimeColumnCard
 
 const Spacer = styled.View`
   width: 12px;
@@ -40,22 +25,58 @@ const Spacer = styled.View`
 const AnimeRecommendationsSlider = ({ slug }) => {
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      try {
-        const res = await fetch(`https://api.hikka.io/anime/${slug}/recommendations`);
-        const json = await res.json();
-        setRecommendations(json.list || []);
-      } catch (e) {
-        console.error('Помилка завантаження рекомендацій:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const SIZE = 15;
 
-    fetchRecommendations();
+  const mergeUniqueBySlug = (prevList, newList) => {
+    const map = new Map();
+    [...prevList, ...newList].forEach((item) => {
+      if (item && item.slug) {
+        map.set(item.slug, item);
+      }
+    });
+    return Array.from(map.values());
+  };
+
+  const loadRecommendations = async (targetPage = 1) => {
+    // Захист від паралельних запитів
+    if (targetPage > 1 && (isLoadingMore || !hasMore)) return;
+    try {
+      if (targetPage === 1) {
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const res = await fetch(`https://api.hikka.io/anime/${slug}/recommendations?page=${targetPage}&size=${SIZE}`);
+      const json = await res.json();
+      const incoming = json.list || [];
+      const nextPage = json?.pagination?.page ?? targetPage;
+      const pages = json?.pagination?.pages ?? targetPage;
+
+      setRecommendations((prev) => (targetPage === 1 ? incoming : mergeUniqueBySlug(prev, incoming)));
+      setPage(nextPage);
+      setHasMore(nextPage < pages);
+    } catch (e) {
+      console.error('Помилка завантаження рекомендацій:', e);
+    } finally {
+      setLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    // Скидаємо стан при зміні аніме
+    setRecommendations([]);
+    setPage(1);
+    setHasMore(true);
+    setIsLoadingMore(false);
+    loadRecommendations(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   if (loading) {
@@ -69,6 +90,13 @@ const AnimeRecommendationsSlider = ({ slug }) => {
 
   if (recommendations.length === 0) return null;
 
+  const handleEndReached = () => {
+    if (!loading && !isLoadingMore && hasMore) {
+      const next = page + 1;
+      loadRecommendations(next);
+    }
+  };
+
   return (
     <Container>
       <RowLineHeader title="Рекомендації" />
@@ -77,16 +105,33 @@ const AnimeRecommendationsSlider = ({ slug }) => {
         data={recommendations}
         keyExtractor={(item) => item.slug}
         ListHeaderComponent={<Spacer />}
-        ListFooterComponent={<Spacer />}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <View style={{ width: 60, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="small" />
+            </View>
+          ) : (
+            <Spacer />
+          )
+        }
         ItemSeparatorComponent={() => <View style={{ width: 15 }} />}
         showsHorizontalScrollIndicator={false}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={6}
+        windowSize={10}
         renderItem={({ item }) => (
-          <Card onPress={() => navigation.push('AnimeDetails', { slug: item.slug })}>
-            <Poster source={{ uri: item.image }} resizeMode="cover" />
-            <Title numberOfLines={2}>
-              {item.title_ua || item.title_en || item.title_ja}
-            </Title>
-          </Card>
+          <View style={{ width: 120 }}>
+            <AnimeColumnCard
+              anime={item}
+              onPress={() => navigation.push('AnimeDetails', { slug: item.slug })}
+              cardWidth={120}
+              imageWidth={120}
+              imageHeight={170}
+              titleNumberOfLines={2}
+            />
+          </View>
         )}
       />
       <LineGray />
