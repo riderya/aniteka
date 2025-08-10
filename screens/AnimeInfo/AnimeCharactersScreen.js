@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Text,
 } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
@@ -32,6 +33,27 @@ const BlurOverlay = styled(BlurView)`
   border-color: ${({ theme }) => theme.colors.border};
 `;
 
+const LoadingFooter = styled.View`
+  padding: 25px;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+`;
+
+const LoadingText = styled(Text)`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin-top: 10px;
+  font-size: 14px;
+`;
+
+const EndMessage = styled(Text)`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  text-align: center;
+  padding: 15px;
+  font-size: 14px;
+  font-weight: 500;
+`;
+
 const AnimeCharactersScreen = () => {
   const route = useRoute();
   const { slug, title } = route.params;
@@ -41,23 +63,82 @@ const AnimeCharactersScreen = () => {
 
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreData, setHasMoreData] = useState(true);
+  
+  const CHARACTERS_PER_PAGE = 20;
 
   const headerHeight = insets.top + 60;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await axios.get(
-          `https://api.hikka.io/anime/${slug}/characters?page=1&size=100`
-        );
+  const fetchCharacters = useCallback(async (page = 1, isLoadMore = false) => {
+    try {
+      if (isLoadMore) {
+        setLoadingMore(true);
+      }
+      
+      const { data } = await axios.get(
+        `https://api.hikka.io/anime/${slug}/characters?page=${page}&size=${CHARACTERS_PER_PAGE}`
+      );
+      
+      if (isLoadMore) {
+        // Фільтруємо дублікати за slug
+        setCharacters(prev => {
+          const existingSlugs = new Set(prev.map(char => char.character.slug));
+          const newCharacters = data.list.filter(char => !existingSlugs.has(char.character.slug));
+          return [...prev, ...newCharacters];
+        });
+      } else {
         setCharacters(data.list);
-      } catch (error) {
-        console.error('Error fetching characters:', error);
-      } finally {
+      }
+      
+      // Перевіряємо, чи є ще дані для завантаження
+      setHasMoreData(data.list.length === CHARACTERS_PER_PAGE);
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Error fetching characters:', error);
+    } finally {
+      if (isLoadMore) {
+        setLoadingMore(false);
+      } else {
         setLoading(false);
       }
-    })();
-  }, [slug]);
+    }
+  }, [slug, CHARACTERS_PER_PAGE]);
+
+  useEffect(() => {
+    fetchCharacters(1, false);
+  }, [fetchCharacters]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!loadingMore && hasMoreData) {
+      fetchCharacters(currentPage + 1, true);
+    }
+  }, [loadingMore, hasMoreData, currentPage, fetchCharacters]);
+
+  const renderFooter = useCallback(() => {
+    // Показуємо лоадер якщо завантажуємо більше або якщо є ще дані для завантаження
+    if (loadingMore || (hasMoreData && characters.length > 0)) {
+      return (
+        <LoadingFooter>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <LoadingText theme={theme}>
+            Завантаження персонажів...
+          </LoadingText>
+        </LoadingFooter>
+      );
+    }
+    
+    if (!hasMoreData && characters.length > 0) {
+      return (
+        <EndMessage theme={theme}>
+          Всі персонажі завантажені
+        </EndMessage>
+      );
+    }
+    
+    return null;
+  }, [loadingMore, hasMoreData, characters.length, theme]);
 
   if (loading) {
     return (
@@ -69,13 +150,13 @@ const AnimeCharactersScreen = () => {
 
   return (
     <Container>
-      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`Всі персонажі: ${title}`} />
       </BlurOverlay>
 
       <FlatList
         data={characters}
-        keyExtractor={(item) => item.character.slug}
+        keyExtractor={(item, index) => `character-${item.character.slug}-${index}`}
         contentContainerStyle={{
           paddingTop: headerHeight,
           paddingBottom: 20 + insets.bottom,
@@ -83,6 +164,18 @@ const AnimeCharactersScreen = () => {
         renderItem={({ item }) => (
           <CharacterCardItem character={item.character} />
         )}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={10}
+        getItemLayout={(data, index) => ({
+          length: 120, // Приблизна висота CharacterCardItem
+          offset: 120 * index,
+          index,
+        })}
       />
     </Container>
   );

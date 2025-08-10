@@ -50,8 +50,8 @@ const OverviewScreen = React.memo(() => {
         <ArticlesSlider />
         <Divider />
         <SocialLinks 
-          telegramUrl="https://t.me/YummyAnimeList"
-          discordUrl="https://discord.gg/5truHDdzEq"
+          // telegramUrl="https://t.me/YummyAnimeList"
+          // discordUrl="https://discord.gg/5truHDdzEq"
         />
         <Divider />
         <AnimeScheduleSlider />

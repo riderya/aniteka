@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Image,
   Alert,
+  Linking,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { BlurView } from 'expo-blur';
@@ -136,10 +137,14 @@ export default function NotificationsScreen({ navigation }) {
       } else if (type === 'hikka_update') {
         const link = item?.data?.link;
         if (link) {
-          navigation.navigate('WebView', { 
-            url: link,
-            title: item?.data?.title || 'Оновлення Хікки'
+          Linking.openURL(link).catch(() => {
+            Alert.alert('Помилка', 'Не вдалося відкрити посилання');
           });
+        }
+      } else if (type === 'follow') {
+        const username = item?.initiator_user?.username;
+        if (username) {
+          navigation.navigate('UserProfileScreen', { username });
         }
       }
     },
@@ -327,6 +332,8 @@ function renderNotificationSubtitle(item) {
     }
     case 'comment_reply':
       return `Користувач ${username} відповів на Ваш коментар`;
+    case 'follow':
+      return `Користувач ${username} підписався на Вас`;
     case 'hikka_update':
       return item?.data?.description || '';
     default:
@@ -383,6 +390,12 @@ function renderNotificationSubtitleWithBold(item) {
         <NormalText key="1">Користувач </NormalText>,
         <BoldText key="2">{username}</BoldText>,
         <NormalText key="3"> відповів на Ваш коментар</NormalText>
+      ];
+    case 'follow':
+      return [
+        <NormalText key="1">Користувач </NormalText>,
+        <BoldText key="2">{username}</BoldText>,
+        <NormalText key="3"> підписався на Вас</NormalText>
       ];
     case 'hikka_update':
       return [<NormalText key="1">{item?.data?.description || ''}</NormalText>];

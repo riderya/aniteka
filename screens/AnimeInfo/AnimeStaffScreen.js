@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Text,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -32,6 +33,27 @@ const BlurOverlay = styled(BlurView)`
   border-color: ${({ theme }) => theme.colors.border};
 `;
 
+const LoadingFooter = styled.View`
+  padding: 25px;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+`;
+
+const LoadingText = styled(Text)`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin-top: 10px;
+  font-size: 14px;
+`;
+
+const EndMessage = styled(Text)`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  text-align: center;
+  padding: 15px;
+  font-size: 14px;
+  font-weight: 500;
+`;
+
 const AnimeStaffScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -42,22 +64,81 @@ const AnimeStaffScreen = () => {
 
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreData, setHasMoreData] = useState(true);
+  
+  const STAFF_PER_PAGE = 20;
   const headerHeight = insets.top + 60;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await axios.get(
-          `https://api.hikka.io/anime/${slug}/staff?page=1&size=100`
-        );
+  const fetchStaff = useCallback(async (page = 1, isLoadMore = false) => {
+    try {
+      if (isLoadMore) {
+        setLoadingMore(true);
+      }
+      
+      const { data } = await axios.get(
+        `https://api.hikka.io/anime/${slug}/staff?page=${page}&size=${STAFF_PER_PAGE}`
+      );
+      
+      if (isLoadMore) {
+        // Фільтруємо дублікати за slug
+        setStaff(prev => {
+          const existingSlugs = new Set(prev.map(person => person.person.slug));
+          const newStaff = data.list.filter(person => !existingSlugs.has(person.person.slug));
+          return [...prev, ...newStaff];
+        });
+      } else {
         setStaff(data.list);
-      } catch (error) {
-        console.error('Помилка при завантаженні авторів:', error);
-      } finally {
+      }
+      
+      // Перевіряємо, чи є ще дані для завантаження
+      setHasMoreData(data.list.length === STAFF_PER_PAGE);
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Помилка при завантаженні авторів:', error);
+    } finally {
+      if (isLoadMore) {
+        setLoadingMore(false);
+      } else {
         setLoading(false);
       }
-    })();
-  }, [slug]);
+    }
+  }, [slug, STAFF_PER_PAGE]);
+
+  useEffect(() => {
+    fetchStaff(1, false);
+  }, [fetchStaff]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!loadingMore && hasMoreData) {
+      fetchStaff(currentPage + 1, true);
+    }
+  }, [loadingMore, hasMoreData, currentPage, fetchStaff]);
+
+  const renderFooter = useCallback(() => {
+    // Показуємо лоадер якщо завантажуємо більше або якщо є ще дані для завантаження
+    if (loadingMore || (hasMoreData && staff.length > 0)) {
+      return (
+        <LoadingFooter>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <LoadingText theme={theme}>
+            Завантаження авторів...
+          </LoadingText>
+        </LoadingFooter>
+      );
+    }
+    
+    if (!hasMoreData && staff.length > 0) {
+      return (
+        <EndMessage theme={theme}>
+          Всі автори завантажені
+        </EndMessage>
+      );
+    }
+    
+    return null;
+  }, [loadingMore, hasMoreData, staff.length, theme]);
 
   if (loading) {
     return (
@@ -69,13 +150,13 @@ const AnimeStaffScreen = () => {
 
   return (
     <Container>
-      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`Всі автори: ${title}`} />
       </BlurOverlay>
 
       <FlatList
         data={staff}
-        keyExtractor={(item) => item.person.slug}
+        keyExtractor={(item, index) => `staff-${item.person.slug}-${index}`}
         contentContainerStyle={{
           paddingTop: headerHeight,
           paddingBottom: 20 + insets.bottom,
@@ -91,6 +172,18 @@ const AnimeStaffScreen = () => {
             }
           />
         )}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={10}
+        getItemLayout={(data, index) => ({
+          length: 80, // Приблизна висота StaffCardRow
+          offset: 80 * index,
+          index,
+        })}
       />
     </Container>
   );

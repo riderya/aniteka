@@ -123,7 +123,7 @@ const AnimeRating = ({ slug }) => {
     );
   };
 
-  const stars = Array.from({ length: 5 }, (_, i) => {
+  const createStars = (isFullScreen = false) => Array.from({ length: 5 }, (_, i) => {
     const idx = i + 1;
     const fullVal = idx * 2;
     const halfVal = fullVal - 1;
@@ -143,9 +143,10 @@ const AnimeRating = ({ slug }) => {
         style={{
           width: STAR_SIZE,
           height: STAR_SIZE,
-          marginRight: i === 4 ? 0 : STAR_GAP,
+          marginRight: isFullScreen ? 0 : (i === 4 ? 0 : STAR_GAP),
           alignItems: 'center',
           justifyContent: 'center',
+          flex: isFullScreen ? 1 : 0,
         }}
         pointerEvents="box-none"
       >
@@ -161,8 +162,23 @@ const AnimeRating = ({ slug }) => {
     );
   });
 
+  const stars = createStars(false);
+  const fullScreenStars = createStars(true);
+
   if (loading || !auth) return null;
   if (!status || status === 'Не дивлюсь') return null;
+
+  // Якщо оцінка не поставлена, розширюємо на весь екран
+  if (score === 0) {
+    return (
+      <FullScreenBlock>
+        <FullScreenRow>
+          <FullScreenAvatar source={avatarUrl ? { uri: avatarUrl } : require('../../assets/image/welcome-login.webp')} />
+          <FullScreenStars>{fullScreenStars}</FullScreenStars>
+        </FullScreenRow>
+      </FullScreenBlock>
+    );
+  }
 
   return (
     <Block>
@@ -188,13 +204,31 @@ export default AnimeRating;
 const Block = styled.View`
   flex-direction: column;
   align-items: center;
-  padding: 12px;
+  padding: 12px 0px;
   margin-top: 20px;
+`;
+
+const FullScreenBlock = styled.View`
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  margin-top: 40px;
+  margin-bottom: 40px;
+  width: 100%;
 `;
 
 const Row = styled.View`
   flex-direction: row;
   align-items: center;
+`;
+
+const FullScreenRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 20px;
 `;
 
 const Avatar = styled.Image`
@@ -205,9 +239,24 @@ const Avatar = styled.Image`
   background-color: aqua;
 `;
 
+const FullScreenAvatar = styled.Image`
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background-color: aqua;
+`;
+
 const Stars = styled.View`
   flex-direction: row;
   margin-right: 12px;
+`;
+
+const FullScreenStars = styled.View`
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  flex: 1;
+  margin-left: 20px;
 `;
 
 const DeleteButton = styled.Pressable`

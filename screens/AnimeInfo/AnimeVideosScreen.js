@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
+import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
 
 // === УТИЛІТИ ===
 const getVideoType = (video) => {
@@ -49,36 +50,15 @@ const BlurOverlay = styled(BlurView)`
   left: 0;
   right: 0;
   z-index: 10;
-`;
-
-const HeaderWrapper = styled.View`
-  padding: 12px;
-`;
-
-const HeaderRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  /* border-bottom-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border}; */
-`;
-
-const BackButton = styled.TouchableOpacity`
-  padding: 4px;
-`;
-
-const HeaderTitle = styled.Text`
-  flex: 1;
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 18px;
-  font-weight: bold;
-  margin-left: 8px;
+  border-bottom-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
 `;
 
 const FilterRow = styled.View`
   flex-direction: row;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px
+  margin: 12px 10px 8px 10px;
 `;
 
 const FilterButton = styled.TouchableOpacity`
@@ -100,7 +80,6 @@ const FilterText = styled.Text`
 
 const ScrollContainer = styled.ScrollView`
   flex: 1;
-  padding-top: 10px;
 `;
 
 const VideoCard = styled.TouchableOpacity`
@@ -176,37 +155,26 @@ const AnimeVideosScreen = ({ route }) => {
 
   const filters = ['ALL', 'PV', 'OP', 'ED'];
 
-  const headerHeight = insets.top + 110;
-
   return (
     <Container>
-      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'} style={{ paddingTop: insets.top }}>
-        <HeaderWrapper>
-          <HeaderRow>
-            <BackButton onPress={() => navigation.goBack()}>
-              <StyledIcon name="arrow-back" />
-            </BackButton>
-            <HeaderTitle numberOfLines={1}>
-              Відео: {anime?.title_ua || anime?.title_en || anime?.title_ja || 'Аніме'}
-            </HeaderTitle>
-          </HeaderRow>
-
-          <FilterRow>
-            {filters.map((f) => (
-              <FilterButton key={f} active={filter === f} onPress={() => setFilter(f)}>
-                <FilterText active={filter === f}>{f === 'ALL' ? 'Усі' : f}</FilterText>
-              </FilterButton>
-            ))}
-          </FilterRow>
-        </HeaderWrapper>
+      <BlurOverlay experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
+        <HeaderTitleBar title={`Всі відео: ${anime.title_ua || anime.title_en || anime.title_ja || ''}`} />
       </BlurOverlay>
 
       <ScrollContainer
         contentContainerStyle={{
-          paddingTop: headerHeight,
+          paddingTop: insets.top + 55,
           paddingBottom: 20 + insets.bottom, // ← ВАЖЛИВО: відступ знизу
         }}
       >
+        <FilterRow>
+          {filters.map((f) => (
+            <FilterButton key={f} active={filter === f} onPress={() => setFilter(f)}>
+              <FilterText active={filter === f}>{f === 'ALL' ? 'Усі' : f}</FilterText>
+            </FilterButton>
+          ))}
+        </FilterRow>
+
         {filteredVideos.map((video, index) => {
           const type = getVideoType(video);
           const thumbnailUrl = getYouTubeThumbnail(video.url);
