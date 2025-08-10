@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationsProvider } from './context/NotificationsContext';
 import RootNavigator from './navigation/RootNavigator';
 import Toast from 'react-native-toast-message';
 import toastConfig from './components/CustomToast';
@@ -14,12 +15,14 @@ export default function App() {
     <SafeAreaProvider>
       <AppThemeProvider>
         <AuthProvider>
-          <WatchStatusProvider>
-            <NavigationContainer>
-              <AppWithStatusBar />
-            </NavigationContainer>
-            <Toast config={toastConfig} position="bottom" />
-          </WatchStatusProvider>
+          <NotificationsProvider>
+            <WatchStatusProvider>
+              <NavigationContainer>
+                <AppWithStatusBar />
+              </NavigationContainer>
+              <Toast config={toastConfig} position="bottom" />
+            </WatchStatusProvider>
+          </NotificationsProvider>
         </AuthProvider>
       </AppThemeProvider>
     </SafeAreaProvider>

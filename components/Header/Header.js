@@ -6,11 +6,13 @@ import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
 import { TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useNotifications } from '../../context/NotificationsContext';
 
 const Header = () => {
   const { isDark } = useTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { unseenCount } = useNotifications();
 
   return (
       <FixedContainer topInset={insets.top + 10}>
@@ -30,6 +32,11 @@ const Header = () => {
         <TouchableOpacity onPress={() => navigation.navigate('Notifications')} activeOpacity={0.7}>
           <BlurIconButton experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
             <IconTextNotifications name="notifications-outline" />
+            {unseenCount > 0 && (
+              <NotificationBadge>
+                <NotificationBadgeText>{unseenCount > 99 ? '99+' : unseenCount}</NotificationBadgeText>
+              </NotificationBadge>
+            )}
           </BlurIconButton>
         </TouchableOpacity>
       </FixedContainer>
@@ -89,4 +96,24 @@ const IconText = styled(AntDesign)`
 const IconTextNotifications = styled(Ionicons)`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 24px;
+`;
+
+const NotificationBadge = styled.View`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: #FF4444;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+`;
+
+const NotificationBadgeText = styled.Text`
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  text-align: center;
 `;
