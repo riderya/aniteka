@@ -111,7 +111,7 @@ const TrendingSlider = () => {
             />
           )}
 
-          <Info experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
+          <Info experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
             <Title numberOfLines={1}>{item.title_ua || item.title_en || item.title_ja}</Title>
             <RowContainer>
               <SubText>

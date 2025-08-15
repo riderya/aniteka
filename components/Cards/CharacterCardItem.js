@@ -10,9 +10,9 @@ const Card = styled.View`
 `;
 
 const CharacterImage = styled.Image`
-  width: 80px;
-  height: 100px;
-  border-radius: 16px;
+  width: ${({ imageWidth }) => imageWidth || 90}px;
+  height: ${({ imageHeight }) => imageHeight || 120}px;
+  border-radius: ${({ imageBorderRadius }) => imageBorderRadius || 16}px;
   background-color: ${({ theme }) => theme.colors.card};
 `;
 
@@ -33,7 +33,12 @@ const AltName = styled.Text`
   margin-top: 4px;
 `;
 
-const CharacterCardItem = ({ character }) => {
+const CharacterCardItem = ({ 
+  character, 
+  imageBorderRadius = 16,
+  imageWidth = 90,
+  imageHeight = 120
+}) => {
   const navigation = useNavigation();
 
   return (
@@ -51,6 +56,9 @@ const CharacterCardItem = ({ character }) => {
               ? { uri: character.image }
               : avatarFallback
           }
+          imageBorderRadius={imageBorderRadius}
+          imageWidth={imageWidth}
+          imageHeight={imageHeight}
         />
         <Info>
           <Name numberOfLines={1}>{character.name_ua || '?'}</Name>

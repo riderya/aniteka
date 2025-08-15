@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { saveUserToSupabaseWithFallback, getUserFromSupabase, updateLastLogin, testSupabaseConnection, getUserCoins } from '../utils/supabase';
 
 const AuthContext = createContext();
 
@@ -8,12 +9,14 @@ const USER_REFERENCE_KEY = 'hikka_user_reference';
 
 export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Змінюємо на false, щоб не блокувати завантаження
+  const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState(null);
   const [token, setToken] = useState(null);
 
   useEffect(() => {
     checkAuthStatus();
+    // Ініціалізуємо Supabase при запуску
+    testSupabaseConnection();
   }, []);
 
   const checkAuthStatus = async () => {
@@ -36,7 +39,7 @@ export function AuthProvider({ children }) {
         setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('Помилка перевірки авторизації:', error);
+      
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
@@ -50,7 +53,7 @@ export function AuthProvider({ children }) {
       });
       return response.ok;
     } catch (error) {
-      console.error('Помилка валідації токена:', error);
+      
       return false;
     }
   };
@@ -67,10 +70,22 @@ export function AuthProvider({ children }) {
         
         if (data.reference) {
           await SecureStore.setItemAsync(USER_REFERENCE_KEY, data.reference);
+          
+          // Зберігаємо дані користувача в Supabase
+          const saved = await saveUserToSupabaseWithFallback(data);
+          if (saved.success) {
+            if (saved.isNewUser) {
+      
+            } else {
+              
+            }
+          } else {
+            
+          }
         }
       }
     } catch (error) {
-      console.error('Помилка отримання даних користувача:', error);
+      
     }
   };
 
@@ -80,8 +95,13 @@ export function AuthProvider({ children }) {
       setToken(newToken);
       setIsAuthenticated(true);
       await fetchUserData(newToken);
+      
+      // Оновлюємо час останнього входу в Supabase
+      if (userData?.reference) {
+        await updateLastLogin(userData.reference);
+      }
     } catch (error) {
-      console.error('Помилка збереження токена:', error);
+      
       throw error;
     }
   };
@@ -94,7 +114,7 @@ export function AuthProvider({ children }) {
       setUserData(null);
       setIsAuthenticated(false);
     } catch (error) {
-      console.error('Помилка виходу:', error);
+      
     }
   };
 

@@ -225,7 +225,7 @@ const fetchCollection = async () => {
     setCollection(response.data);
     setVoteScore(response.data.vote_score);
   } catch (error) {
-    console.error('Помилка завантаження колекції:', error);
+    
   } finally {
     setLoading(false);
   }
@@ -289,7 +289,7 @@ const fetchCollection = async () => {
         });
       }
     } catch (error) {
-      console.error('Помилка оновлення уподобаного:', error);
+      
       Toast.show({
         type: 'error',
         text1: 'Помилка при оновленні улюбленого',
@@ -324,7 +324,7 @@ const checkVoteStatus = async () => {
     if (error.response?.status === 404) {
       setScore(0);
     } else {
-      console.error('Помилка отримання статусу голосу:', error);
+      
       setScore(0);
     }
   }
@@ -375,7 +375,7 @@ const checkVoteStatus = async () => {
         });
       }
     } catch (error) {
-      console.error('Помилка надсилання голосу:', error);
+      
       Toast.show({
         type: 'error',
         text1: 'Помилка при голосуванні',

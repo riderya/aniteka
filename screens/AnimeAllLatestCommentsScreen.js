@@ -43,7 +43,7 @@ const AnimeAllLatestComments = () => {
         // Перевіряємо чи є ще дані для завантаження
         setHasMore(newComments.length === 20);
       } catch (error) {
-        console.error('Помилка при завантаженні коментарів:', error);
+
       } finally {
         setLoading(false);
         setLoadingMore(false);

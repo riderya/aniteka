@@ -191,7 +191,7 @@ const fetchSchedule = async () => {
     setTodayList(todayItems);
     setGroupedList(groupedArray);
   } catch (err) {
-    console.warn('Помилка при завантаженні розкладу:', err);
+    
   } finally {
     setLoading(false);
   }

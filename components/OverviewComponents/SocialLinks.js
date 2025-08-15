@@ -8,29 +8,29 @@ const SocialLinks = React.memo(({ telegramUrl, discordUrl }) => {
 
   const openLink = useCallback(async (url, linkType = 'посилання') => {
     if (!url) {
-      console.log('SocialLinks: URL не передано');
+
       Alert.alert('Помилка', 'Посилання не доступне');
       return;
     }
     
-    console.log(`SocialLinks: Спроба відкрити ${linkType}: ${url}`);
+    
     
     try {
       const supported = await Linking.canOpenURL(url);
-      console.log(`SocialLinks: URL підтримується: ${supported}`);
+      
       
       if (supported) {
         await Linking.openURL(url);
-        console.log(`SocialLinks: ${linkType} успішно відкрито`);
+        
       } else {
-        console.log(`SocialLinks: ${linkType} не підтримується пристроєм`);
+        
         Alert.alert(
           'Неможливо відкрити посилання', 
           `Ваш пристрій не може відкрити це ${linkType}. Спробуйте встановити відповідний додаток або скопіювати посилання вручну: ${url}`
         );
       }
     } catch (error) {
-      console.error(`SocialLinks: Помилка при відкритті ${linkType}:`, error);
+      
       Alert.alert(
         'Помилка', 
         `Не вдалося відкрити ${linkType}. Спробуйте пізніше або скопіюйте посилання вручну: ${url}`

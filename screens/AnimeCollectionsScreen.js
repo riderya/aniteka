@@ -57,7 +57,7 @@ const AnimeCollectionsScreen = () => {
       const combined = allResults.flatMap(res => res.data.list || []);
       setCollections(combined);
     } catch (error) {
-      console.error('Помилка при завантаженні колекцій:', error.response?.data || error.message);
+      
     } finally {
       setLoading(false);
     }

@@ -47,7 +47,7 @@ const AnimeRating = ({ slug }) => {
         if (e.response?.status === 404) {
           setStatus('Не дивлюсь');
           setScore(0);
-        } else console.error(e);
+        } else {}
       } finally {
         setLoad(false);
       }
@@ -65,7 +65,7 @@ const AnimeRating = ({ slug }) => {
           setAvatarUrl(data.avatar);
         }
       } catch (e) {
-        console.error('Failed to load user profile', e);
+
       }
     })();
   }, [auth]);
@@ -79,7 +79,7 @@ const AnimeRating = ({ slug }) => {
         { headers: { auth } }
       );
     } catch (e) {
-      console.error('Update score error', e);
+      
     }
   };
 
@@ -112,7 +112,7 @@ const AnimeRating = ({ slug }) => {
                 Alert.alert('Помилка', 'Не вдалося видалити оцінку');
               }
             } catch (e) {
-              console.error('Delete error', e);
+      
               Alert.alert('Помилка', 'Не вдалося видалити оцінку');
             } finally {
               setDeleting(false);
@@ -212,9 +212,8 @@ const FullScreenBlock = styled.View`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  margin-top: 40px;
-  margin-bottom: 40px;
+  padding: 12px 0px;
+  margin-top: 20px;
   width: 100%;
 `;
 

@@ -231,7 +231,7 @@ const AnimeCharacterDetailsScreen = () => {
         const response = await axios.get(`https://api.hikka.io/characters/${slug}`);
         setCharacter(response.data);
       } catch (error) {
-        console.error('Помилка при завантаженні персонажа:', error);
+
       } finally {
         setLoading(false);
       }
@@ -242,7 +242,7 @@ const AnimeCharacterDetailsScreen = () => {
         const response = await axios.get(`https://api.hikka.io/characters/${slug}/anime?page=1&size=100`);
         setAnimeList(response.data.list || []);
       } catch (error) {
-        console.error('Помилка при завантаженні аніме персонажа:', error);
+
       }
     };
   
@@ -251,7 +251,7 @@ const AnimeCharacterDetailsScreen = () => {
         const response = await axios.get(`https://api.hikka.io/characters/${slug}/manga?page=1&size=100`);
         setMangaList(response.data.list || []);
       } catch (error) {
-        console.error('Помилка при завантаженні манги персонажа:', error);
+        
       }
     };
 
@@ -260,7 +260,7 @@ const AnimeCharacterDetailsScreen = () => {
           const response = await axios.get(`https://api.hikka.io/characters/${slug}/novel?page=1&size=100`);
           setNovelList(response.data.list || []);
         } catch (error) {
-          console.error('Помилка при завантаженні манги персонажа:', error);
+          
         }
       };
 
@@ -269,7 +269,7 @@ const AnimeCharacterDetailsScreen = () => {
           const response = await axios.get(`https://api.hikka.io/characters/${slug}/voices?page=1&size=100`);
           setVoicesList(response.data.list || []);
         } catch (error) {
-          console.error('Помилка при завантаженні манги персонажа:', error);
+          
         }
       };
   

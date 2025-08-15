@@ -23,7 +23,7 @@ const LatestComments = React.memo(() => {
         ).slice(0, 5);
         setComments(filteredComments);
       } catch (error) {
-        console.error('Помилка при завантаженні коментарів:', error);
+
       } finally {
         setLoading(false);
       }

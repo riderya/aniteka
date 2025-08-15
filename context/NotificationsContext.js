@@ -38,7 +38,7 @@ export const NotificationsProvider = ({ children }) => {
       }
     } catch (e) {
       // Silent error handling
-      console.log('Failed to load unseen notifications count:', e);
+      
     }
   }, [token, isAuthenticated]);
 

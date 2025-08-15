@@ -3,9 +3,12 @@ import styled from 'styled-components/native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { getUserActiveItems, getShopItems } from '../../utils/supabase';
 
 const AvatarWrapper = styled.View`
   position: relative;
+  overflow: visible;
 `;
 
 const AvatarImage = styled.Image`
@@ -15,6 +18,15 @@ const AvatarImage = styled.Image`
   border-width: 6px;
   border-color: ${({ theme }) => theme.colors.background || '#f5f7fa'};
   background-color: ${({ theme }) => theme.colors.border || '#dbeafe'};
+`;
+
+const AvatarOverlay = styled.Image`
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 152px;
+  height: 152px;
+  z-index: 99;
 `;
 
 const StatusCircle = styled.View`
@@ -97,6 +109,7 @@ const EmailText = styled.Text`
 const Description = styled.Text`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.gray};
+  margin-bottom: 10px;
 `;
 
 const ActivityInfoContainer = styled.TouchableOpacity`
@@ -184,9 +197,47 @@ const formatTimeAgo = (timestamp) => {
 
 export default function UserAvatar({ userData, showEmailButton = true, showUserBadge = true }) {
   const { theme } = useTheme();
+  const { userData: currentUser } = useAuth();
   const [showEmail, setShowEmail] = useState(false);
   const [showExpandedInfo, setShowExpandedInfo] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [activeOverlay, setActiveOverlay] = useState(null);
+
+  // Завантаження активного оверлею
+  useEffect(() => {
+    const loadActiveOverlay = async () => {
+      if (currentUser?.reference) {
+        try {
+          const activeItems = await getUserActiveItems(currentUser.reference);
+          
+                     if (activeItems && activeItems.avatar_overlay_id) {
+             
+             const overlayItems = await getShopItems(null, 'avatar_overlay');
+             
+             const activeOverlayItem = overlayItems.find(item => item.id === activeItems.avatar_overlay_id);
+             
+             if (activeOverlayItem) {
+       
+               setActiveOverlay(activeOverlayItem);
+             } else {
+               
+               setActiveOverlay(null);
+             }
+           } else {
+             
+             setActiveOverlay(null);
+           }
+        } catch (error) {
+          
+          setActiveOverlay(null);
+        }
+      } else {
+        setActiveOverlay(null);
+      }
+    };
+
+    loadActiveOverlay();
+  }, [currentUser?.reference]);
 
   // Auto-hide tooltip after 3 seconds
   useEffect(() => {
@@ -208,7 +259,16 @@ export default function UserAvatar({ userData, showEmailButton = true, showUserB
               ? { uri: userData.avatar }
               : require('../../assets/image/noSearchImage.png')
           }
+          resizeMode="cover"
         />
+        {activeOverlay && 
+         activeOverlay.image_url && 
+         activeOverlay.is_active !== false && (
+          <AvatarOverlay
+            source={{ uri: activeOverlay.image_url }}
+            resizeMode="cover"
+          />
+        )}
         <StatusCircle active={userData.active} />
       </AvatarWrapper>
 
@@ -269,6 +329,10 @@ export default function UserAvatar({ userData, showEmailButton = true, showUserB
           )}
         </ActivityInfoContainer>
 
+        {userData.description ? (
+          <Description>{userData.description}</Description>
+        ) : null}
+
         {showEmailButton && (
           <EmailWrapper onPress={() => setShowEmail((prev) => !prev)}>
             <EmailText>
@@ -283,9 +347,6 @@ export default function UserAvatar({ userData, showEmailButton = true, showUserB
           </EmailWrapper>
         )}
 
-        {userData.description ? (
-          <Description>{userData.description}</Description>
-        ) : null}
       </ColumnInfo>
     </>
   );

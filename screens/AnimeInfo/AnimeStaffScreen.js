@@ -96,7 +96,7 @@ const AnimeStaffScreen = () => {
       setHasMoreData(data.list.length === STAFF_PER_PAGE);
       setCurrentPage(page);
     } catch (error) {
-      console.error('Помилка при завантаженні авторів:', error);
+      
     } finally {
       if (isLoadMore) {
         setLoadingMore(false);
@@ -150,7 +150,7 @@ const AnimeStaffScreen = () => {
 
   return (
     <Container>
-      <BlurOverlay experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`Всі автори: ${title}`} />
       </BlurOverlay>
 

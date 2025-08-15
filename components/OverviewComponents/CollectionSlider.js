@@ -34,7 +34,7 @@ const CollectionSlider = React.memo(() => {
 
         setCollections(response.data.list);
       } catch (error) {
-        console.error('Помилка при завантаженні колекцій:', error);
+
       } finally {
         setLoading(false);
       }

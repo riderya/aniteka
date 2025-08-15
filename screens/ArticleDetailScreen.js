@@ -36,7 +36,7 @@ const CATEGORY_TRANSLATIONS = {
   useEffect(() => {
     axios.get(`https://api.hikka.io/articles/${slug}`)
       .then(res => setArticle(res.data))
-      .catch(console.error)
+              .catch(() => {})
       .finally(() => setLoading(false));
   }, [slug]);
 

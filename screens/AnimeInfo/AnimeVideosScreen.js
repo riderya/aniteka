@@ -157,7 +157,7 @@ const AnimeVideosScreen = ({ route }) => {
 
   return (
     <Container>
-      <BlurOverlay experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`Всі відео: ${anime.title_ua || anime.title_en || anime.title_ja || ''}`} />
       </BlurOverlay>
 

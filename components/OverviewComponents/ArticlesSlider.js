@@ -26,7 +26,7 @@ const ArticlesSlider = React.memo(({ slug, title }) => {
         draft: false,
       })
       .then((res) => setArticles(res.data.list))
-      .catch((err) => console.error('Failed to fetch articles:', err));
+              .catch((err) => {});
   }, []);
 
   const renderItem = useCallback(({ item }) => {

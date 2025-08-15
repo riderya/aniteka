@@ -24,7 +24,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const HeaderContainer = styled.View`
   position: relative;
-  height: 250px;
+  height: 220px;
   overflow: hidden;
 `;
 
@@ -40,7 +40,7 @@ const CoverOverlay = styled.View`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
+  /* background-color: rgba(0, 0, 0, 0.4); */
 `;
 
 const FollowButton = styled.TouchableOpacity`
@@ -60,7 +60,8 @@ const FollowButton = styled.TouchableOpacity`
 `;
 
 const FollowButtonText = styled.Text`
-  color: ${({ isFollowed, theme }) => 
+  color: ${({ isFollowed, theme, disabled }) => 
+    disabled ? theme.colors.gray : 
     isFollowed ? theme.colors.text : '#ffffff'};
   font-weight: 600;
   font-size: 16px;
@@ -235,9 +236,13 @@ const UserProfile = () => {
   const [isFollowed, setIsFollowed] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('statistics');
 
   const username = route.params?.username || 'hikka';
+  
+  // Перевіряємо чи це профіль поточного користувача
+  const isOwnProfile = currentUser?.username === username;
 
   const handleTabPress = (tabName) => {
     setActiveTab(tabName);
@@ -268,7 +273,7 @@ const UserProfile = () => {
     try {
       return await SecureStore.getItemAsync('hikka_token');
     } catch (err) {
-      console.error('Error getting auth token:', err);
+      
       return null;
     }
   };
@@ -297,7 +302,7 @@ const UserProfile = () => {
       }
       return false;
     } catch (err) {
-      console.error('Error checking follow status:', err);
+      
       return false;
     }
   };
@@ -325,7 +330,7 @@ const UserProfile = () => {
       }
       return false;
     } catch (err) {
-      console.error('Error following user:', err);
+      
       return false;
     }
   };
@@ -353,7 +358,7 @@ const UserProfile = () => {
       }
       return false;
     } catch (err) {
-      console.error('Error unfollowing user:', err);
+      
       return false;
     }
   };
@@ -366,10 +371,10 @@ const UserProfile = () => {
         const data = await response.json();
         return data;
       }
-      console.log('Follow stats response not ok:', response.status);
+      
       return { followers: 0, following: 0 };
     } catch (err) {
-      console.error('Error fetching follow stats:', err);
+      
       return { followers: 0, following: 0 };
     }
   };
@@ -391,7 +396,7 @@ const UserProfile = () => {
         on_hold: 0 
       };
     } catch (err) {
-      console.error('Error fetching watch stats:', err);
+      
       return { 
         duration: 0, 
         completed: 0, 
@@ -400,6 +405,24 @@ const UserProfile = () => {
         dropped: 0, 
         on_hold: 0 
       };
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await fetch('https://api.hikka.io/user/me', {
+        headers: { auth: token }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentUser(data);
+      }
+    } catch (err) {
+      
     }
   };
 
@@ -415,7 +438,7 @@ const UserProfile = () => {
       const data = await response.json();
       setUserData(data);
     } catch (err) {
-      console.error('Error fetching user profile:', err);
+      
       setError('Не вдалося завантажити профіль користувача');
     }
   };
@@ -444,7 +467,7 @@ const UserProfile = () => {
           }
         }
       } catch (watchErr) {
-        console.error('Error fetching watch stats for activity calculation:', watchErr);
+        
       }
       
       // Fallback: Calculate total anime hours from activity data
@@ -456,7 +479,7 @@ const UserProfile = () => {
       const totalHours = Math.round(totalMinutes / 60);
       setAnimeHours(totalHours);
     } catch (err) {
-      console.error('Error fetching user activity:', err);
+      
       // Don't set error for activity, just log it
       setAnimeHours(0);
     }
@@ -476,8 +499,9 @@ const UserProfile = () => {
       fetchFollowStats().then(stats => setFollowStats(stats))
     ];
     
-    // Only load follow status if authenticated
+    // Load current user data if authenticated
     if (token) {
+      promises.push(fetchCurrentUser());
       promises.push(
         checkFollowStatus().then(status => setIsFollowed(status))
       );
@@ -499,15 +523,15 @@ const UserProfile = () => {
         return (
           <>
             <HeaderContainer>
-              <CoverImage
-                source={
-                  userData?.cover
-                    ? { uri: userData.cover }
-                    : require('../assets/image/banner-zaglushka.jpg')
-                }
-                resizeMode="cover"
-              />
-              <CoverOverlay />
+              {userData?.cover && (
+                <>
+                  <CoverImage
+                    source={{ uri: userData.cover }}
+                    resizeMode="cover"
+                  />
+                  <CoverOverlay />
+                </>
+              )}
             </HeaderContainer>
             <UserInfoContainer>
               <UserAvatar userData={userData} showEmailButton={false} showUserBadge={true} />
@@ -605,21 +629,23 @@ const UserProfile = () => {
              <FollowButton 
                isFollowed={isFollowed}
                onPress={handleFollowToggle}
-               disabled={followLoading}
+               disabled={followLoading || isOwnProfile}
              >
                {followLoading ? (
                  <ActivityIndicator color={theme.colors.text} />
                ) : (
                  <>
                    <FollowButtonIconWrapper>
-                     {!isFollowed ? (
+                     {isOwnProfile ? (
+                       <Ionicons name="person" size={20} color={theme.colors.gray} />
+                     ) : !isFollowed ? (
                        <Ionicons name="person-add-outline" size={20} color="#ffffff"  />
                      ) : (
                        <Ionicons name="person-remove-outline" size={20} color={theme.colors.text} />
                      )}
                    </FollowButtonIconWrapper>
-                   <FollowButtonText isFollowed={isFollowed}>
-                     {isFollowed ? 'Не стежити' : 'Відстежувати'}
+                   <FollowButtonText isFollowed={isFollowed} disabled={isOwnProfile}>
+                     {isOwnProfile ? 'Це мій профіль' : (isFollowed ? 'Не стежити' : 'Відстежувати')}
                    </FollowButtonText>
                  </>
                )}
@@ -682,7 +708,7 @@ const UserProfile = () => {
   };
 
   const handleFollowToggle = async () => {
-    if (followLoading) return;
+    if (followLoading || isOwnProfile) return;
     
          // Check if user is authenticated
      if (!isAuthenticated) {
@@ -736,7 +762,7 @@ const UserProfile = () => {
          });
        }
          } catch (err) {
-       console.error('Error in follow toggle:', err);
+       
        Toast.show({
          type: 'error',
          text1: 'Помилка',

@@ -290,7 +290,7 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
       setHasMore(page < totalPages);
     }
   } catch (err) {
-    console.error('Error fetching favorites:', err);
+    
     if (page === 1) {
       setError(`Не вдалося завантажити улюблені ${getContentTypeLabel(contentType).toLowerCase()}: ${err.message}`);
     } else {

@@ -10,6 +10,7 @@ import OverviewScreen from '../screens/OverviewScreen';
 import SavedScreen from '../screens/SavedScreen';
 import UserScreen from '../screens/UserScreen';
 
+
 const Tab = createBottomTabNavigator();
 
 const TabBarContainer = styled(BlurView)`
@@ -53,8 +54,9 @@ export default function TabNavigator() {
             case 'User':
               iconName = focused ? 'person' : 'person-outline';
               break;
+
             default:
-              iconName = 'ellipse';
+              iconName = 'help-circle-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -73,7 +75,7 @@ export default function TabNavigator() {
         const { state, descriptors, navigation } = props;
         return (
           <TabBarContainer 
-            experimentalBlurMethod="dimezis" 
+            experimentalBlurMethod="dimezisBlurView" 
             intensity={100} 
             tint={isDark ? 'dark' : 'light'}
             bottomInset={insets.bottom}
@@ -158,14 +160,15 @@ export default function TabNavigator() {
           headerShown: false,
         }}
       />
-      <Tab.Screen
-        name="User"
-        component={UserScreen}
-        options={{
-          tabBarLabel: 'Профіль',
-          headerShown: false,
-        }}
-      />
+              <Tab.Screen
+          name="User"
+          component={UserScreen}
+          options={{
+            tabBarLabel: 'Профіль',
+            headerShown: false,
+          }}
+        />
+
     </Tab.Navigator>
   );
 }

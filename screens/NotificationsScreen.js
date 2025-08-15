@@ -23,7 +23,7 @@ const PAGE_SIZE = 15;
 export default function NotificationsScreen({ navigation }) {
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, isLoading: authLoading } = useAuth();
   const { unseenCount, setUnseenCount, loadUnseenCount, decrementUnseenCount } = useNotifications();
 
   const [list, setList] = useState([]);
@@ -164,10 +164,30 @@ export default function NotificationsScreen({ navigation }) {
     </EmptyContainer>
   ), [theme.colors.textSecondary]);
 
+  // Показуємо лоадер під час перевірки авторизації
+  if (authLoading) {
+    return (
+      <ScreenContainer style={{ paddingBottom: insets.bottom }}>
+        <HeaderRow experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
+          <BackButton onPress={() => navigation.goBack()} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+          </BackButton>
+          <HeaderTitle>Сповіщення</HeaderTitle>
+          <View style={{ width: 32 }} />
+        </HeaderRow>
+        <ContentContainer style={{ paddingTop: insets.top + 56 }}>
+          <LoaderContainer>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </LoaderContainer>
+        </ContentContainer>
+      </ScreenContainer>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <ScreenContainer style={{ paddingBottom: insets.bottom }}>
-        <HeaderRow experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
+        <HeaderRow experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
           <BackButton onPress={() => navigation.goBack()} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
           </BackButton>
@@ -188,7 +208,7 @@ export default function NotificationsScreen({ navigation }) {
 
   return (
     <ScreenContainer style={{ paddingBottom: insets.bottom }}>
-      <HeaderRow experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
+      <HeaderRow experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
         <BackButton onPress={() => navigation.goBack()} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
         </BackButton>

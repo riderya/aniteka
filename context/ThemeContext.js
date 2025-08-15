@@ -1,12 +1,34 @@
 import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import styled, { ThemeProvider } from 'styled-components/native';
 import { lightThemeColors, darkThemeColors } from './themeColors';
+import * as SecureStore from 'expo-secure-store';
 
 const ThemeContext = createContext();
 
 export const AppThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(false);
   const [primaryColorIndex, setPrimaryColorIndex] = useState(0); // зберігаємо індекс кольору
+
+  // Завантажуємо збережені налаштування при ініціалізації
+  useEffect(() => {
+    const loadThemeSettings = async () => {
+      try {
+        const savedIsDark = await SecureStore.getItemAsync('theme_is_dark');
+        const savedColorIndex = await SecureStore.getItemAsync('theme_color_index');
+        
+        if (savedIsDark !== null) {
+          setIsDark(savedIsDark === 'true');
+        }
+        if (savedColorIndex !== null) {
+          setPrimaryColorIndex(parseInt(savedColorIndex));
+        }
+      } catch (error) {
+        console.log('Помилка завантаження налаштувань теми:', error);
+      }
+    };
+
+    loadThemeSettings();
+  }, []);
 
   const lightColors = ['#9A60AC', '#ff6666', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0'];
   const darkColors = ['#C084E4', '#00E5FF', '#81C784', '#FFD54F', '#BA68C8', '#F06292'];
@@ -26,8 +48,26 @@ export const AppThemeProvider = ({ children }) => {
     };
   }, [isDark, primaryColorIndex]);
 
-  const toggleTheme = () => setIsDark((prev) => !prev);
-  const changePrimaryColor = (index) => setPrimaryColorIndex(index);
+  const toggleTheme = async () => {
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    
+    try {
+      await SecureStore.setItemAsync('theme_is_dark', newIsDark.toString());
+    } catch (error) {
+      console.log('Помилка збереження налаштування теми:', error);
+    }
+  };
+
+  const changePrimaryColor = async (index) => {
+    setPrimaryColorIndex(index);
+    
+    try {
+      await SecureStore.setItemAsync('theme_color_index', index.toString());
+    } catch (error) {
+      console.log('Помилка збереження налаштування кольору:', error);
+    }
+  };
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({

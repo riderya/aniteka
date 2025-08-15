@@ -58,7 +58,7 @@ const MoreButton = ({ slug }) => {
         message: `Дивись це аніме у додатку: ${firebaseDynamicLink}`,
       });
     } catch (error) {
-      console.error('Помилка при поділі:', error);
+      
     }
     setVisible(false);
   };
@@ -67,7 +67,7 @@ const MoreButton = ({ slug }) => {
     // Тут відкриваємо кастомний deep link (якщо додаток встановлений)
     const deepLinkUrl = `yummyanimelist://anime/${slug}`;
     Linking.openURL(deepLinkUrl).catch((err) => {
-      console.error('Не вдалося відкрити посилання:', err);
+      
       // Можна за бажанням відкривати веб-версію, якщо deep link не працює
       Linking.openURL(firebaseDynamicLink);
     });

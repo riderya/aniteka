@@ -8,7 +8,6 @@ import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import toastConfig from '../components/CustomToast';
 
-import Header from '../components/Header/Header';
 import UserAvatar from '../components/UserComponents/UserAvatar';
 import FollowStatsBlock from '../components/UserComponents/FollowStatsBlock';
 import UserActivityBlock from '../components/UserComponents/UserActivityBlock';
@@ -21,7 +20,7 @@ import { useTheme } from '../context/ThemeContext';
 
 const HeaderContainer = styled.View`
   position: relative;
-  height: 250px;
+  height: 220px;
   overflow: hidden;
 `;
 
@@ -37,7 +36,6 @@ const CoverOverlay = styled.View`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
 `;
 
 const EditButton = styled.TouchableOpacity`
@@ -49,6 +47,24 @@ const EditButton = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   justify-content: center;
+`;
+
+const ShopButton = styled.TouchableOpacity`
+  padding: 14px;
+  border-radius: 999px;
+  background-color: ${({ theme, disabled }) => disabled ? theme.colors.border : theme.colors.card};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  width: 50px;
+  height: 50px;
+  align-items: center;
+  justify-content: center;
+  opacity: ${({ disabled }) => disabled ? 0.5 : 1};
+`;
+
+const ButtonsContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
 `;
 
 const EditButtonText = styled.Text`
@@ -192,7 +208,7 @@ const UserScreen = () => {
   const renderData = [
     { type: 'header', id: 'header' },
     { type: 'followStats', id: 'followStats' },
-    { type: 'editButton', id: 'editButton' },
+    { type: 'buttonsRow', id: 'buttonsRow' },
     { type: 'actionButtons', id: 'actionButtons' },
     // Показуємо блоки в залежності від активного табу
     ...(activeTab === 'statistics' ? [{ type: 'watchStats', id: 'watchStats' }] : []),
@@ -208,7 +224,7 @@ const UserScreen = () => {
     try {
       return await SecureStore.getItemAsync('hikka_token');
     } catch (err) {
-      console.error('Error getting auth token:', err);
+      
       return null;
     }
   };
@@ -228,7 +244,7 @@ const UserScreen = () => {
       }
       return { followers: 0, following: 0 };
     } catch (err) {
-      console.error('Error fetching follow stats:', err);
+      
       return { followers: 0, following: 0 };
     }
   };
@@ -262,7 +278,7 @@ const UserScreen = () => {
         on_hold: 0 
       };
     } catch (err) {
-      console.error('Error fetching watch stats:', err);
+      
       return { 
         duration: 0, 
         completed: 0, 
@@ -297,7 +313,7 @@ const UserScreen = () => {
       const data = await response.json();
       setUserData(data);
     } catch (err) {
-      console.error('Error fetching user profile:', err);
+      
       setError('Не вдалося завантажити профіль користувача');
     }
   };
@@ -333,7 +349,7 @@ const UserScreen = () => {
           }
         }
       } catch (watchErr) {
-        console.error('Error fetching watch stats for activity calculation:', watchErr);
+        
       }
       
       // Fallback: Calculate total anime hours from activity data
@@ -343,7 +359,7 @@ const UserScreen = () => {
       const totalHours = Math.round(totalMinutes / 60);
       setAnimeHours(totalHours);
     } catch (err) {
-      console.error('Error fetching user activity:', err);
+      
       setAnimeHours(0);
     }
   };
@@ -382,15 +398,15 @@ const UserScreen = () => {
         return (
           <>
             <HeaderContainer>
-              <CoverImage
-                source={
-                  userData?.cover
-                    ? { uri: userData.cover }
-                    : require('../assets/image/banner-zaglushka.jpg')
-                }
-                resizeMode="cover"
-              />
-              <CoverOverlay />
+              {userData?.cover && (
+                <>
+                  <CoverImage
+                    source={{ uri: userData.cover }}
+                    resizeMode="cover"
+                  />
+                  <CoverOverlay />
+                </>
+              )}
             </HeaderContainer>
             <UserInfoContainer>
               <UserAvatar userData={userData} showEmailButton={true} showUserBadge={true} />
@@ -458,19 +474,21 @@ const UserScreen = () => {
                 </ActionButtonText>
               </ActionButton>
               
-              <ActionButton 
-                isActive={activeTab === 'history'} 
-                onPress={() => handleTabPress('history')}
-              >
-                <Ionicons 
-                  name="time" 
-                  size={16} 
-                  color={activeTab === 'history' ? '#ffffff' : theme.colors.text} 
-                />
-                <ActionButtonText isActive={activeTab === 'history'}>
-                  Історія
-                </ActionButtonText>
-              </ActionButton>
+                             <ActionButton 
+                 isActive={activeTab === 'history'} 
+                 onPress={() => handleTabPress('history')}
+               >
+                 <Ionicons 
+                   name="time" 
+                   size={16} 
+                   color={activeTab === 'history' ? '#ffffff' : theme.colors.text} 
+                 />
+                 <ActionButtonText isActive={activeTab === 'history'}>
+                   Історія
+                 </ActionButtonText>
+               </ActionButton>
+              
+
             </ActionButtonsScrollView>
           </ProfileActionButtonsContainer>
         );
@@ -482,17 +500,22 @@ const UserScreen = () => {
           </View>
         );
       
-      case 'editButton':
-        return (
-          <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
-            <EditButton onPress={() => navigation.navigate('EditProfile')}>
-              <EditButtonIconWrapper>
-                <Feather name="edit-3" size={20} color={theme.colors.text} />
-              </EditButtonIconWrapper>
-              <EditButtonText>Редагувати профіль</EditButtonText>
-            </EditButton>
-          </View>
-        );
+                    case 'buttonsRow':
+         return (
+           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
+             <ButtonsContainer>
+               <EditButton onPress={() => navigation.navigate('Settings', { fromEditProfile: true })} style={{ flex: 1 }}>
+                 <EditButtonIconWrapper>
+                   <Feather name="edit-3" size={20} color={theme.colors.text} />
+                 </EditButtonIconWrapper>
+                 <EditButtonText>Редагувати профіль</EditButtonText>
+               </EditButton>
+               <ShopButton disabled={true} onPress={() => navigation.navigate('Shop')}>
+                 <Ionicons name="storefront" size={20} color={theme.colors.text} />
+               </ShopButton>
+             </ButtonsContainer>
+           </View>
+         );
       
       case 'watchStats':
         return (
@@ -608,8 +631,6 @@ const UserScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <Header />
-      
       <FlatList
         data={renderData}
         keyExtractor={(item) => item.id}

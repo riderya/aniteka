@@ -62,7 +62,7 @@ const AnimeRecommendationsSlider = ({ slug }) => {
       setPage(nextPage);
       setHasMore(nextPage < pages);
     } catch (e) {
-      console.error('Помилка завантаження рекомендацій:', e);
+      
     } finally {
       setLoading(false);
       setIsLoadingMore(false);
@@ -82,7 +82,7 @@ const AnimeRecommendationsSlider = ({ slug }) => {
   if (loading) {
     return (
       <Container>
-        <RowLineHeader title="Рекомендації" />
+        <RowLineHeader title="Схожий контент" />
         <ActivityIndicator size="small" style={{ marginVertical: 20 }} />
       </Container>
     );
@@ -99,7 +99,7 @@ const AnimeRecommendationsSlider = ({ slug }) => {
 
   return (
     <Container>
-      <RowLineHeader title="Рекомендації" />
+      <RowLineHeader title="Схожий контент" />
       <FlatList
         horizontal
         data={recommendations}

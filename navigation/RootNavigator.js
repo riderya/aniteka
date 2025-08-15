@@ -25,6 +25,10 @@ import ArticleDetailScreen from '../screens/ArticleDetailScreen';
 import CollectionDetailScreen from '../screens/CollectionDetailScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 
+import UserInventoryScreen from '../components/Shop/UserInventoryScreen';
+import ShopScreen from '../components/Shop/ShopScreen';
+
+
 const RootStack = createStackNavigator();
 
 const LoadingContainer = styled.View`
@@ -68,8 +72,12 @@ export default function RootNavigator() {
       <RootStack.Screen name="AnimeCollectionsScreen" component={AnimeCollectionsScreen} />
       <RootStack.Screen name="AnimeAllArticlesScreen" component={AnimeAllArticlesScreen} />
       <RootStack.Screen name="ArticleDetailScreen" component={ArticleDetailScreen} />
-      <RootStack.Screen name="CollectionDetailScreen" component={CollectionDetailScreen} />
-      <RootStack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+             <RootStack.Screen name="CollectionDetailScreen" component={CollectionDetailScreen} />
+       <RootStack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+
+       <RootStack.Screen name="Inventory" component={UserInventoryScreen} />
+       <RootStack.Screen name="Shop" component={ShopScreen} />
+
     </RootStack.Navigator>
   );
 }

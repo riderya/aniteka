@@ -3,16 +3,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
-const HeaderTitleBar = ({ title }) => {
+const HeaderTitleBar = ({ title, showBack = true, onBack }) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      navigation.goBack();
+    }
+  };
 
   return (
     <HeaderContainer style={{ paddingTop: insets.top }}>
       <HeaderRow>
-        <BackButton onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="#888" />
-        </BackButton>
+        {showBack && (
+          <BackButton onPress={handleBack}>
+            <Ionicons name="arrow-back" size={28} color="#888" />
+          </BackButton>
+        )}
         <HeaderTitle numberOfLines={1}>{title}</HeaderTitle>
       </HeaderRow>
     </HeaderContainer>

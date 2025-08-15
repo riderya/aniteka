@@ -56,7 +56,7 @@ const UserCollectionsBlock = ({ username, reference }) => {
     try {
       return await SecureStore.getItemAsync('auth_token');
     } catch (error) {
-      console.error('Error getting auth token:', error);
+      
       return null;
     }
   };
@@ -93,7 +93,7 @@ const UserCollectionsBlock = ({ username, reference }) => {
 
       if (!collectionsResponse.ok) {
         const errorText = await collectionsResponse.text();
-        console.error('API Error Response:', errorText);
+        
         throw new Error(`HTTP error! status: ${collectionsResponse.status}`);
       }
 
@@ -130,7 +130,7 @@ const UserCollectionsBlock = ({ username, reference }) => {
       }
 
     } catch (error) {
-      console.error('Error fetching user collections:', error);
+      
       setError(error.message);
       
       if (page === 1) {

@@ -169,7 +169,7 @@ const AnimeHistoryBlock = ({ username, limit = 21 }) => {
         setHasMore(hasMoreData);
       }
     } catch (err) {
-      console.error('Error fetching history:', err);
+      
       if (page === 1) {
         setError(err.message || 'Не вдалося завантажити історію');
       } else {

@@ -145,7 +145,7 @@ const TopDetail = ({ anime }) => {
    <Poster 
      source={{ uri: anime.image }} 
      resizeMode="cover"
-     onError={() => console.log('Помилка завантаження зображення')}
+                     onError={() => {}}
      defaultSource={fallbackImage}
    />
  </TouchableOpacity>
@@ -183,7 +183,7 @@ const TopDetail = ({ anime }) => {
           </ButtonsRow>
 
           <ButtonsRow>
-            <WatchButton onPress={() => console.log('Кнопка 2')}>
+            <WatchButton onPress={() => {}}>
               <StyledPlay name="play" />
               <ButtonText>Дивитися</ButtonText>
             </WatchButton>
@@ -241,7 +241,7 @@ const TopDetail = ({ anime }) => {
              ? { uri: studios[0].company.image }
              : fallbackImage
          }
-         onError={() => console.log('Помилка завантаження логотипу студії')}
+                         onError={() => {}}
          defaultSource={fallbackImage}
        />
       {/* <StudioName>{studios[0].company.name}</StudioName> */}
@@ -368,7 +368,7 @@ const TopDetail = ({ anime }) => {
                        ? { uri: studioItem.company.image }
                        : fallbackImage
                    }
-                   onError={() => console.log('Помилка завантаження логотипу студії')}
+                   onError={() => {}}
                    defaultSource={fallbackImage}
                  />
                 <StudioName>{studioItem.company.name}</StudioName>
@@ -400,7 +400,7 @@ const TopDetail = ({ anime }) => {
        onSwipeDown={() => setImageViewerVisible(false)}
        backgroundColor={theme.colors.transparentBackground}
        saveToLocalByLongPress={false}
-       onImageLoadError={() => console.log('Помилка завантаження зображення в ImageViewer')}
+                 onImageLoadError={() => {}}
        enableImageZoom={true}
        swipeDownThreshold={50}
      />

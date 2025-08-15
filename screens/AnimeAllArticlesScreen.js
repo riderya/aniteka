@@ -104,7 +104,7 @@ const AnimeAllArticlesScreen = () => {
         setHasMore(newArticles.length > 0);
         setPage(pageNumber);
       } catch (error) {
-        console.error('Error fetching articles:', error);
+
       } finally {
         setLoading(false);
         if (isRefresh) setRefreshing(false);

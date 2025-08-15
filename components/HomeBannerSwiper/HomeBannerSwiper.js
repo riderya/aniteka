@@ -105,7 +105,7 @@ return (
   <Slide key={`slide-${item.slug || item.id || Math.random().toString(36).substr(2, 9)}`}>
     <GradientBlock />
     <BackgroundImage source={{ uri: imageUrl }} />
-    <StyledBlurView experimentalBlurMethod="dimezis" intensity={30} tint={isDark ? 'dark' : 'light'} />
+    <StyledBlurView experimentalBlurMethod="dimezisBlurView" intensity={30} tint={isDark ? 'dark' : 'light'} />
     <Content>
       <Info>
         <Title numberOfLines={2}>{item.title_ua || 'Назва відсутня'}</Title>
@@ -139,7 +139,7 @@ return (
             <StyledPlay name="play" />
             <ButtonText>Дивитись</ButtonText>
           </WatchButton>
-          <DetailButton onPress={() => console.log('Детальніше натиснуто')}>
+          <DetailButton onPress={() => {}}>
             <StyledInfo name="info" />
             <ButtonText style={{color: '#fff'}}>Детальніше</ButtonText>
           </DetailButton>
@@ -276,7 +276,7 @@ const RatingBlock = styled.View`
   gap: 5px;
   height: 36px;
   padding: 4px 16px;
-  background-color: rgba(255, 215, 0, 0.2); 
+  background-color: rgba(173, 133, 0, 0.3); 
   border-radius: 999px;
 `;
 
@@ -366,7 +366,6 @@ const DetailButton = styled(TouchableOpacity)`
   height: 48px;
   margin-top: 5px;
   background-color: #30303066;
-  border: 1px solid ${({ theme }) => theme.colors.borderInput};
   padding: 0px 32px;
   border-radius: 999px;
   margin-left: 4px;

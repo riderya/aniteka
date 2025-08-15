@@ -48,7 +48,7 @@ const CompanyDetailScreen = () => {
       const data = await res.json();
       setCompany(data);
     } catch (err) {
-      console.error('Error loading company:', err);
+      
     } finally {
       setLoadingCompany(false);
     }
@@ -75,7 +75,7 @@ const CompanyDetailScreen = () => {
       setTotalPages(data.pagination?.pages || 1);
       setPage(pageToLoad);
     } catch (err) {
-      console.error('Error loading anime list:', err);
+      
     } finally {
       setLoadingMore(false);
     }

@@ -53,7 +53,7 @@ export default function CommentForm({ content_type, slug }) {
       const result = await response.json();
 
       if (!response.ok) {
-        console.error('Помилка API:', result);
+
         Alert.alert('Помилка', result?.detail || 'Не вдалося надіслати коментар');
         return;
       }
@@ -63,7 +63,7 @@ export default function CommentForm({ content_type, slug }) {
       setSpoiler(false);
     } catch (e) {
       Alert.alert('Помилка', 'Сталася помилка під час відправки коментаря');
-      console.error(e);
+      
     }
   };
 

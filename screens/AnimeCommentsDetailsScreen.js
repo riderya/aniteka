@@ -176,7 +176,7 @@ const AnimeCommentsDetailsScreen = () => {
 
       setHasMore(res.data.pagination.page < res.data.pagination.pages);
     } catch (e) {
-      console.error('Помилка при завантаженні коментарів:', e);
+      
     } finally {
       setIsFetching(false);
       setLoading(false);
@@ -200,7 +200,7 @@ const AnimeCommentsDetailsScreen = () => {
       setComments(newComments);
       setHasMore(res.data.pagination.page < res.data.pagination.pages);
     } catch (e) {
-      console.error('Помилка при оновленні коментарів:', e);
+      
     } finally {
       setRefreshing(false);
     }
@@ -263,7 +263,7 @@ const AnimeCommentsDetailsScreen = () => {
       keyboardVerticalOffset={40}
     >
       <Container>
-        <BlurOverlay experimentalBlurMethod="dimezis"  intensity={100} tint={isDark ? 'dark' : 'light'}>
+        <BlurOverlay experimentalBlurMethod="dimezisBlurView"  intensity={100} tint={isDark ? 'dark' : 'light'}>
           <HeaderTitleBar title={`Коментарі: ${title}`} />
         </BlurOverlay>
 

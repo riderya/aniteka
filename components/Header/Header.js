@@ -8,6 +8,7 @@ import { TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useNotifications } from '../../context/NotificationsContext';
 
+
 const Header = () => {
   const { isDark } = useTheme();
   const navigation = useNavigation();
@@ -17,28 +18,29 @@ const Header = () => {
   return (
       <FixedContainer topInset={insets.top + 10}>
         <Touchable onPress={() => navigation.navigate('Search')} activeOpacity={0.7}>
-          <BlurButton experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
+          <BlurButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
             <IconText name="search1" />
             <ButtonText>Пошук</ButtonText>
           </BlurButton>
         </Touchable>
 
         <TouchableOpacity onPress={() => navigation.navigate('Settings')} activeOpacity={0.7}>
-          <BlurIconButton experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
+          <BlurIconButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
             <IconText name="setting" />
           </BlurIconButton>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Notifications')} activeOpacity={0.7}>
-          <BlurIconButton experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
-            <IconTextNotifications name="notifications-outline" />
-            {unseenCount > 0 && (
-              <NotificationBadge>
-                <NotificationBadgeText>{unseenCount > 99 ? '99+' : unseenCount}</NotificationBadgeText>
-              </NotificationBadge>
-            )}
-          </BlurIconButton>
-        </TouchableOpacity>
+                 <TouchableOpacity onPress={() => navigation.navigate('Notifications')} activeOpacity={0.7}>
+           <BlurIconButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
+             <IconTextNotifications name="notifications-outline" />
+             {unseenCount > 0 && (
+               <NotificationBadge>
+                 <NotificationBadgeText>{unseenCount > 99 ? '99+' : unseenCount}</NotificationBadgeText>
+               </NotificationBadge>
+             )}
+           </BlurIconButton>
+         </TouchableOpacity>
+
       </FixedContainer>
   );
 };

@@ -200,7 +200,7 @@ const AnimeRowCard = React.memo(({
           setAnimeDescription(description);
         }
       } catch (error) {
-        console.error('Error fetching anime description:', error);
+
       }
     };
 

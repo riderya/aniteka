@@ -10,9 +10,9 @@ const Card = styled.View`
 `;
 
 const Image = styled.Image`
-  width: 80px;
-  height: 100px;
-  border-radius: 16px;
+  width: ${({ imageWidth }) => imageWidth || 90}px;
+  height: ${({ imageHeight }) => imageHeight || 120}px;
+  border-radius: ${({ imageBorderRadius }) => imageBorderRadius || 16}px;
   background-color: ${({ theme }) => theme.colors.card};
 `;
 
@@ -33,7 +33,14 @@ const Role = styled.Text`
   margin-top: 4px;
 `;
 
-const StaffCardRow = ({ person, roles, onPress }) => {
+const StaffCardRow = ({ 
+  person, 
+  roles, 
+  onPress, 
+  imageBorderRadius = 16,
+  imageWidth = 90,
+  imageHeight = 120
+}) => {
   return (
     <TouchableOpacity onPress={onPress}>
       <Card>
@@ -41,6 +48,9 @@ const StaffCardRow = ({ person, roles, onPress }) => {
           source={
             person?.image?.trim() ? { uri: person.image } : avatarFallback
           }
+          imageBorderRadius={imageBorderRadius}
+          imageWidth={imageWidth}
+          imageHeight={imageHeight}
         />
         <Info>
           <Name numberOfLines={1}>

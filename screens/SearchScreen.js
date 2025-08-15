@@ -15,12 +15,16 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import avatarFallback from '../assets/image/image404.png';
 import noSearchImage from '../assets/image/noSearchImage.png';
+import AnimeRowCard from '../components/Cards/AnimeRowCard';
+import CharacterCardItem from '../components/Cards/CharacterCardItem';
+import StaffCardRow from '../components/Cards/StaffCardRow';
 
 const API_ANIME = 'https://api.hikka.io/anime';
 const API_CHARACTERS = 'https://api.hikka.io/characters';
@@ -36,6 +40,7 @@ export default function SearchScreen() {
   const [history, setHistory] = useState([]);
   const navigation = useNavigation();
   const { isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const HISTORY_KEY = 'search_history';
 
@@ -50,7 +55,7 @@ export default function SearchScreen() {
         setHistory(JSON.parse(storedHistory));
       }
     } catch (err) {
-      console.error('Failed to load search history', err);
+      
     }
   };
 
@@ -58,7 +63,7 @@ export default function SearchScreen() {
     try {
       await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
     } catch (err) {
-      console.error('Failed to save search history', err);
+      
     }
   };
 
@@ -86,7 +91,7 @@ export default function SearchScreen() {
         const list = type === 'users' ? response?.data : response?.data?.list;
         setResults(list || []);
       } catch (error) {
-        console.error(error);
+
       } finally {
         setLoading(false);
       }
@@ -140,18 +145,11 @@ export default function SearchScreen() {
     }
   };
 
-  const media_Type = {
-    tv: 'ТБ-серіал',
-    movie: 'Фільм',
-    ova: 'OVA',
-    ona: 'ONA',
-    special: 'Спешл',
-    music: 'Музичне',
-  };
+
 
   return (
     <Container>
-      <BlurHeader intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurHeader topInset={insets.top} experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
         <Row>
           <ButtonBack onPress={() => navigation.goBack()}>
             <StyledInfo name="arrow-back-outline" />
@@ -229,66 +227,63 @@ export default function SearchScreen() {
 
 
       <FlatList
-        contentContainerStyle={{ paddingTop: 150 }}
+        contentContainerStyle={{ paddingTop: 150, paddingBottom: insets.bottom }}
         data={results}
         keyExtractor={(item) => item.slug || item.reference}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handlePress(item)}>
-            <Item>
-              {type === 'users' ? (
-                <>
+        renderItem={({ item }) => {
+          if (type === 'anime') {
+            return <AnimeRowCard anime={item} imageBorderRadius={16} imageWidth={90} imageHeight={120} />;
+          } else if (type === 'characters') {
+            return <CharacterCardItem character={item} imageBorderRadius={16} imageWidth={90} imageHeight={120} />;
+          } else if (type === 'people') {
+            return (
+              <StaffCardRow 
+                person={item} 
+                roles={item.roles || []}
+                onPress={() => handlePress(item)}
+                imageBorderRadius={16}
+                imageWidth={90}
+                imageHeight={120}
+              />
+            );
+          } else if (type === 'users') {
+            return (
+              <TouchableOpacity onPress={() => handlePress(item)}>
+                <Item>
                   <Thumbnail source={{ uri: item.avatar || 'https://i.imgur.com/R8uKmI0.png' }} />
                   <Content>
                     <Title numberOfLines={1}>{item.username}</Title>
                     <TitleEn numberOfLines={1}>{item.description || 'Без опису'}</TitleEn>
                     <RowInfo>
                       <Info>{item.role || 'Користувач'}</Info>
-                      {item.active && <Info><StyledDot name="ellipse" /> Активний</Info>}
+                      {item.active && <Info><StyledDot name="circle" /> Активний</Info>}
                     </RowInfo>
                   </Content>
-                </>
-              ) : (
-                <>
+                </Item>
+              </TouchableOpacity>
+            );
+          } else {
+            return (
+              <TouchableOpacity onPress={() => handlePress(item)}>
+                <Item>
                   <Thumbnail source={item.image ? { uri: item.image } : avatarFallback} />
                   <Content>
                     <Title numberOfLines={2}>
-                      {type === 'anime'
-                        ? item.title_ua || item.title_ja || '?'
-                        : type === 'characters'
-                        ? item.name_ua || item.name_ja || '?'
-                        : type === 'companies'
+                      {type === 'companies'
                         ? item.name
                         : item.name_ua || '?'}
                     </Title>
                     <TitleEn numberOfLines={1}>
-                      {type === 'anime'
-                        ? item.title_en || '?'
-                        : type === 'characters'
-                        ? item.name_en || '?'
-                        : type === 'companies'
+                      {type === 'companies'
                         ? item.name || '?'
                         : item.name_en || '?'}
                     </TitleEn>
-                    <RowInfo>
-                      {type === 'anime' && <Info>{item.score}</Info>}
-                      {type === 'anime' && <Info><StyledDot name="circle" /></Info>}
-                      {type === 'anime' && <Info>{item.year}</Info>}
-                      {type === 'anime' && <Info><StyledDot name="circle" /></Info>}
-                      {type === 'anime' && <Info>{media_Type[item.media_type]}</Info>}
-                      {type === 'characters' && <Info><TitleEn>{item.name_ja}</TitleEn></Info>}
-                    </RowInfo>
-                    {type === 'characters' && item.synonyms?.length > 0 && (
-                      <Info>Синоніми: {item.synonyms.join(', ')}</Info>
-                    )}
-                    {type === 'people' && item.description_ua && (
-                      <Info numberOfLines={2}>{item.description_ua}</Info>
-                    )}
                   </Content>
-                </>
-              )}
-            </Item>
-          </TouchableOpacity>
-        )}
+                </Item>
+              </TouchableOpacity>
+            );
+          }
+        }}
         ListEmptyComponent={
           !loading && (
             <View style={{ alignItems: 'center' }}>
@@ -314,7 +309,7 @@ const BlurHeader = styled(BlurView)`
   left: 0;
   right: 0;
   z-index: 10;
-  padding-top: 48px;
+  padding-top: ${({ topInset }) => topInset}px;
   padding-bottom: 10px;
 `;
 
@@ -382,8 +377,8 @@ const Item = styled.View`
 
 const Thumbnail = styled.Image`
   width: 90px;
-  height: 130px;
-  border-radius: 12px;
+  height: 120px;
+  border-radius: 16px;
 `;
 
 const SearchImage = styled.Image`

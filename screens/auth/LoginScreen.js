@@ -9,6 +9,7 @@ import styled from 'styled-components/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../context/AuthContext';
 import BackButton from '../../components/DetailsAnime/BackButton';
 import HIKKA_SCOPES from './hikkaScopes';
 
@@ -17,27 +18,14 @@ WebBrowser.maybeCompleteAuthSession();
 const CLIENT_ID = 'e31c506b-5841-4ac4-b2ba-ed900a558617';
 const CLIENT_SECRET = 'qRDNu2OQw9FrQW_d3ZsSk50INm5ZmPFPB-09mbyVOpuMcUAyDIRchgz9XK69GBFLQIKXbcNSsRACcTTPQYvTJeOZX5BNps5Qn6LmFATtN5Wj8VLOxR2Bx_y5O-T00kdm';
 const REDIRECT_URI = 'yummyanimelist://';
-const TOKEN_KEY = 'hikka_token';
-const USER_REFERENCE_KEY = 'hikka_user_reference';
 
 export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
-  const [token, setToken] = useState(null);
-  const [userData, setUserData] = useState(null);
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { login, logout, token, userData, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    (async () => {
-      const savedToken = await SecureStore.getItemAsync(TOKEN_KEY);
-      const savedRef = await SecureStore.getItemAsync(USER_REFERENCE_KEY);
-
-      if (savedToken) {
-        setToken(savedToken);
-        fetchUserData(savedToken);
-      }
-    })();
-
     // Налаштовуємо обробку deep linking
     const subscription = Linking.addEventListener('url', (event) => {
       const { queryParams } = Linking.parse(event.url);
@@ -52,41 +40,7 @@ export default function LoginScreen({ navigation }) {
     };
   }, []);
 
-  async function saveToken(newToken) {
-    await SecureStore.setItemAsync(TOKEN_KEY, newToken);
-    setToken(newToken);
-  }
 
-  async function logout() {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-    await SecureStore.deleteItemAsync(USER_REFERENCE_KEY);
-    setToken(null);
-    setUserData(null);
-    Alert.alert('🚪 Вихід', 'Ви успішно вийшли з облікового запису.');
-  }
-
-  async function fetchUserData(accessToken) {
-    try {
-      setLoading(true);
-      const response = await fetch('https://api.hikka.io/user/me', {
-        headers: { auth: accessToken },
-      });
-
-      const text = await response.text();
-      if (!response.ok) throw new Error(`Помилка ${response.status}: ${text}`);
-
-      const data = JSON.parse(text);
-      setUserData(data);
-
-      if (data.reference) {
-        await SecureStore.setItemAsync(USER_REFERENCE_KEY, data.reference);
-      }
-    } catch (error) {
-      Alert.alert('⚠️ Помилка', error.message || 'Не вдалося отримати дані користувача.');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const handleLogin = async () => {
     const scope = HIKKA_SCOPES.join(',');
@@ -119,8 +73,7 @@ export default function LoginScreen({ navigation }) {
         const data = await response.json();
 
         if (response.ok && data.secret) {
-          await saveToken(data.secret);
-          await fetchUserData(data.secret);
+          await login(data.secret);
           navigation.navigate('Tabs');
         } else {
           Alert.alert('🚫 Помилка авторизації', data.message || 'Не вдалося отримати токен.');
@@ -151,8 +104,7 @@ export default function LoginScreen({ navigation }) {
       const data = await response.json();
 
       if (response.ok && data.secret) {
-        await saveToken(data.secret);
-        await fetchUserData(data.secret);
+        await login(data.secret);
         navigation.navigate('Tabs');
       } else {
         Alert.alert('🚫 Помилка авторизації', data.message || 'Не вдалося отримати токен.');
@@ -183,13 +135,13 @@ export default function LoginScreen({ navigation }) {
           />
           <Title>Ласкаво просимо до YummyAnimeList!</Title>
           <Description>🎌 Авторизуйтесь, щоб отримати повний доступ до функцій додатка.</Description>
-          {token && (
-            <StatusText>✅ Ви вже авторизовані! Натисніть кнопку для повторної авторизації.</StatusText>
+          {isAuthenticated && userData && (
+            <StatusText>✅ Ви вже авторизовані як {userData.username}! Натисніть кнопку для повторної авторизації.</StatusText>
           )}
           <Button onPress={handleLogin} disabled={loading}>
             {loading ? <ActivityIndicator color={theme.colors.background} /> : <ButtonText>Увійти</ButtonText>}
           </Button>
-          {token && (
+          {isAuthenticated && (
             <LogoutButton onPress={logout} disabled={loading}>
               <LogoutButtonText>Вийти з системи</LogoutButtonText>
             </LogoutButton>

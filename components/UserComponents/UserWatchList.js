@@ -256,7 +256,7 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
   
       }
     } catch (err) {
-      console.error('Error fetching watch list:', err);
+      
       if (page === 1) {
         setError('Не вдалося завантажити список аніме');
       } else {
@@ -310,7 +310,7 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
       
       setStatusCounts(counts);
     } catch (err) {
-      console.error('Error fetching status counts:', err);
+      
     }
   };
 

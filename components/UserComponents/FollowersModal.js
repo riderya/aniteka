@@ -181,7 +181,7 @@ export default function FollowersModal({
         throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (err) {
-      console.error(`Error fetching ${type}:`, err);
+      
       setError(`Не вдалося завантажити ${type === 'followers' ? 'підписників' : 'підписки'}`);
     } finally {
       setLoading(false);

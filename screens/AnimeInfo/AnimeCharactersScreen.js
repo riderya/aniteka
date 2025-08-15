@@ -96,7 +96,7 @@ const AnimeCharactersScreen = () => {
       setHasMoreData(data.list.length === CHARACTERS_PER_PAGE);
       setCurrentPage(page);
     } catch (error) {
-      console.error('Error fetching characters:', error);
+      
     } finally {
       if (isLoadMore) {
         setLoadingMore(false);
@@ -150,7 +150,7 @@ const AnimeCharactersScreen = () => {
 
   return (
     <Container>
-      <BlurOverlay experimentalBlurMethod="dimezis" intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`Всі персонажі: ${title}`} />
       </BlurOverlay>
 
