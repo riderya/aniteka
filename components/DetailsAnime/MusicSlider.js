@@ -1,9 +1,9 @@
 import React from 'react';
 import { FlatList, Linking, Alert, View } from 'react-native';
 import styled from 'styled-components/native';
-import { useTheme } from 'styled-components/native';
 import RowLineHeader from './RowLineHeader';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { useTheme } from '../../context/ThemeContext';
 
 const Container = styled.View`
   padding: 0px;
@@ -106,7 +106,7 @@ const openLink = async (url) => {
 };
 
 const MusicSlider = ({ anime }) => {
-  const theme = useTheme();
+  const { theme } = useTheme();
   const ost = Array.isArray(anime?.ost) ? anime.ost : [];
 
   const data = ost

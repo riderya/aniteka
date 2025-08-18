@@ -20,7 +20,7 @@ import Toast from 'react-native-toast-message';
 import toastConfig from '../components/CustomToast';
 
 import { useTheme } from '../context/ThemeContext';
-import { BlurView } from 'expo-blur';
+import { PlatformBlurView } from '../components/Custom/PlatformBlurView';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggleButton } from '../components/Switchers/ThemeToggleButton';
 import ColorSelector from '../components/Switchers/ColorsSwitcher';
@@ -32,7 +32,7 @@ const Container = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const BlurOverlay = styled(BlurView)`
+const BlurOverlay = styled(PlatformBlurView)`
   position: absolute;
   top: 0;
   left: 0;
@@ -1473,7 +1473,7 @@ const SettingsScreen = () => {
     return (
       <Container>
         {Platform.OS === 'ios' ? (
-          <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={25} tint={isDark ? 'dark' : 'light'}>
+          <BlurOverlay intensity={25} tint={isDark ? 'dark' : 'light'}>
             <HeaderTitleBar 
               title="Налаштування"
               showBack={true}
@@ -1513,7 +1513,7 @@ const SettingsScreen = () => {
   return (
     <Container>
       {Platform.OS === 'ios' ? (
-        <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={25} tint={isDark ? 'dark' : 'light'}>
+        <BlurOverlay intensity={25} tint={isDark ? 'dark' : 'light'}>
           <HeaderTitleBar 
             title={fromEditProfile ? 'Редагування профілю' : (showTabList ? 'Налаштування' : (availableTabs.find(tab => tab.id === activeTab)?.title || 'Налаштування'))}
             showBack={true}

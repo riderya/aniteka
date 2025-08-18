@@ -6,8 +6,8 @@ import {
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PlatformBlurView } from '../../components/Custom/PlatformBlurView';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
 import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
@@ -23,7 +23,7 @@ const CenteredContainer = styled(Container)`
   justify-content: center;
 `;
 
-const BlurOverlay = styled(BlurView)`
+const BlurOverlay = styled(PlatformBlurView)`
   position: absolute;
   top: 0;
   left: 0;
@@ -150,7 +150,7 @@ const AnimeStaffScreen = () => {
 
   return (
     <Container>
-      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`Всі автори: ${title}`} />
       </BlurOverlay>
 

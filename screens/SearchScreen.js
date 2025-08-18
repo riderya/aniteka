@@ -13,8 +13,8 @@ import {
 import styled from 'styled-components/native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
-import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
+import { PlatformBlurView } from '../components/Custom/PlatformBlurView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -149,7 +149,7 @@ export default function SearchScreen() {
 
   return (
     <Container>
-      <BlurHeader topInset={insets.top} experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurHeader topInset={insets.top} intensity={100} tint={isDark ? 'dark' : 'light'}>
         <Row>
           <ButtonBack onPress={() => navigation.goBack()}>
             <StyledInfo name="arrow-back-outline" />
@@ -227,7 +227,7 @@ export default function SearchScreen() {
 
 
       <FlatList
-        contentContainerStyle={{ paddingTop: 150, paddingBottom: insets.bottom }}
+        contentContainerStyle={{ paddingTop: 170, paddingBottom: insets.bottom, paddingHorizontal: 12 }}
         data={results}
         keyExtractor={(item) => item.slug || item.reference}
         renderItem={({ item }) => {
@@ -303,14 +303,14 @@ const Container = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const BlurHeader = styled(BlurView)`
+const BlurHeader = styled(PlatformBlurView)`
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 10;
-  padding-top: ${({ topInset }) => topInset}px;
-  padding-bottom: 10px;
+  z-index: 1000;
+  padding: 10px 0px;
+  padding-top: ${({ topInset }) => topInset + 16}px;
 `;
 
 const Row = styled.View`

@@ -4,13 +4,13 @@ import styled from 'styled-components/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useNotifications } from '../../context/NotificationsContext';
 
 
 const Header = () => {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { unseenCount } = useNotifications();
@@ -18,20 +18,34 @@ const Header = () => {
   return (
       <FixedContainer topInset={insets.top + 10}>
         <Touchable onPress={() => navigation.navigate('Search')} activeOpacity={0.7}>
-          <BlurButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
-            <IconText name="search1" />
-            <ButtonText>Пошук</ButtonText>
-          </BlurButton>
+          {Platform.OS === 'ios' ? (
+            <BlurButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
+              <IconText name="search1" />
+              <ButtonText>Пошук</ButtonText>
+            </BlurButton>
+          ) : (
+            <AndroidButton>
+              <IconText name="search1" />
+              <ButtonText>Пошук</ButtonText>
+            </AndroidButton>
+          )}
         </Touchable>
 
         <TouchableOpacity onPress={() => navigation.navigate('Settings')} activeOpacity={0.7}>
-          <BlurIconButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
-            <IconText name="setting" />
-          </BlurIconButton>
+          {Platform.OS === 'ios' ? (
+            <BlurIconButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
+              <IconText name="setting" />
+            </BlurIconButton>
+          ) : (
+            <AndroidIconButton>
+              <IconText name="setting" />
+            </AndroidIconButton>
+          )}
         </TouchableOpacity>
 
                  <TouchableOpacity onPress={() => navigation.navigate('Notifications')} activeOpacity={0.7}>
-           <BlurIconButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
+           {Platform.OS === 'ios' ? (
+            <BlurIconButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
              <IconTextNotifications name="notifications-outline" />
              {unseenCount > 0 && (
                <NotificationBadge>
@@ -39,6 +53,16 @@ const Header = () => {
                </NotificationBadge>
              )}
            </BlurIconButton>
+         ) : (
+           <AndroidIconButton>
+             <IconTextNotifications name="notifications-outline" />
+             {unseenCount > 0 && (
+               <NotificationBadge>
+                 <NotificationBadgeText>{unseenCount > 99 ? '99+' : unseenCount}</NotificationBadgeText>
+               </NotificationBadge>
+             )}
+           </AndroidIconButton>
+         )}
          </TouchableOpacity>
 
       </FixedContainer>
@@ -118,4 +142,26 @@ const NotificationBadgeText = styled.Text`
   font-size: 11px;
   font-weight: bold;
   text-align: center;
+`;
+
+const AndroidButton = styled.View`
+  flex: 1;
+  height: 55px;
+  background-color: ${({ theme }) => theme.colors.card};
+  border-radius: 999px;
+  padding: 0 16px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+`;
+
+const AndroidIconButton = styled.View`
+  width: 55px;
+  height: 55px;
+  background-color: ${({ theme }) => theme.colors.card};
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 `;

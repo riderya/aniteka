@@ -1,8 +1,8 @@
 import React, { useState, useEffect, memo } from 'react';
 import { FlatList, ActivityIndicator, Dimensions, StatusBar, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
-import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
+import { PlatformBlurView } from '../Custom/PlatformBlurView';
 import { useNavigation } from '@react-navigation/native';
 import AnilistBanner from '../../components/BackgroundImg/AnilistBanner';
 import KitsuBanner   from '../../components/BackgroundImg/KitsuBanner';
@@ -111,7 +111,7 @@ const TrendingSlider = () => {
             />
           )}
 
-          <Info experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
+          <Info intensity={100} tint={isDark ? 'dark' : 'light'}>
             <Title numberOfLines={1}>{item.title_ua || item.title_en || item.title_ja}</Title>
             <RowContainer>
               <SubText>
@@ -168,7 +168,7 @@ const Card = styled.View`
   align-items: center;
 `;
 
-const Info = styled(BlurView)`
+const Info = styled(PlatformBlurView)`
   position: absolute;
   bottom: 0;
   padding: 8px 12px;

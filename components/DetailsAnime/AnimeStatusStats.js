@@ -1,7 +1,8 @@
 import React from 'react';
 import { View } from 'react-native';
-import styled, { useTheme } from 'styled-components/native';
+import styled from 'styled-components/native';
 import RowLineHeader from './RowLineHeader';
+import { useTheme } from '../../context/ThemeContext';
 
 const Container = styled.View``;
 
@@ -73,7 +74,7 @@ const getLabel = (key) => {
 };
 
 const AnimeStatusStats = ({ anime }) => {
-  const { colors } = useTheme();
+  const { theme } = useTheme();
   const stats = anime?.stats;
 
   if (!stats) return null;
@@ -100,7 +101,7 @@ const AnimeStatusStats = ({ anime }) => {
               key={key}
               style={{
                 width: `${percent}%`,
-                backgroundColor: colors[key], // 👈 використовуємо theme
+                backgroundColor: theme.colors[key], // 👈 використовуємо theme
               }}
             />
           );
@@ -110,7 +111,7 @@ const AnimeStatusStats = ({ anime }) => {
       <FlexWrap>
         {segments.map(({ key, value }) => (
           <LegendItem key={key}>
-            <Dot style={{ backgroundColor: colors[key] }} />
+            <Dot style={{ backgroundColor: theme.colors[key] }} />
             <Label>
               {getLabel(key)} <Score>{value.toLocaleString('uk-UA')}</Score>
             </Label>

@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Dimensions, ActivityIndicator, FlatList, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import styled from 'styled-components/native';
-import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
+import { PlatformBlurView } from '../Custom/PlatformBlurView';
 import GradientBlock from '../GradientBlock/GradientBlock';
 import axios from 'axios';
 
@@ -105,7 +105,7 @@ return (
   <Slide key={`slide-${item.slug || item.id || Math.random().toString(36).substr(2, 9)}`}>
     <GradientBlock />
     <BackgroundImage source={{ uri: imageUrl }} />
-    <StyledBlurView experimentalBlurMethod="dimezisBlurView" intensity={30} tint={isDark ? 'dark' : 'light'} />
+    <StyledBlurView intensity={30} tint={isDark ? 'dark' : 'light'} />
     <Content>
       <Info>
         <Title numberOfLines={2}>{item.title_ua || 'Назва відсутня'}</Title>
@@ -210,7 +210,7 @@ left: 0;
 opacity: 0.7;
 `;
 
-const StyledBlurView = styled(BlurView)`
+const StyledBlurView = styled(PlatformBlurView)`
 position: absolute;
 top: 0;
 right: 0;

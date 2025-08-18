@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components/native';
-import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
+import { PlatformBlurView } from '../Custom/PlatformBlurView';
 import { View, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -80,7 +80,7 @@ const ModalOverlay = styled.TouchableOpacity`
   padding: 20px;
 `;
 
-const BlurOverlay = styled(BlurView)`
+const BlurOverlay = styled(PlatformBlurView)`
   position: absolute;
   top: 0;
   left: 0;

@@ -2,9 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import styled from 'styled-components/native';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
+import { PlatformBlurView } from '../components/Custom/PlatformBlurView';
 import HomeScreen from '../screens/HomeScreen';
 import OverviewScreen from '../screens/OverviewScreen';
 import SavedScreen from '../screens/SavedScreen';
@@ -13,7 +13,7 @@ import UserScreen from '../screens/UserScreen';
 
 const Tab = createBottomTabNavigator();
 
-const TabBarContainer = styled(BlurView)`
+const TabBarContainer = styled(PlatformBlurView)`
   position: absolute;
   bottom: ${props => props.bottomInset + 10}px;
   left: 10px;
@@ -75,7 +75,6 @@ export default function TabNavigator() {
         const { state, descriptors, navigation } = props;
         return (
           <TabBarContainer 
-            experimentalBlurMethod="dimezisBlurView" 
             intensity={100} 
             tint={isDark ? 'dark' : 'light'}
             bottomInset={insets.bottom}

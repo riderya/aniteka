@@ -11,7 +11,7 @@ import Entypo from '@expo/vector-icons/Entypo';
 import Markdown from 'react-native-markdown-display';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import avatarFallback from '../assets/image/image404.png';
-import HeaderTitleBar from '../components/Header/HeaderTitleBar';
+import BackButton from '../components/DetailsAnime/BackButton';
 
 const Container = styled.View`
   flex: 1;
@@ -20,18 +20,15 @@ const Container = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const Spacer = styled.View`
-  width: 12px;
+const FixedBackButtonWrapper = styled.View`
+  position: absolute;
+  top: 50px;
+  left: 12px;
+  z-index: 10;
 `;
 
-const BlurOverlay = styled(BlurView)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  border-bottom-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
+const Spacer = styled.View`
+  width: 12px;
 `;
 
 const BlockBorder = styled.View`
@@ -60,7 +57,7 @@ const CharacterImageWrapper = styled.View`
 const CharacterImage = styled.Image`
   width: 210px;
   height: 300px;
-  border-radius: 16px;
+  border-radius: 36px;
   background-color: ${({ theme }) => theme.colors.card};
 `;
 
@@ -219,7 +216,7 @@ const AnimeCharacterDetailsScreen = () => {
   const [character, setCharacter] = useState(null);
   const [loading, setLoading] = useState(true);
   const [spoilerOpen, setSpoilerOpen] = useState({});
-   const headerHeight = insets.top + 65;
+   const headerHeight = insets.top + 30;
   const [animeList, setAnimeList] = useState([]);
   const [mangaList, setMangaList] = useState([]);
   const [novelList, setNovelList] = useState([]);
@@ -294,14 +291,13 @@ const AnimeCharacterDetailsScreen = () => {
 
   return (
     <Container>
-
-      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
-        <HeaderTitleBar title={`${character.name_ua || character.name_en || character.name_ja}`} />
-      </BlurOverlay>
+      <FixedBackButtonWrapper>
+        <BackButton />
+      </FixedBackButtonWrapper>
 
       <Content
               headerHeight={headerHeight}
-              contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
               >
         <CharacterImageWrapper>
           <CharacterImage 

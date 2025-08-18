@@ -3,8 +3,8 @@ import { Alert, Linking } from 'react-native';
 import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PlatformBlurView } from '../../components/Custom/PlatformBlurView';
 import { useTheme } from '../../context/ThemeContext';
 import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
 
@@ -44,7 +44,7 @@ const Container = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const BlurOverlay = styled(BlurView)`
+const BlurOverlay = styled(PlatformBlurView)`
   position: absolute;
   top: 0;
   left: 0;
@@ -157,7 +157,7 @@ const AnimeVideosScreen = ({ route }) => {
 
   return (
     <Container>
-      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`Всі відео: ${anime.title_ua || anime.title_en || anime.title_ja || ''}`} />
       </BlurOverlay>
 

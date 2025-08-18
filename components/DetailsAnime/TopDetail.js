@@ -1,8 +1,8 @@
 // TopDetail.js
 import { TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Alert, View, StyleSheet, Modal } from 'react-native';
-import ImageViewer from 'react-native-image-zoom-viewer';
+import ImageViewing from 'react-native-image-viewing';
 import styled from 'styled-components/native';
 import * as Clipboard from 'expo-clipboard';
 import Markdown from 'react-native-markdown-display';
@@ -33,8 +33,11 @@ const TopDetail = ({ anime }) => {
   const [visible, setVisible] = useState(false);
   const [anilistBannerLoaded, setAnilistBannerLoaded] = useState(null);
   
-  const [isImageViewerVisible, setImageViewerVisible] = useState(false);
+  const [galleryVisible, setGalleryVisible] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [galleryImages, setGalleryImages] = useState([]);
   const [bannerUrls, setBannerUrls] = useState([]);
+  const previousImagesRef = useRef([]);
 
   const copyToClipboard = async (text) => {
     await Clipboard.setStringAsync(text);
@@ -86,62 +89,85 @@ const TopDetail = ({ anime }) => {
     fall: 'Осінь',
   };
 
-  const styles = StyleSheet.create({
-    header: {
-      flexDirection: 'row',
-      gap: 10,
-      position: 'absolute',
-      top: 50,
-      right: 12,
-      zIndex: 1,
-    },
-    closeBtn: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.card,
-      borderWidth: 1,
-      borderColor: theme.colors.borderInput,
-      borderRadius: 12,
-      width: 45,
-      height: 45,
-    },
-  });
+
 
 
   
 
-  const imageUris = [anime.image, ...bannerUrls];
-  const uniqueImageUris = [...new Set(imageUris.filter(Boolean))];
-  const imagesToView = uniqueImageUris.map(uri => ({ url: uri }));
+  // Оновлюємо галерею зображень при зміні bannerUrls та студій
+  React.useEffect(() => {
+    const studioImages = studios.map(studio => studio.company.image).filter(Boolean);
+    const imageUris = [anime.image, ...bannerUrls, ...studioImages];
+    const uniqueImageUris = [...new Set(imageUris.filter(Boolean))];
+    const images = uniqueImageUris.map(uri => ({ uri }));
+    
+    // Перевіряємо, чи дійсно змінилися зображення перед оновленням
+    const currentImagesString = JSON.stringify(images.map(img => img.uri).sort());
+    const previousImagesString = JSON.stringify(previousImagesRef.current.map(img => img.uri).sort());
+    
+    if (currentImagesString !== previousImagesString) {
+      setGalleryImages(images);
+      previousImagesRef.current = images;
+    }
+  }, [anime.image, bannerUrls, studios]);
 
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
 <BackgroundWrapper>
-  <AnilistBanner
-    mal_id={anime.mal_id}
-    type="ANIME"
-    onLoaded={(url) => {
-      if (url) {
-        setBannerUrls(prev => [...prev, url]);
-      } else {
-        setAnilistBannerLoaded(false);
+  <TouchableOpacity 
+    onPress={() => {
+      if (bannerUrls.length > 0) {
+        setGalleryIndex(1); // Починаємо з першого банеру
+        setGalleryVisible(true);
       }
     }}
-  />
-  
-  {anilistBannerLoaded === false && (
-    <KitsuBanner
-      slug={anime.slug}
-      onLoaded={(url) => url && setBannerUrls(prev => [...prev, url])}
+    activeOpacity={0.9}
+  >
+    <AnilistBanner
+      mal_id={anime.mal_id}
+      type="ANIME"
+      onLoaded={(url) => {
+        if (url) {
+          setBannerUrls(prev => {
+            // Перевіряємо, чи URL вже не додано
+            if (!prev.includes(url)) {
+              return [...prev, url];
+            }
+            return prev;
+          });
+        } else {
+          setAnilistBannerLoaded(false);
+        }
+      }}
     />
-  )}
+    
+    {anilistBannerLoaded === false && (
+      <KitsuBanner
+        slug={anime.slug}
+        onLoaded={(url) => {
+          if (url) {
+            setBannerUrls(prev => {
+              // Перевіряємо, чи URL вже не додано
+              if (!prev.includes(url)) {
+                return [...prev, url];
+              }
+              return prev;
+            });
+          }
+        }}
+      />
+    )}
+  </TouchableOpacity>
   <GradientBlock />
 </BackgroundWrapper>
 
       <Content>
         <Container>
-                 <TouchableOpacity onPress={() => setImageViewerVisible(true)}>
+                 <TouchableOpacity onPress={() => {
+                   setGalleryIndex(0);
+                   setGalleryVisible(true);
+                 }}>
    <Poster 
      source={{ uri: anime.image }} 
      resizeMode="cover"
@@ -235,15 +261,28 @@ const TopDetail = ({ anime }) => {
       }
       style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}
     >
-             <StudioLogo
-         source={
-           studios[0].company.image
-             ? { uri: studios[0].company.image }
-             : fallbackImage
-         }
-                         onError={() => {}}
-         defaultSource={fallbackImage}
-       />
+      <TouchableOpacity
+        onPress={() => {
+          if (studios[0].company.image) {
+            const studioIndex = galleryImages.findIndex(img => img.uri === studios[0].company.image);
+            if (studioIndex >= 0) {
+              setGalleryIndex(studioIndex);
+              setGalleryVisible(true);
+            }
+          }
+        }}
+        activeOpacity={0.8}
+      >
+        <StudioLogo
+          source={
+            studios[0].company.image
+              ? { uri: studios[0].company.image }
+              : fallbackImage
+          }
+          onError={() => {}}
+          defaultSource={fallbackImage}
+        />
+      </TouchableOpacity>
       {/* <StudioName>{studios[0].company.name}</StudioName> */}
     </TouchableOpacity>
 
@@ -362,15 +401,29 @@ const TopDetail = ({ anime }) => {
               }}
             >
               <InfoRow style={{ gap: 12 }}>
-                                 <StudioLogo
-                   source={
-                     studioItem.company.image
-                       ? { uri: studioItem.company.image }
-                       : fallbackImage
-                   }
-                   onError={() => {}}
-                   defaultSource={fallbackImage}
-                 />
+                <TouchableOpacity
+                  onPress={() => {
+                    if (studioItem.company.image) {
+                      const studioIndex = galleryImages.findIndex(img => img.uri === studioItem.company.image);
+                      if (studioIndex >= 0) {
+                        setStudiosModalVisible(false);
+                        setGalleryIndex(studioIndex);
+                        setGalleryVisible(true);
+                      }
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <StudioLogo
+                    source={
+                      studioItem.company.image
+                        ? { uri: studioItem.company.image }
+                        : fallbackImage
+                    }
+                    onError={() => {}}
+                    defaultSource={fallbackImage}
+                  />
+                </TouchableOpacity>
                 <StudioName>{studioItem.company.name}</StudioName>
               </InfoRow >
             </TouchableOpacity>
@@ -378,34 +431,12 @@ const TopDetail = ({ anime }) => {
         </Column>
       </AnimatedModal>
 
-      <Modal
-  visible={isImageViewerVisible}
-  onRequestClose={() => setImageViewerVisible(false)}
-  transparent={true}
->
-     <View style={{ flex: 1, backgroundColor: theme.colors.transparentBackground }}>
-     <View style={styles.header}>
-       <TouchableOpacity
-         onPress={() => setImageViewerVisible(false)}
-         style={styles.closeBtn}
-       >
-         <Ionicons name="close" size={28} color={theme.colors.gray} />
-       </TouchableOpacity>
-     </View>
-
-         <ImageViewer
-       imageUrls={imagesToView}
-       index={0}
-       enableSwipeDown={true}
-       onSwipeDown={() => setImageViewerVisible(false)}
-       backgroundColor={theme.colors.transparentBackground}
-       saveToLocalByLongPress={false}
-                 onImageLoadError={() => {}}
-       enableImageZoom={true}
-       swipeDownThreshold={50}
-     />
-  </View>
-</Modal>
+      <ImageViewing
+        images={galleryImages}
+        imageIndex={galleryIndex}
+        visible={galleryVisible}
+        onRequestClose={() => setGalleryVisible(false)}
+      />
 
 
 

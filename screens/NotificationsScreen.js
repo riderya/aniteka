@@ -11,8 +11,8 @@ import {
   Linking,
 } from 'react-native';
 import styled from 'styled-components/native';
-import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
+import { PlatformBlurView } from '../components/Custom/PlatformBlurView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
@@ -169,7 +169,7 @@ export default function NotificationsScreen({ navigation }) {
   if (authLoading) {
     return (
       <ScreenContainer style={{ paddingBottom: insets.bottom }}>
-        <HeaderRow experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
+        <HeaderRow intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
           <BackButton onPress={() => navigation.goBack()} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
           </BackButton>
@@ -188,7 +188,7 @@ export default function NotificationsScreen({ navigation }) {
   if (!isAuthenticated) {
     return (
       <ScreenContainer style={{ paddingBottom: insets.bottom }}>
-        <HeaderRow experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
+        <HeaderRow intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
           <BackButton onPress={() => navigation.goBack()} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
           </BackButton>
@@ -204,7 +204,7 @@ export default function NotificationsScreen({ navigation }) {
 
   return (
     <ScreenContainer style={{ paddingBottom: insets.bottom }}>
-      <HeaderRow experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
+      <HeaderRow intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
         <BackButton onPress={() => navigation.goBack()} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
         </BackButton>
@@ -510,20 +510,14 @@ const ContentContainer = styled.View`
   flex: 1;
 `;
 
-const HeaderRow = styled(BlurView)`
-  height: ${({ topOffset }) => 56 + topOffset}px;
-  flex-direction: row;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 0 12px 12px 12px;
-  overflow: hidden;
+const HeaderRow = styled(PlatformBlurView)`
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  border-bottom-width: 1px;
-  border-bottom-color: ${({ theme }) => theme.colors.border};
+  padding: 16px;
+  padding-top: ${({ topOffset }) => topOffset + 16}px;
 `;
 
 const BackButton = styled(TouchableOpacity)`

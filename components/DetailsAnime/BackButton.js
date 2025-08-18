@@ -6,6 +6,8 @@ import { useNavigation } from '@react-navigation/native';
 
 const BackButtonWrapper = styled(TouchableOpacity)`
   position: absolute;
+  top: 12px;
+  left: 12px;
   z-index: 10;
   width: 45px;
   height: 45px;

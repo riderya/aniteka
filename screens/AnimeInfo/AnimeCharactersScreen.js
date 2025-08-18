@@ -9,7 +9,7 @@ import axios from 'axios';
 import HeaderTitleBar from '../../components/Header/HeaderTitleBar';
 import { useTheme } from '../../context/ThemeContext';
 import { useRoute } from '@react-navigation/native';
-import { BlurView } from 'expo-blur';
+import { PlatformBlurView } from '../../components/Custom/PlatformBlurView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CharacterCardItem from '../../components/Cards/CharacterCardItem';
 
@@ -23,7 +23,7 @@ const CenteredContainer = styled(Container)`
   justify-content: center;
 `;
 
-const BlurOverlay = styled(BlurView)`
+const BlurOverlay = styled(PlatformBlurView)`
   position: absolute;
   top: 0;
   left: 0;
@@ -150,7 +150,7 @@ const AnimeCharactersScreen = () => {
 
   return (
     <Container>
-      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`Всі персонажі: ${title}`} />
       </BlurOverlay>
 

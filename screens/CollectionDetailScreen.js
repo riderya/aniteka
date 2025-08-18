@@ -2,8 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { ActivityIndicator, Dimensions, View, Text } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
+import { PlatformBlurView } from '../components/Custom/PlatformBlurView';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import Markdown from 'react-native-markdown-display';
@@ -463,7 +463,7 @@ useFocusEffect(
 
       <StyledScrollView
         contentContainerStyle={{
-          paddingTop: 110,
+          paddingTop: 90,
           paddingBottom: 20 + insets.bottom,
           paddingHorizontal: 12,
           backgroundColor: theme.background,
@@ -490,104 +490,93 @@ useFocusEffect(
   </AuthorContainer>
 )}
 
-        <Title>{title}</Title>
+        <HeaderBlock>
+          <HeaderTitle>{title}</HeaderTitle>
+          
+          <HeaderCreatedAt>
+            {formatDate(collection.created)}
+            {collection.updated > 0 && collection.updated !== collection.created && (
+              <Text style={{ color: theme.colors.gray, fontSize: 14 }}>
+                {' • Ред: ' + formatDate(collection.updated)}
+              </Text>
+            )}
+          </HeaderCreatedAt>
 
-<CreatedAtButton 
-  onPress={() => {
-    if (!hasSeenUpdated) {
-      setShowUpdated(true);
-      setHasSeenUpdated(true);
-    }
-  }} 
-  activeOpacity={1}
->
-  <CreatedAt>
-    <CreatedAtText>{formatDate(collection.created)}</CreatedAtText>
-    {!showUpdated && !hasSeenUpdated && (
-      <AntDesign name="right" size={14} color="#888" />
-    )}
-  </CreatedAt>
-  {(showUpdated || hasSeenUpdated) && collection.updated > 0 && collection.updated !== collection.created && (
-    <CreatedAt style={{ marginTop: 2 }}>
-      <CreatedAtText>Ред: {formatDate(collection.updated)}</CreatedAtText>
-    </CreatedAt>
-  )}
-</CreatedAtButton>
+          {tags?.length > 0 && (
+            <TagsContainer>
+              {tags.map((tag, i) => (
+                <Tag key={i}>{tag}</Tag>
+              ))}
+            </TagsContainer>
+          )}
 
-        {tags?.length > 0 && (
-          <TagsContainer>
-            {tags.map((tag, i) => (
-              <Tag key={i}>{tag}</Tag>
-            ))}
-          </TagsContainer>
-        )}
+          <HeaderButtonsScrollView>
+            <HeaderButtonsContainer>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>  
+                <VoteButton
+                  active={score === 1}
+                  onPress={() => sendVote(score === 1 ? 0 : 1)}
+                  theme={theme}
+                  disabled={voteLoading}
+                >
+                  <Ionicons 
+                    name="chevron-up" 
+                    size={24} 
+                    color={score === 1 
+                      ? theme.colors.success 
+                      : theme.colors.gray}
+                  />
+                </VoteButton>
 
-<ButtonsScrollView>
-  <ButtonsContainer>
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>  
-      <VoteButton
-        active={score === 1}
-        onPress={() => sendVote(score === 1 ? 0 : 1)}
-        theme={theme}
-        disabled={voteLoading}
-      >
-        <Ionicons 
-          name="chevron-up" 
-          size={24} 
-          color={score === 1 
-            ? theme.colors.success 
-            : theme.colors.gray}
-        />
-      </VoteButton>
+                <VoteScoreText>{voteScore}</VoteScoreText>
 
-      <VoteScoreText>{voteScore}</VoteScoreText>
+                <VoteButton
+                  active={score === -1}
+                  onPress={() => sendVote(score === -1 ? 0 : -1)}
+                  theme={theme}
+                  disabled={voteLoading}
+                >
+                  <Ionicons 
+                    name="chevron-down"
+                    size={24} 
+                    color={score === -1
+                      ? theme.colors.error
+                      : theme.colors.gray}
+                  />
+                </VoteButton>
+              </View>
 
-      <VoteButton
-        active={score === -1}
-        onPress={() => sendVote(score === -1 ? 0 : -1)}
-        theme={theme}
-        disabled={voteLoading}
-      >
-        <Ionicons 
-          name="chevron-down"
-          size={24} 
-          color={score === -1
-            ? theme.colors.error
-            : theme.colors.gray}
-        />
-      </VoteButton>
-    </View>
+              <FavouriteButton
+                onPress={toggleFavourite}
+                disabled={favouriteLoading}
+                isFavourite={isFavourite}
+              >
+                <AntDesign 
+                  name={isFavourite ? "heart" : "hearto"} 
+                  size={16} 
+                  color={theme.colors.error}
+                  style={{
+                    marginRight: 8,
+                    borderRightWidth: 1,
+                    borderColor: '#ccc',
+                    paddingRight: 8
+                  }}
+                />
+                <FavouriteText isFavourite={isFavourite}>
+                  {isFavourite ? 'Видалити з улюблених' : 'Додати в улюблене'}
+                </FavouriteText>
+              </FavouriteButton>
 
-    <FavouriteButton
-      onPress={toggleFavourite}
-      disabled={favouriteLoading}
-      isFavourite={isFavourite}
-    >
-      <AntDesign 
-        name={isFavourite ? "heart" : "hearto"} 
-        size={16} 
-        color={theme.colors.error}
-        style={{
-          marginRight: 8,
-          borderRightWidth: 1,
-          borderColor: '#ccc',
-          paddingRight: 8
-        }}
-      />
-      <FavouriteText isFavourite={isFavourite}>
-        {isFavourite ? 'Видалити з улюблених' : 'Додати в улюблене'}
-      </FavouriteText>
-    </FavouriteButton>
-
-    <CommentsCountButton>
-      <Ionicons name="chatbox-outline" size={16} color={theme.colors.gray}/>
-      <CommentsCountText 
-        style={{ marginLeft: 8 }}>
-        {collection.comments_count}
-      </CommentsCountText>
-    </CommentsCountButton>
-  </ButtonsContainer>
-</ButtonsScrollView>
+              <CommentsCountButton>
+                <Ionicons name="chatbox-outline" size={16} color={theme.colors.gray}/>
+                <CommentsCountText 
+                  style={{ marginLeft: 8 }}>
+                  {collection.comments_count}
+                </CommentsCountText>
+              </CommentsCountButton>
+            </HeaderButtonsContainer>
+          </HeaderButtonsScrollView>
+        </HeaderBlock>
 
 {collection.description && (
   <DescriptionContainer>
@@ -656,7 +645,7 @@ useFocusEffect(
 export default CollectionDetailScreen;
 
 // Styled components
-const BlurOverlay = styled(BlurView)`
+const BlurOverlay = styled(PlatformBlurView)`
   position: absolute;
   top: 0;
   left: 0;
@@ -851,4 +840,44 @@ const ButtonsContainer = styled.View`
   align-items: center;
   gap: 10px;
   margin-top: 12px;
+`;
+
+const HeaderBlock = styled.View`
+  background-color: ${({ theme }) => theme.colors.card};
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  shadow-color: #000;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
+  elevation: 3;
+`;
+
+const HeaderTitle = styled.Text`
+  font-size: 24px;
+  font-weight: bold;
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 8px;
+  line-height: 28px;
+`;
+
+const HeaderCreatedAt = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+  margin-bottom: 12px;
+`;
+
+const HeaderButtonsContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+`;
+
+const HeaderButtonsScrollView = styled.ScrollView.attrs({
+  horizontal: true,
+  showsHorizontalScrollIndicator: false,
+})`
+  flex: 1;
 `;

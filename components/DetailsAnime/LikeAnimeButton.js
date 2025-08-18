@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator } from 'react-native'
-import styled, { useTheme } from 'styled-components/native'
+import styled from 'styled-components/native'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import axios from 'axios'
 import * as SecureStore from 'expo-secure-store'
 import Toast from 'react-native-toast-message'
+import { useTheme } from '../../context/ThemeContext'
 
 const TouchableOpacityStyled = styled.TouchableOpacity`
   flex-direction: row;
@@ -22,7 +23,7 @@ const LikeAnimeButton = ({ slug }) => {
   const [loading, setLoading] = useState(true)
   const [authToken, setAuthToken] = useState(null)
 
-  const theme = useTheme()
+  const { theme } = useTheme()
   const contentType = 'anime'
   const endpoint = `https://api.hikka.io/favourite/${contentType}/${slug}`
 
