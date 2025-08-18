@@ -8,6 +8,7 @@ import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import toastConfig from '../components/CustomToast';
 
+import Header from '../components/Header/Header';
 import UserAvatar from '../components/UserComponents/UserAvatar';
 import FollowStatsBlock from '../components/UserComponents/FollowStatsBlock';
 import UserActivityBlock from '../components/UserComponents/UserActivityBlock';
@@ -16,7 +17,9 @@ import UserWatchList from '../components/UserComponents/UserWatchList';
 import UserCollectionsBlock from '../components/UserComponents/UserCollectionsBlock';
 import AnimeHistoryBlock from '../components/UserComponents/AnimeHistoryBlock';
 import FavoritesBlock from '../components/UserComponents/FavoritesBlock';
+import LoginComponent from '../components/Auth/LoginComponent';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 const HeaderContainer = styled.View`
   position: relative;
@@ -182,6 +185,7 @@ const formatTimeAgo = (timestamp) => {
 const UserScreen = () => {
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const { isAuthenticated } = useAuth();
   const insets = useSafeAreaInsets();
   const [userData, setUserData] = useState(null);
   const [activityData, setActivityData] = useState([]);
@@ -295,10 +299,7 @@ const UserScreen = () => {
       setError(null);
       const token = await getAuthToken();
       if (!token) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
+        setError('Потрібна авторизація');
         return;
       }
 
@@ -593,6 +594,16 @@ const UserScreen = () => {
     }
   }, [userData?.username]);
 
+  // Перевіряємо чи користувач авторизований
+  if (!isAuthenticated) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <Header />
+        <LoginComponent onLoginSuccess={loadData} />
+      </View>
+    );
+  }
+
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -631,6 +642,7 @@ const UserScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <Header />
       <FlatList
         data={renderData}
         keyExtractor={(item) => item.id}

@@ -4,7 +4,6 @@ import { FlatList, ActivityIndicator, Alert, RefreshControl, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import toastConfig from '../components/CustomToast';
@@ -18,7 +17,10 @@ import UserWatchList from '../components/UserComponents/UserWatchList';
 import UserCollectionsBlock from '../components/UserComponents/UserCollectionsBlock';
 import AnimeHistoryBlock from '../components/UserComponents/AnimeHistoryBlock';
 import FavoritesBlock from '../components/UserComponents/FavoritesBlock';
+import LoginComponent from '../components/Auth/LoginComponent';
 import { useTheme } from '../context/ThemeContext';
+import { BlurView } from 'expo-blur';
+import { useAuth } from '../context/AuthContext';
 
 
 
@@ -217,6 +219,7 @@ const UserProfile = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const { isAuthenticated: authIsAuthenticated } = useAuth();
   const insets = useSafeAreaInsets();
   const [userData, setUserData] = useState(null);
   const [activityData, setActivityData] = useState([]);
@@ -778,6 +781,16 @@ const UserProfile = () => {
   useEffect(() => {
     loadData();
   }, [username]);
+
+  // Перевіряємо чи користувач авторизований
+  if (!authIsAuthenticated) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <Header />
+        <LoginComponent onLoginSuccess={loadData} />
+      </View>
+    );
+  }
 
   if (loading) {
     return (

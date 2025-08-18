@@ -3,8 +3,8 @@ import { View, StatusBar, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import styled from 'styled-components/native';
 import { useTheme } from '../context/ThemeContext';
-import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import { BlurView } from 'expo-blur';
+import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const WebViewScreen = ({ route }) => {
@@ -19,7 +19,7 @@ const WebViewScreen = ({ route }) => {
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={theme.colors.background}
       />
-      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={title || 'Веб-сторінка'} />
       </BlurOverlay>
       

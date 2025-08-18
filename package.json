@@ -37,6 +37,7 @@
     "expo-media-library": "~17.1.7",
     "expo-secure-store": "~14.2.3",
     "expo-status-bar": "~2.2.3",
+    "expo-system-ui": "~5.0.10",
     "expo-web-browser": "~14.2.0",
     "lottie-react-native": "7.2.2",
     "react": "19.0.0",
@@ -62,7 +63,8 @@
     "react-native-walkthrough-tooltip": "^1.6.0",
     "react-native-webview": "^13.13.5",
     "react-native-youtube-iframe": "^2.4.1",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.1.19",
+    "@shopify/react-native-skia": "v2.0.0-next.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
@@ -71,7 +73,14 @@
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "listUnknownPackages": false
+        "listUnknownPackages": false,
+        "exclude": [
+          "react-native-keyboard-aware-scroll-view",
+          "react-native-pell-rich-editor",
+          "react-native-image-viewing",
+          "react-native-image-zoom-viewer",
+          "react-native-modal-dropdown"
+        ]
       }
     }
   }

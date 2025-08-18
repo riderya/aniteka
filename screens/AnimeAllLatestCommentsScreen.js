@@ -3,8 +3,8 @@ import { ActivityIndicator, StatusBar, FlatList } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
-import { BlurView } from 'expo-blur';
 import { useTheme } from '../context/ThemeContext';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LatestCommentCard from '../components/Cards/LatestCommentCard';
@@ -102,7 +102,7 @@ const AnimeAllLatestComments = () => {
           barStyle={isDark ? 'light-content' : 'dark-content'}
           backgroundColor={theme.colors.background}
         />
-        <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+        <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
           <HeaderTitleBar title="Останні коментарі" />
         </BlurOverlay>
         <LatestCommentsSkeleton showIndex={true} />
@@ -116,7 +116,7 @@ const AnimeAllLatestComments = () => {
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={theme.colors.background}
       />
-      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title="Останні коментарі" />
       </BlurOverlay>
 

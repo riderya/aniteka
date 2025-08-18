@@ -3,10 +3,10 @@ import { ActivityIndicator, ScrollView, FlatList, TouchableOpacity, Linking, Vie
 import * as WebBrowser from 'expo-web-browser';
 import styled from 'styled-components/native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
+import { BlurView } from 'expo-blur';
 import Entypo from '@expo/vector-icons/Entypo';
 import Markdown from 'react-native-markdown-display';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -295,7 +295,7 @@ const AnimeCharacterDetailsScreen = () => {
   return (
     <Container>
 
-      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title={`${character.name_ua || character.name_en || character.name_ja}`} />
       </BlurOverlay>
 

@@ -71,9 +71,12 @@ const Bar = styled.View`
   position: relative;
   width: 15px;
   border-radius: 999px;
-  background-color: ${({ theme, hasData }) => 
-    hasData ? theme.colors.primary : 'rgba(128, 128, 128, 0.3)'
-  };
+  background-color: ${({ theme, hasData, isToday }) => {
+    if (isToday) {
+      return hasData ? theme.colors.primary : 'rgba(255, 193, 7, 0.6)';
+    }
+    return hasData ? theme.colors.primary : 'rgba(128, 128, 128, 0.3)';
+  }};
   height: ${props => props.height || 0}%;
 `;
 
@@ -235,68 +238,43 @@ const UserActivityBlock = ({ activity, animeHours = 0 }) => {
   const animeTimeDisplay = calculateAnimeTimeDisplay(animeHours);
   const progress = Math.min((animeHours / (365 * 24)) * 100, 100);
   
-  // Створюємо масив для перших 8 днів активності
-  const generateFirst8Days = () => {
-    if (!activity || activity.length === 0) {
-      // Якщо немає активності, показуємо останні 8 днів
-      const days = [];
-      const now = new Date();
-      
-      for (let i = 7; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        const timestamp = Math.floor(date.getTime() / 1000);
-        
-        days.push({
-          timestamp,
-          actions: 0,
-          hasData: false
-        });
-      }
-      
-      return days;
-    }
-
-    // Сортуємо активність за датою (від найдавнішої до найновішої)
-    const sortedActivity = [...activity].sort((a, b) => a.timestamp - b.timestamp);
-    
-    // Беремо перші 8 днів активності
-    const first8Activity = sortedActivity.slice(0, 8);
-    
-    // Якщо активності менше 8 днів, додаємо пусті дні
+  // Створюємо масив для останніх 8 днів активності
+  const generateLast8Days = () => {
     const days = [];
+    const now = new Date();
     
-    for (let i = 0; i < 8; i++) {
-      if (i < first8Activity.length) {
-        days.push({
-          timestamp: first8Activity[i].timestamp,
-          actions: first8Activity[i].actions,
-          hasData: true
-        });
-      } else {
-        // Додаємо пустий день після останньої активності
-        const lastActivity = first8Activity[first8Activity.length - 1];
-        const lastDate = new Date(lastActivity.timestamp * 1000);
-        const emptyDate = new Date(lastDate);
-        emptyDate.setDate(lastDate.getDate() + (i - first8Activity.length + 1));
-        
-        days.push({
-          timestamp: Math.floor(emptyDate.getTime() / 1000),
-          actions: 0,
-          hasData: false
-        });
-      }
+    // Показуємо останні 8 днів, включаючи сьогоднішній
+    for (let i = 7; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const timestamp = Math.floor(date.getTime() / 1000);
+      
+      // Шукаємо активність для цього дня
+      const dayActivity = activity?.find(item => {
+        const itemDate = new Date(item.timestamp * 1000);
+        return itemDate.toDateString() === date.toDateString();
+      });
+      
+      // Визначаємо, чи це сьогоднішній день
+      const isToday = date.toDateString() === now.toDateString();
+      
+             days.push({
+         timestamp,
+         actions: dayActivity?.actions || 0,
+         hasData: !!dayActivity || isToday, // Сьогоднішній день завжди має дані для відображення
+         isToday
+       });
     }
     
     return days;
   };
 
-  const first8Days = generateFirst8Days();
-  const maxActions = Math.max(...first8Days.map(item => item.actions), 1);
+  const last8Days = generateLast8Days();
+  const maxActions = Math.max(...last8Days.map(item => item.actions), 1);
 
   const barWidth = 24;
   const containerWidth = Dimensions.get('window').width - 32;
-  const gap = (containerWidth - barWidth * first8Days.length) / (first8Days.length - 1);
+  const gap = (containerWidth - barWidth * last8Days.length) / (last8Days.length - 1);
 
   return (
     <View style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -333,8 +311,13 @@ const UserActivityBlock = ({ activity, animeHours = 0 }) => {
         <RowLineHeader title="Активність"/>
         <BarChartWrapper>
           <BarContainer>
-            {first8Days.map((item, index) => {
-              const height = maxActions > 0 ? Math.max(0, Math.min(100, (item.actions / maxActions) * 100)) : 0;
+                         {last8Days.map((item, index) => {
+               let height = maxActions > 0 ? Math.max(0, Math.min(100, (item.actions / maxActions) * 100)) : 0;
+               
+               // Завжди показуємо сьогоднішній день з мінімальною висотою, навіть якщо активності немає
+               if (item.isToday && height === 0) {
+                 height = 5; // Мінімальна висота для сьогоднішнього дня
+               }
 
               return (
                 <TouchableOpacity
@@ -344,11 +327,11 @@ const UserActivityBlock = ({ activity, animeHours = 0 }) => {
                 >
                                      {tooltipIndex === index && (
                      <TooltipBox style={{ bottom: height + 10 }}>
-                       <TooltipText numberOfLines={1} style={{ textAlign: 'center' }}>
-                         {item.hasData ? `${item.actions} дій` : 'Немає активності'}
-                       </TooltipText>
+                                               <TooltipText numberOfLines={1} style={{ textAlign: 'center' }}>
+                          {item.actions > 0 ? `${item.actions} дій` : 'Немає активності'}
+                        </TooltipText>
                        <TooltipText numberOfLines={1} style={{ fontSize: 11, marginTop: 2, textAlign: 'center' }}>
-                         {format(new Date(item.timestamp * 1000), 'dd.MM.yyyy', { locale: uk })}
+                         {item.isToday ? 'Сьогодні' : format(new Date(item.timestamp * 1000), 'dd.MM.yyyy', { locale: uk })}
                        </TooltipText>
                      </TooltipBox>
                    )}
@@ -357,6 +340,7 @@ const UserActivityBlock = ({ activity, animeHours = 0 }) => {
                      <Bar 
                        height={height} 
                        hasData={item.hasData}
+                       isToday={item.isToday}
                      />
                    </View>
                 </TouchableOpacity>

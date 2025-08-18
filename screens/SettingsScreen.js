@@ -20,10 +20,12 @@ import Toast from 'react-native-toast-message';
 import toastConfig from '../components/CustomToast';
 
 import { useTheme } from '../context/ThemeContext';
-import { ThemeToggleButton } from '../components/Switchers/ThemeToggleButton';
 import { BlurView } from 'expo-blur';
+import { useAuth } from '../context/AuthContext';
+import { ThemeToggleButton } from '../components/Switchers/ThemeToggleButton';
 import ColorSelector from '../components/Switchers/ColorsSwitcher';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
+import LoginComponent from '../components/Auth/LoginComponent';
 
 const Container = styled.View`
   flex: 1;
@@ -38,12 +40,23 @@ const BlurOverlay = styled(BlurView)`
   z-index: 10;
   border-bottom-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.background}80;
+`;
+
+const HeaderOverlay = styled.View`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  border-bottom-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.background};
 `;
 
 const ContentContainer = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
-  padding-top: 110px;
 `;
 
 const TabListContainer = styled.View`
@@ -108,12 +121,13 @@ const TabCardDescription = styled.Text`
 
 
 
-const ContentScroll = styled.ScrollView.attrs({
+const ContentScroll = styled.ScrollView.attrs(({ insets }) => ({
   contentContainerStyle: {
     padding: 12,
-    paddingBottom: 0,
+    paddingTop: 120,
+    paddingBottom: insets.bottom + 20,
   },
-})`
+}))`
   flex: 1;
 `;
 
@@ -284,34 +298,35 @@ const ArrowIcon = styled.View`
 const BannerContainer = styled.View`
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 180px;
   border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 20px;
+  margin-bottom: 60px;
 `;
 
 const BannerImage = styled.Image`
   width: 100%;
   height: 100%;
+  border-radius: 24px;
 `;
 
 const AvatarOverlay = styled.TouchableOpacity`
   position: absolute;
-  left: 20px;
-  bottom: 20px;
-  width: 80px;
-  height: 80px;
-  border-radius: 40px;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50px) translateY(-50px);
+  width: 100px;
+  height: 100px;
+  border-radius: 999px;
   border: 3px solid ${({ theme }) => theme.colors.background};
   overflow: hidden;
 `;
 
 const RemoveButton = styled.TouchableOpacity`
   position: absolute;
-  top: -5px;
-  right: -5px;
-  width: 24px;
-  height: 24px;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
   border-radius: 12px;
   background-color: #FF5252;
   align-items: center;
@@ -323,6 +338,7 @@ const SettingsScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { theme, isDark } = useTheme();
+  const { isAuthenticated, logout } = useAuth();
   const insets = useSafeAreaInsets();
   const windowWidth = Dimensions.get('window').width;
   const isMobile = windowWidth < 768;
@@ -422,10 +438,7 @@ const SettingsScreen = () => {
     try {
       const token = await getAuthToken();
       if (!token) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
+        setLoading(false);
         return;
       }
 
@@ -1312,27 +1325,24 @@ const SettingsScreen = () => {
         </SaveButton>
       </Section>
 
-      <Section>
-        <SecurityItem onPress={async () => {
-          try {
-            await SecureStore.deleteItemAsync('hikka_token');
-            Toast.show({
-              type: 'success',
-              text1: 'Успішно',
-              text2: 'Ви успішно вийшли з облікового запису'
-            });
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
-          } catch (error) {
-            Toast.show({
-              type: 'error',
-              text1: 'Помилка',
-              text2: 'Не вдалося вийти з облікового запису'
-            });
-          }
-        }}>
+             <Section>
+         <SecurityItem onPress={async () => {
+           try {
+             await logout();
+             Toast.show({
+               type: 'success',
+               text1: 'Успішно',
+               text2: 'Ви успішно вийшли з облікового запису'
+             });
+             navigation.navigate('Tabs');
+           } catch (error) {
+             Toast.show({
+               type: 'error',
+               text1: 'Помилка',
+               text2: 'Не вдалося вийти з облікового запису'
+             });
+           }
+         }}>
           <SecurityItemLeft>
             <SecurityIcon>
               <Ionicons name="log-out" size={20} color="#FF5252" />
@@ -1458,6 +1468,38 @@ const SettingsScreen = () => {
     return () => clearInterval(interval);
   }, [lastUsernameChange]);
 
+  // Перевіряємо чи користувач авторизований
+  if (!isAuthenticated) {
+    return (
+      <Container>
+        {Platform.OS === 'ios' ? (
+          <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={25} tint={isDark ? 'dark' : 'light'}>
+            <HeaderTitleBar 
+              title="Налаштування"
+              showBack={true}
+            />
+          </BlurOverlay>
+        ) : (
+          <HeaderOverlay>
+            <HeaderTitleBar 
+              title="Налаштування"
+              showBack={true}
+            />
+          </HeaderOverlay>
+        )}
+        <ContentContainer>
+          <ContentScroll 
+            insets={insets}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <LoginComponent onLoginSuccess={fetchUserProfile} />
+          </ContentScroll>
+        </ContentContainer>
+      </Container>
+    );
+  }
+
   if (loading) {
     return (
       <Container>
@@ -1468,24 +1510,43 @@ const SettingsScreen = () => {
     );
   }
 
-    return (
+  return (
     <Container>
-      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
-      <HeaderTitleBar 
-        title={fromEditProfile ? 'Редагування профілю' : (showTabList ? 'Налаштування' : (availableTabs.find(tab => tab.id === activeTab)?.title || 'Налаштування'))}
-        showBack={true}
-        onBack={() => {
-          if (showTabList) {
-            // Якщо ми на списку табів - виходимо з екрану
-            navigation.goBack();
-          } else {
-            // Якщо ми в конкретному табі - повертаємося до списку
-            setShowTabList(true);
-            setActiveTab(null);
-          }
-        }}
-      />
-      </BlurOverlay>
+      {Platform.OS === 'ios' ? (
+        <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={25} tint={isDark ? 'dark' : 'light'}>
+          <HeaderTitleBar 
+            title={fromEditProfile ? 'Редагування профілю' : (showTabList ? 'Налаштування' : (availableTabs.find(tab => tab.id === activeTab)?.title || 'Налаштування'))}
+            showBack={true}
+            onBack={() => {
+              if (showTabList) {
+                // Якщо ми на списку табів - виходимо з екрану
+                navigation.goBack();
+              } else {
+                // Якщо ми в конкретному табі - повертаємося до списку
+                setShowTabList(true);
+                setActiveTab(null);
+              }
+            }}
+          />
+        </BlurOverlay>
+      ) : (
+        <HeaderOverlay>
+          <HeaderTitleBar 
+            title={fromEditProfile ? 'Редагування профілю' : (showTabList ? 'Налаштування' : (availableTabs.find(tab => tab.id === activeTab)?.title || 'Налаштування'))}
+            showBack={true}
+            onBack={() => {
+              if (showTabList) {
+                // Якщо ми на списку табів - виходимо з екрану
+                navigation.goBack();
+              } else {
+                // Якщо ми в конкретному табі - повертаємося до списку
+                setShowTabList(true);
+                setActiveTab(null);
+              }
+            }}
+          />
+        </HeaderOverlay>
+      )}
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1493,6 +1554,7 @@ const SettingsScreen = () => {
       >
         <ContentContainer>
           <ContentScroll 
+            insets={insets}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >

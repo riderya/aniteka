@@ -4,14 +4,12 @@ import {
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import * as SecureStore from 'expo-secure-store';
 import styled from 'styled-components/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
-import BackButton from '../../components/DetailsAnime/BackButton';
-import HIKKA_SCOPES from './hikkaScopes';
+import HIKKA_SCOPES from '../../screens/auth/hikkaScopes';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -19,14 +17,13 @@ const CLIENT_ID = 'e31c506b-5841-4ac4-b2ba-ed900a558617';
 const CLIENT_SECRET = 'qRDNu2OQw9FrQW_d3ZsSk50INm5ZmPFPB-09mbyVOpuMcUAyDIRchgz9XK69GBFLQIKXbcNSsRACcTTPQYvTJeOZX5BNps5Qn6LmFATtN5Wj8VLOxR2Bx_y5O-T00kdm';
 const REDIRECT_URI = 'yummyanimelist://';
 
-export default function LoginScreen({ navigation }) {
+export default function LoginComponent({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { login, logout, token, userData, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    // Налаштовуємо обробку deep linking
     const subscription = Linking.addEventListener('url', (event) => {
       const { queryParams } = Linking.parse(event.url);
       
@@ -39,8 +36,6 @@ export default function LoginScreen({ navigation }) {
       subscription?.remove();
     };
   }, []);
-
-
 
   const handleLogin = async () => {
     const scope = HIKKA_SCOPES.join(',');
@@ -74,7 +69,9 @@ export default function LoginScreen({ navigation }) {
 
         if (response.ok && data.secret) {
           await login(data.secret);
-          navigation.navigate('Tabs');
+          if (onLoginSuccess) {
+            onLoginSuccess();
+          }
         } else {
           Alert.alert('🚫 Помилка авторизації', data.message || 'Не вдалося отримати токен.');
         }
@@ -105,7 +102,9 @@ export default function LoginScreen({ navigation }) {
 
       if (response.ok && data.secret) {
         await login(data.secret);
-        navigation.navigate('Tabs');
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        }
       } else {
         Alert.alert('🚫 Помилка авторизації', data.message || 'Не вдалося отримати токен.');
       }
@@ -116,11 +115,17 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Після виходу компонент автоматично перерендериться і покаже форму логіну
+    } catch (error) {
+      Alert.alert('❗ Помилка', 'Не вдалося вийти з системи');
+    }
+  };
+
   return (
     <Container>
-      <BackButtonWrapper>
-        <BackButton />
-      </BackButtonWrapper>
       <GradientContainer
         insets={insets}
         colors={[theme.colors.primary, theme.colors.primary, theme.colors.background]}
@@ -131,7 +136,7 @@ export default function LoginScreen({ navigation }) {
         <ContentContainer>
           <Image
             source={require('../../assets/image/welcome-login.webp')}
-            style={{ width: 220, height: 220, resizeMode: 'contain' }}
+            style={{ width: 180, height: 180, resizeMode: 'contain' }}
           />
           <Title>Ласкаво просимо до YummyAnimeList!</Title>
           <Description>🎌 Авторизуйтесь, щоб отримати повний доступ до функцій додатка.</Description>
@@ -142,11 +147,10 @@ export default function LoginScreen({ navigation }) {
             {loading ? <ActivityIndicator color={theme.colors.background} /> : <ButtonText>Увійти</ButtonText>}
           </Button>
           {isAuthenticated && (
-            <LogoutButton onPress={logout} disabled={loading}>
+            <LogoutButton onPress={handleLogout} disabled={loading}>
               <LogoutButtonText>Вийти з системи</LogoutButtonText>
             </LogoutButton>
           )}
-        </ContentContainer>
 
         <BottomContainer insets={insets}>
           <PartnerRow>
@@ -155,6 +159,7 @@ export default function LoginScreen({ navigation }) {
             <LogoImage source={require('../../assets/image/hikka-logo.jpg')} />
           </PartnerRow>
         </BottomContainer>
+        </ContentContainer> 
       </GradientContainer>
     </Container>
   );
@@ -173,17 +178,11 @@ const ContentContainer = styled.View`
   padding: 20px;
 `;
 const BottomContainer = styled.View`
-  padding-bottom: ${({ insets }) => insets.bottom}px;
-`;
-const BackButtonWrapper = styled.View`
-  position: absolute;
-  top: 50px;
-  left: 12px;
-  z-index: 1;
+  margin-top: 50px;
 `;
 const Title = styled.Text`
   color: ${({ theme }) => theme.colors.text};
-  font-size: 26px;
+  font-size: 24px;
   font-weight: bold;
   text-align: center;
   margin-top: 16px;
@@ -236,10 +235,10 @@ const PartnerRow = styled.View`
   gap: 10px;
 `;
 const LogoImage = styled.Image`
-  width: 45px;
-  height: 45px;
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
 `;
 const Handshake = styled.Text`
-  font-size: 28px;
+  font-size: 24px;
 `;

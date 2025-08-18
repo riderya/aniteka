@@ -1,13 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Alert, ActivityIndicator } from 'react-native';
+import { Alert, ActivityIndicator, View } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 
 import FilterTabs from '../components/SavedComponents/FilterTabs';
 import AnimeListSection from '../components/SavedComponents/AnimeListSection';
+import LoginComponent from '../components/Auth/LoginComponent';
+import Header from '../components/Header/Header';
 
 import styled, { useTheme } from 'styled-components/native';
+import { useAuth } from '../context/AuthContext';
 
 const TOKEN_KEY = 'hikka_token';
 
@@ -23,6 +26,7 @@ const FILTERS = [
 const SavedScreen = () => {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const { isAuthenticated } = useAuth();
   const [pageIndex, setPageIndex] = useState(0);
   const [animeLists, setAnimeLists] = useState(Array(FILTERS.length).fill([]));
   const [loadingStates, setLoadingStates] = useState(Array(FILTERS.length).fill(false));
@@ -171,6 +175,21 @@ const SavedScreen = () => {
   const onRefreshData = async () => {
     await fetchList(pageIndex);
   };
+
+  // Перевіряємо чи користувач авторизований
+  if (!isAuthenticated) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <Header />
+        <LoginComponent onLoginSuccess={() => {
+          // Перезавантажуємо дані після успішного логіну
+          FILTERS.forEach((_, index) => {
+            fetchList(index);
+          });
+        }} />
+      </View>
+    );
+  }
 
   return (
     <Container insets={insets} theme={theme}>

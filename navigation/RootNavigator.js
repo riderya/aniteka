@@ -8,7 +8,6 @@ import SearchScreen from '../screens/SearchScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AnimeDetailsScreen from '../screens/AnimeDetailsScreen';
-import LoginScreen from '../screens/auth/LoginScreen';
 import AnimeVideosScreen from '../screens/AnimeInfo/AnimeVideosScreen';
 import AnimeCharactersScreen from '../screens/AnimeInfo/AnimeCharactersScreen';
 import AnimeStaffScreen from '../screens/AnimeInfo/AnimeStaffScreen';
@@ -58,7 +57,6 @@ export default function RootNavigator() {
       <RootStack.Screen name="Settings" component={SettingsScreen} />
       <RootStack.Screen name="Notifications" component={NotificationsScreen} />
       <RootStack.Screen name="AnimeDetails" component={AnimeDetailsScreen} />
-      <RootStack.Screen name="Login" component={LoginScreen} />
       <RootStack.Screen name="AnimeVideosScreen" component={AnimeVideosScreen} />
       <RootStack.Screen name="AnimeCharactersScreen" component={AnimeCharactersScreen} />
       <RootStack.Screen name="AnimeStaffScreen" component={AnimeStaffScreen} />

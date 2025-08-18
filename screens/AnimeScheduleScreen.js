@@ -268,7 +268,7 @@ const renderModal = (type, options, selectedValues, onSelect) => (
 
   return (
     <>
-      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
+      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
         <HeaderTitleBar title="Календар" />
       </BlurOverlay>
 

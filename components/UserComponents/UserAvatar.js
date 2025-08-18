@@ -120,7 +120,7 @@ const ActivityInfoContainer = styled.TouchableOpacity`
 const ActivityInfoRow = styled.View`
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 `;
 
 const ActivityTextGray = styled.Text`
@@ -171,8 +171,14 @@ const getRoleText = (role) => {
 const formatTimeAgo = (timestamp) => {
   if (!timestamp) return 'невідомо';
   
+  // Перевіряємо чи timestamp в секундах чи мілісекундах
+  let timestampInSeconds = timestamp;
+  if (timestamp > 1000000000000) { // Якщо timestamp в мілісекундах
+    timestampInSeconds = Math.floor(timestamp / 1000);
+  }
+  
   const now = Math.floor(Date.now() / 1000);
-  const diff = now - timestamp;
+  const diff = now - timestampInSeconds;
   
   const minutes = Math.floor(diff / 60);
   const hours = Math.floor(diff / 3600);
@@ -303,22 +309,24 @@ export default function UserAvatar({ userData, showEmailButton = true, showUserB
 
         {/* Activity info block */}
         <ActivityInfoContainer 
-          activeOpacity={1}
+          activeOpacity={userData.active ? 1 : 0.8}
           onPress={() => {
-            if (!showExpandedInfo) {
+            if (!userData.active && !showExpandedInfo) {
               setShowExpandedInfo(true);
             }
           }}
         >
-          <ActivityInfoRow>
-            <ActivityTextGray>
-              був(ла) в мережі {userData.updated ? formatTimeAgo(userData.updated) : 'невідомо'}
-            </ActivityTextGray>
-            {!showExpandedInfo && <AntDesign name="right" size={16} color={theme.colors.gray} />}
-          </ActivityInfoRow>
-          {showExpandedInfo && userData.active && (
+          {!userData.active && (
             <ActivityInfoRow>
-              <ActivityTextGray style={{ marginTop: 4 }}>
+              <ActivityTextGray>
+                був(ла) в мережі {userData.updated ? formatTimeAgo(userData.updated) : 'невідомо'}
+              </ActivityTextGray>
+              {!showExpandedInfo && <AntDesign name="right" size={16} color={theme.colors.gray} />}
+            </ActivityInfoRow>
+          )}
+          {(showExpandedInfo || userData.active) && (
+            <ActivityInfoRow>
+              <ActivityTextGray style={{ marginTop: userData.active ? 0 : 4 }}>
                 у числі учасників з {userData.created ? new Date(userData.created * 1000).toLocaleDateString('uk-UA', {
                   day: 'numeric',
                   month: 'long',

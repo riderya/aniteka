@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
 import { Ionicons } from '@expo/vector-icons';
+import LoginComponent from '../components/Auth/LoginComponent';
 
 const PAGE_SIZE = 15;
 
@@ -195,12 +196,7 @@ export default function NotificationsScreen({ navigation }) {
           <View style={{ width: 32 }} />
         </HeaderRow>
         <ContentContainer style={{ paddingTop: insets.top + 56 }}>
-          <CenterFill>
-            <InfoText>Потрібна авторизація, щоб переглядати сповіщення.</InfoText>
-            <PrimaryButton onPress={() => navigation.navigate('Login')} activeOpacity={0.8}>
-              <PrimaryButtonText>Увійти</PrimaryButtonText>
-            </PrimaryButton>
-          </CenterFill>
+          <LoginComponent onLoginSuccess={refresh} />
         </ContentContainer>
       </ScreenContainer>
     );

@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.osu_tenef.yummyanimelist",
+      "bundleIdentifier": "com.osu-tenef.yummyanimelist",
       "associatedDomains": ["applinks:hikka.io"]
     },
     "android": {
@@ -62,7 +62,8 @@
     "plugins": [
       "expo-web-browser",
       "expo-asset",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-image-picker"
     ],
     "extra": {
       "eas": {
