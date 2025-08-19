@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  RefreshControl,
 } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
@@ -29,14 +30,15 @@ const sortOptions = [
 const AnimeCollectionsScreen = () => {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [sort, setSort] = useState(sortOptions[0].value);
   const [isSortModalVisible, setIsSortModalVisible] = useState(false);
 
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const fetchCollections = useCallback(async () => {
-    setLoading(true);
+  const fetchCollections = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const allResults = await Promise.all(
         contentTypeOptions.map((type) =>
@@ -59,13 +61,22 @@ const AnimeCollectionsScreen = () => {
     } catch (error) {
       
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [sort]);
 
   useEffect(() => {
     fetchCollections();
   }, [sort]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchCollections(true);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchCollections]);
 
   const renderHeader = () => (
     <FilterContainer>
@@ -99,6 +110,16 @@ const AnimeCollectionsScreen = () => {
             }}
             ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
             ListHeaderComponent={renderHeader}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[theme.colors.text]}
+                tintColor={theme.colors.text}
+                progressViewOffset={insets.top + 50}
+                progressBackgroundColor={isDark ? theme.colors.card : undefined}
+              />
+            }
             showsVerticalScrollIndicator={false}
           />
         )}

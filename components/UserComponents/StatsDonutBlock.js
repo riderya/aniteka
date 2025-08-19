@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import styled from 'styled-components/native';
 import Svg, { Circle } from 'react-native-svg';
 import { TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
 import RowLineHeader from '../../components/DetailsAnime/RowLineHeader';
 
@@ -104,6 +105,40 @@ const StatsDonutBlock = ({ stats }) => {
     const { theme, isDark } = useTheme();
     const [rotation, setRotation] = useState(0);
     const [lastRotation, setLastRotation] = useState(0);
+    
+    // Ключ для сохранения положения круга
+    const ROTATION_STORAGE_KEY = 'stats_donut_rotation';
+    
+    // Загружаем сохраненное положение при монтировании компонента
+    useEffect(() => {
+        loadSavedRotation();
+    }, []);
+    
+    // Сохраняем положение при изменении
+    useEffect(() => {
+        saveRotation(rotation);
+    }, [rotation]);
+    
+    const loadSavedRotation = async () => {
+        try {
+            const savedRotation = await AsyncStorage.getItem(ROTATION_STORAGE_KEY);
+            if (savedRotation !== null) {
+                const parsedRotation = parseFloat(savedRotation);
+                setRotation(parsedRotation);
+                setLastRotation(parsedRotation);
+            }
+        } catch (error) {
+            console.log('Ошибка при загрузке положения круга:', error);
+        }
+    };
+    
+    const saveRotation = async (newRotation) => {
+        try {
+            await AsyncStorage.setItem(ROTATION_STORAGE_KEY, newRotation.toString());
+        } catch (error) {
+            console.log('Ошибка при сохранении положения круга:', error);
+        }
+    };
     
   // підготуємо дані
   const { watching, planned, completed, on_hold, dropped } = stats;

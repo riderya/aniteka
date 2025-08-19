@@ -128,8 +128,10 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={[theme.colors.primary]}
-              tintColor={theme.colors.primary}
+              colors={[theme.colors.text]}
+              tintColor={theme.colors.text}
+              progressViewOffset={insets.top + 50}
+              progressBackgroundColor={isDark ? theme.colors.card : undefined}
             />
           }
           contentContainerStyle={{
@@ -140,6 +142,11 @@ export default function HomeScreen() {
           windowSize={5}
           initialNumToRender={2}
         />
+        {refreshing && (
+          <RefreshOverlay>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          </RefreshOverlay>
+        )}
       </Container>
     </>
   );

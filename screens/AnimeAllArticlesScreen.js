@@ -162,7 +162,16 @@ const renderItem = ({ item }) => <ArticleCard item={item} theme={theme} />;
     </View>
   )}
   ListFooterComponent={loading && <ActivityIndicator />}
-  refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+  refreshControl={
+    <RefreshControl
+    refreshing={refreshing}
+    onRefresh={onRefresh}
+    colors={[theme.colors.text]}
+    tintColor={theme.colors.text}
+    progressViewOffset={insets.top + 50}
+    progressBackgroundColor={isDark ? theme.colors.card : undefined}
+  />
+  }
 />
 
 

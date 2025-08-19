@@ -13,13 +13,12 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
-import { BlurView } from 'expo-blur';
 import Entypo from '@expo/vector-icons/Entypo';
 import Markdown from 'react-native-markdown-display';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import avatarFallback from '../assets/image/image404.png';
-import HeaderTitleBar from '../components/Header/HeaderTitleBar';
+import BackButton from '../components/DetailsAnime/BackButton';
 
 /* ---------- styles ---------- */
 const Container = styled.View`
@@ -32,18 +31,15 @@ const CenteredContainer = styled(Container)`
   justify-content: center;
 `;
 
-const Spacer = styled.View`
-  width: 12px;
+const FixedBackButtonWrapper = styled.View`
+  position: absolute;
+  top: 50px;
+  left: 12px;
+  z-index: 10;
 `;
 
-const BlurOverlay = styled(BlurView)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  border-bottom-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
+const Spacer = styled.View`
+  width: 12px;
 `;
 
 const BlockBorder = styled.View`
@@ -68,7 +64,7 @@ const PeopleImageWrapper = styled.View`
 const PeopleImage = styled.Image`
   width: 210px;
   height: 300px;
-  border-radius: 16px;
+  border-radius: 36px;
   background-color: ${({ theme }) => theme.colors.card};
 `;
 
@@ -204,7 +200,7 @@ const AnimePeopleDetailsScreen = () => {
   const { slug } = useRoute().params;
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
 
   const [people, setPeople] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -213,7 +209,7 @@ const AnimePeopleDetailsScreen = () => {
   const [mangaList, setMangaList] = useState([]);
   const [novelList, setNovelList] = useState([]);
 
-  const headerHeight = insets.top + 65;
+  const headerHeight = insets.top + 30;
 
   /* --- fetch --- */
   useEffect(() => {
@@ -245,14 +241,13 @@ const AnimePeopleDetailsScreen = () => {
 
   return (
     <Container>
-
-      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
-        <HeaderTitleBar title={`${people.name_ua || people.name_en || people.name_ja}`} />
-      </BlurOverlay>
+      <FixedBackButtonWrapper>
+        <BackButton />
+      </FixedBackButtonWrapper>
 
       <Content
         headerHeight={headerHeight}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         >
         <PeopleImageWrapper>
           <PeopleImage 

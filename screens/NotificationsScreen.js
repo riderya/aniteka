@@ -12,12 +12,12 @@ import {
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useTheme } from '../context/ThemeContext';
-import { PlatformBlurView } from '../components/Custom/PlatformBlurView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationsContext';
 import { Ionicons } from '@expo/vector-icons';
 import LoginComponent from '../components/Auth/LoginComponent';
+import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 
 const PAGE_SIZE = 15;
 
@@ -169,14 +169,8 @@ export default function NotificationsScreen({ navigation }) {
   if (authLoading) {
     return (
       <ScreenContainer style={{ paddingBottom: insets.bottom }}>
-        <HeaderRow intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
-          <BackButton onPress={() => navigation.goBack()} activeOpacity={0.7}>
-            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
-          </BackButton>
-          <HeaderTitle>Сповіщення</HeaderTitle>
-          <View style={{ width: 32 }} />
-        </HeaderRow>
-        <ContentContainer style={{ paddingTop: insets.top + 56 }}>
+        <HeaderTitleBar title="Сповіщення" />
+        <ContentContainer>
           <LoaderContainer>
             <ActivityIndicator size="large" color={theme.colors.primary} />
           </LoaderContainer>
@@ -188,14 +182,8 @@ export default function NotificationsScreen({ navigation }) {
   if (!isAuthenticated) {
     return (
       <ScreenContainer style={{ paddingBottom: insets.bottom }}>
-        <HeaderRow intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
-          <BackButton onPress={() => navigation.goBack()} activeOpacity={0.7}>
-            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
-          </BackButton>
-          <HeaderTitle>Сповіщення</HeaderTitle>
-          <View style={{ width: 32 }} />
-        </HeaderRow>
-        <ContentContainer style={{ paddingTop: insets.top + 56 }}>
+        <HeaderTitleBar title="Сповіщення" />
+        <ContentContainer>
           <LoginComponent onLoginSuccess={refresh} />
         </ContentContainer>
       </ScreenContainer>
@@ -204,24 +192,10 @@ export default function NotificationsScreen({ navigation }) {
 
   return (
     <ScreenContainer style={{ paddingBottom: insets.bottom }}>
-      <HeaderRow intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
-        <BackButton onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
-        </BackButton>
-        <HeaderTitle>Сповіщення</HeaderTitle>
-        <BadgeContainer onPress={markAllAsSeen} activeOpacity={0.7}>
-          <Ionicons name="notifications-outline" size={22} color={theme.colors.text} />
-          {unseenCount > 0 && (
-            <Badge>
-              <BadgeText>{unseenCount}</BadgeText>
-            </Badge>
-          )}
-        </BadgeContainer>
-      </HeaderRow>
-
+      <HeaderTitleBar title="Сповіщення" />
       <ContentContainer>
         {isLoading && page === 1 ? (
-          <LoaderContainer style={{ paddingTop: insets.top + 56 }}>
+          <LoaderContainer>
             <ActivityIndicator size="large" color={theme.colors.primary} />
           </LoaderContainer>
         ) : (
@@ -234,7 +208,14 @@ export default function NotificationsScreen({ navigation }) {
             ItemSeparatorComponent={() => <Separator />}
             ListEmptyComponent={EmptyState}
             refreshControl={
-              <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={theme.colors.primary} />
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={refresh}
+                colors={[theme.colors.text]}
+                tintColor={theme.colors.text}
+                progressViewOffset={insets.top + 50}
+                progressBackgroundColor={isDark ? theme.colors.card : undefined}
+              />
             }
             onEndReachedThreshold={0.3}
             onEndReached={loadMore}
@@ -510,51 +491,7 @@ const ContentContainer = styled.View`
   flex: 1;
 `;
 
-const HeaderRow = styled(PlatformBlurView)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  padding: 16px;
-  padding-top: ${({ topOffset }) => topOffset + 16}px;
-`;
 
-const BackButton = styled(TouchableOpacity)`
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-`;
-
-const HeaderTitle = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 18px;
-  font-weight: 700;
-  height: 24px;
-`;
-
-const BadgeContainer = styled(TouchableOpacity)`
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-`;
-
-const Badge = styled.View`
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  background-color: ${({ theme }) => theme.colors.primary};
-  padding: 2px 6px;
-  border-radius: 999px;
-`;
-
-const BadgeText = styled.Text`
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-`;
 
 const LoaderContainer = styled.View`
   flex: 1;

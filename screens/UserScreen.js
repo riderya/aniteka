@@ -184,7 +184,7 @@ const formatTimeAgo = (timestamp) => {
 
 const UserScreen = () => {
   const navigation = useNavigation();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { isAuthenticated } = useAuth();
   const insets = useSafeAreaInsets();
   const [userData, setUserData] = useState(null);
@@ -343,9 +343,8 @@ const UserScreen = () => {
         if (watchResponse.ok) {
           const watchData = await watchResponse.json();
           if (watchData.duration && watchData.duration > 0) {
-            // Convert duration to hours (assuming duration is in minutes)
-            const hours = Math.round(watchData.duration / 60);
-            setAnimeHours(hours);
+            // API returns duration in minutes (like the website)
+            setAnimeHours(watchData.duration);
             return;
           }
         }
@@ -533,7 +532,7 @@ const UserScreen = () => {
           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
             <UserActivityBlock 
               activity={activityData}
-              animeHours={animeHours}
+              animeDuration={animeHours}
             />
           </View>
         );
@@ -651,8 +650,10 @@ const UserScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
+            colors={[theme.colors.text]}
+            tintColor={theme.colors.text}
+            progressViewOffset={insets.top + 50}
+            progressBackgroundColor={isDark ? theme.colors.card : undefined}
           />
         }
         showsVerticalScrollIndicator={false}

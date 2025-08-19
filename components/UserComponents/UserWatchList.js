@@ -16,6 +16,11 @@ import AnimeColumnCard from '../Cards/AnimeColumnCard';
 import AnimeRowCard from '../Cards/AnimeRowCard';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+// Grid layout constants
+const GRID_NUM_COLUMNS = 3;
+const CONTAINER_HORIZONTAL_PADDING = 12; // styles.container padding
+const CONTENT_HORIZONTAL_PADDING = 8; // contentContainerStyle when grid
+const GRID_ITEM_MARGIN_HORIZONTAL = 4; // renderGridItem container marginHorizontal
 
 // Move styles outside component to prevent recreation on every render
 const createStyles = (theme) => StyleSheet.create({
@@ -70,7 +75,7 @@ const createStyles = (theme) => StyleSheet.create({
     justifyContent: 'center',
   },
   gridContainer: {
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginBottom: 4,
   },
   loadingContainer: {
@@ -109,14 +114,14 @@ const createStyles = (theme) => StyleSheet.create({
   },
   dropdownContainer: {
     position: 'absolute',
-    top: 60,
+    top: 65,
     left: 16,
     backgroundColor: theme.colors.background,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.colors.border,
     zIndex: 1000,
-    minWidth: 250,
+    width: screenWidth - 32 - 110, // Віднімаємо відступы та ширину кнопок справа
   },
   dropdownOption: {
     flexDirection: 'row',
@@ -132,25 +137,25 @@ const createStyles = (theme) => StyleSheet.create({
   radioButton: {
     width: 16,
     height: 16,
-    borderRadius: 12,
+    borderRadius: 9,
     borderWidth: 2,
-    marginRight: 16,
+    borderColor: theme.colors.border,
+    marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioButtonSelected: {
     borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primary,
   },
   radioButtonUnselected: {
     borderColor: theme.colors.border,
     backgroundColor: 'transparent',
   },
   radioButtonInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ffffff',
+    width: 6,
+    height: 6,
+    borderRadius: 6,
+    backgroundColor: theme.colors.primary,
   },
   dropdownOptionText: {
     color: theme.colors.text,
@@ -377,8 +382,8 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
 
   const renderGridItem = useCallback(({ item }) => (
     <View style={{ 
-      flex: 1,
-      marginHorizontal: 4,
+      width: ((screenWidth - (CONTAINER_HORIZONTAL_PADDING * 2) - (CONTENT_HORIZONTAL_PADDING * 2)) - (GRID_NUM_COLUMNS * GRID_ITEM_MARGIN_HORIZONTAL * 2)) / GRID_NUM_COLUMNS,
+      marginHorizontal: GRID_ITEM_MARGIN_HORIZONTAL,
       marginBottom: 8
     }}>
       <AnimeColumnCard

@@ -26,9 +26,9 @@ const Label = styled.Text`
 `;
 
 const Value = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 16px;
-  font-weight: bold;
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+  font-weight: 500;
   margin-left: auto;
 `;
 
@@ -133,31 +133,25 @@ const AnimeTooltipSub = styled.Text`
 
 
 // Time formatter
-const formatAnimeTime = (hours) => {
-  if (hours === 0) {
+const formatAnimeTime = (minutes) => {
+  if (minutes === 0) {
     return {
       main: 'Немає даних про перегляд',
       suffix: '',
     };
   }
   
-  const totalMinutes = hours * 60;
-  const totalDays = Math.floor(totalMinutes / (60 * 24)) + 1;
+  const totalDays = Math.floor(minutes / (24 * 60));
+  const remainingMinutesAfterDays = minutes - (totalDays * 24 * 60);
+  const remainingHours = Math.floor(remainingMinutesAfterDays / 60);
+  const remainingMinutes = remainingMinutesAfterDays % 60;
   
-  // Calculate months and days using more accurate calculation
-  // Assuming average month length of 30.44 days (365.25 / 12)
-  const averageMonthDays = 30.44;
-  const months = Math.floor(totalDays / averageMonthDays);
-  const days = Math.floor(totalDays % averageMonthDays);
-  
-  // Calculate hours and minutes from the remaining time after days
-  const remainingMinutes = totalMinutes - ((totalDays - 1) * 24 * 60);
-  const remainingHours = Math.floor(remainingMinutes / 60);
-  const minutes = Math.floor(remainingMinutes % 60);
-  
-
-  
-  if (months > 0) {
+  // Calculate months and days if more than 31 days
+  let displayText = '';
+  if (totalDays > 31) {
+    const months = Math.floor(totalDays / 30.44); // Average days per month
+    const days = Math.floor(totalDays % 30.44);
+    
     let monthText = 'місяців';
     if (months === 1) monthText = 'місяць';
     else if (months < 5) monthText = 'місяці';
@@ -166,28 +160,27 @@ const formatAnimeTime = (hours) => {
     if (days === 1) dayText = 'день';
     else if (days < 5) dayText = 'дні';
     
-    let hourText = 'годин';
-    if (remainingHours === 1) hourText = 'година';
-    else if (remainingHours < 5) hourText = 'години';
-    
-         return {
-       main: `${months} ${monthText} ${days} ${dayText} ${remainingHours} ${hourText}`,
-       suffix: `/ 1 рік`,
-     };
+    displayText = `${months} ${monthText} ${days} ${dayText}`;
   } else {
     let dayText = 'днів';
-    if (days === 1) dayText = 'день';
-    else if (days < 5) dayText = 'дні';
+    if (totalDays === 1) dayText = 'день';
+    else if (totalDays < 5) dayText = 'дні';
     
-    let hourText = 'годин';
-    if (remainingHours === 1) hourText = 'година';
-    else if (remainingHours < 5) hourText = 'години';
-    
-         return {
-       main: `${days} ${dayText} ${remainingHours} ${hourText}`,
-       suffix: `/ 1 рік`,
-     };
+    displayText = `${totalDays} ${dayText}`;
   }
+  
+  let hourText = 'годин';
+  if (remainingHours === 1) hourText = 'година';
+  else if (remainingHours < 5) hourText = 'години';
+  
+  let minuteText = 'хвилин';
+  if (remainingMinutes === 1) minuteText = 'хвилина';
+  else if (remainingMinutes < 5) minuteText = 'хвилини';
+  
+  return {
+    main: `${displayText} ${remainingHours} ${hourText} ${remainingMinutes} ${minuteText}`,
+    suffix: `/ 1 рік`,
+  };
 };
 
 // Helper function to calculate anime time display
@@ -231,12 +224,16 @@ const calculateAnimeTimeDisplay = (hours) => {
   };
 };
 
-const UserActivityBlock = ({ activity, animeHours = 0 }) => {
+const UserActivityBlock = ({ activity, animeDuration = 0 }) => {
   const [tooltipIndex, setTooltipIndex] = useState(null);
   const [showAnimeTooltip, setShowAnimeTooltip] = useState(false);
 
-  const animeTimeDisplay = calculateAnimeTimeDisplay(animeHours);
-  const progress = Math.min((animeHours / (365 * 24)) * 100, 100);
+  // animeDuration is in minutes (like the website API)
+  const totalMinutes = animeDuration;
+  const totalHours = totalMinutes / 60;
+  
+  const animeTimeDisplay = calculateAnimeTimeDisplay(totalHours);
+  const progress = Math.min((totalMinutes / 525600) * 100, 100); // 525600 minutes = 1 year
   
   // Створюємо масив для останніх 8 днів активності
   const generateLast8Days = () => {
@@ -280,25 +277,45 @@ const UserActivityBlock = ({ activity, animeHours = 0 }) => {
     <View style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <Card>
         <RowLineHeader title="Час аніме"/>
-        <StatRow>
-          <DaysValue>{Math.floor(animeHours / 24) + 1} днів</DaysValue>
-          <Value>{animeHours} годин</Value>
-        </StatRow>
+                          <StatRow>
+           <DaysValue>
+             {(() => {
+               const totalDays = Math.floor(totalHours / 24);
+               if (totalDays > 31) {
+                 const months = Math.floor(totalDays / 30.44);
+                 const days = Math.floor(totalDays % 30.44);
+                 let monthText = 'місяців';
+                 if (months === 1) monthText = 'місяць';
+                 else if (months < 5) monthText = 'місяці';
+                 let dayText = 'днів';
+                 if (days === 1) dayText = 'день';
+                 else if (days < 5) dayText = 'дні';
+                 return `${months} ${monthText} ${days} ${dayText}`;
+               } else {
+                 let dayText = 'днів';
+                 if (totalDays === 1) dayText = 'день';
+                 else if (totalDays < 5) dayText = 'дні';
+                 return `${totalDays} ${dayText}`;
+               }
+             })()}
+           </DaysValue>
+           <Value>{Math.floor(totalHours)} годин</Value>
+         </StatRow>
 
-        <TouchableOpacity onPress={() => setShowAnimeTooltip(!showAnimeTooltip)}>
-          <View style={{ position: 'relative' }}>
-            {showAnimeTooltip && (
-              <AnimeTooltip>
-                <AnimeTooltipText>
-                  {animeHours > 0 ? formatAnimeTime(animeHours).main : 'Немає даних про перегляд'}
-                </AnimeTooltipText>
-                {animeHours > 0 && (
-                  <AnimeTooltipSub>
-                    {formatAnimeTime(animeHours).suffix}
-                  </AnimeTooltipSub>
-                )}
-              </AnimeTooltip>
-            )}
+         <TouchableOpacity onPress={() => setShowAnimeTooltip(!showAnimeTooltip)}>
+           <View style={{ position: 'relative' }}>
+             {showAnimeTooltip && (
+               <AnimeTooltip>
+                                   <AnimeTooltipText>
+                    {totalMinutes > 0 ? formatAnimeTime(totalMinutes).main : 'Немає даних про перегляд'}
+                  </AnimeTooltipText>
+                  {totalMinutes > 0 && (
+                    <AnimeTooltipSub>
+                      {formatAnimeTime(totalMinutes).suffix}
+                    </AnimeTooltipSub>
+                  )}
+               </AnimeTooltip>
+             )}
             <ProgressBar>
               <Progress progress={progress} />
             </ProgressBar>
@@ -331,7 +348,7 @@ const UserActivityBlock = ({ activity, animeHours = 0 }) => {
                           {item.actions > 0 ? `${item.actions} дій` : 'Немає активності'}
                         </TooltipText>
                        <TooltipText numberOfLines={1} style={{ fontSize: 11, marginTop: 2, textAlign: 'center' }}>
-                         {item.isToday ? 'Сьогодні' : format(new Date(item.timestamp * 1000), 'dd.MM.yyyy', { locale: uk })}
+                         {format(new Date(item.timestamp * 1000), 'dd.MM.yyyy', { locale: uk })}
                        </TooltipText>
                      </TooltipBox>
                    )}

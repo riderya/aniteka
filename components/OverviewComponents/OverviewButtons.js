@@ -19,14 +19,15 @@ const OverviewButtons = React.memo(() => {
   const navigation = useNavigation();
 
   const handlePress = useCallback(async (key) => {
+    const rootNav = navigation.getParent ? navigation.getParent() : navigation;
     if (key === 'filter') {
-      navigation.navigate('AnimeFilterScreen');
+      rootNav.navigate('AnimeFilterScreen');
     } if (key === 'schedule') {
-      navigation.navigate('AnimeScheduleScreen');
+      rootNav.navigate('AnimeScheduleScreen');
     } if (key === 'collections') {
-      navigation.navigate('AnimeCollectionsScreen');
+      rootNav.navigate('AnimeCollectionsScreen');
     } if (key === 'articles') {
-      navigation.navigate('AnimeAllArticlesScreen');
+      rootNav.navigate('AnimeAllArticlesScreen');
     } else if (key === 'random') {
         const maxPages = 1000;
         const randomPage = Math.floor(Math.random() * maxPages) + 1;
@@ -34,7 +35,7 @@ const OverviewButtons = React.memo(() => {
         });
         const animeList = response.data.list;
         const randomAnime = animeList[0];
-        navigation.navigate('AnimeDetails', { slug: randomAnime.slug });
+        rootNav.navigate('AnimeDetails', { slug: randomAnime.slug });
     }
   }, [navigation]);
 

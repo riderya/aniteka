@@ -18,6 +18,11 @@ import CharacterColumnCard from '../Cards/CharacterColumnCard';
 import CollectionCard from '../Cards/CollectionCard';
 
 const { width: screenWidth } = Dimensions.get('window');
+// Grid layout constants
+const GRID_NUM_COLUMNS = 3;
+const CONTAINER_HORIZONTAL_PADDING = 12; // styles.container padding
+const CONTENT_HORIZONTAL_PADDING = 8; // contentContainerStyle when grid
+const GRID_ITEM_MARGIN_HORIZONTAL = 4; // renderGridItem container marginHorizontal
 
 const CONTENT_TYPES = [
   { key: 'anime', label: 'Аніме', icon: 'tv-outline' },
@@ -91,7 +96,7 @@ const createStyles = (theme) => StyleSheet.create({
   },
   dropdownMenu: {
     position: 'absolute',
-    top: '100%',
+    top: '120%',
     right: 0,
     backgroundColor: theme.colors.background,
     borderRadius: 12,
@@ -112,9 +117,6 @@ const createStyles = (theme) => StyleSheet.create({
   dropdownOptionLast: {
     borderBottomWidth: 0,
   },
-  dropdownOptionSelected: {
-    backgroundColor: theme.colors.primary + '20',
-  },
   optionIcon: {
     marginRight: 12,
   },
@@ -122,10 +124,30 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.colors.text,
     fontSize: 14,
     fontWeight: '500',
+    flex: 1,
   },
   optionTextSelected: {
     color: theme.colors.primary,
     fontWeight: '600',
+  },
+  radioButton: {
+    width: 16,
+    height: 16,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  radioButtonSelected: {
+    borderColor: theme.colors.primary,
+  },
+  radioButtonInner: {
+    width: 6,
+    height: 6,
+    borderRadius: 6,
+    backgroundColor: theme.colors.primary,
   },
   viewModeButton: {
     padding: 8,
@@ -173,7 +195,7 @@ const createStyles = (theme) => StyleSheet.create({
     fontWeight: '600',
   },
   gridContainer: {
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginBottom: 4,
   },
   listContainer: {
@@ -332,9 +354,10 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
 
   const renderGridItem = useCallback(({ item }) => (
     <View style={{ 
-      flex: selectedContentType === 'collection' ? 0 : 1,
-      width: selectedContentType === 'collection' ? '100%' : undefined,
-      marginHorizontal: selectedContentType === 'collection' ? 0 : 4,
+      width: selectedContentType === 'collection' 
+        ? '100%'
+        : ((screenWidth - (CONTAINER_HORIZONTAL_PADDING * 2) - (CONTENT_HORIZONTAL_PADDING * 2)) - (GRID_NUM_COLUMNS * GRID_ITEM_MARGIN_HORIZONTAL * 2)) / GRID_NUM_COLUMNS,
+      marginHorizontal: selectedContentType === 'collection' ? 0 : GRID_ITEM_MARGIN_HORIZONTAL,
       marginBottom: 8
     }}>
       {selectedContentType === 'anime' && (
@@ -552,12 +575,14 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
                     ]}
                     onPress={() => handleContentTypeSelect(contentType.key)}
                   >
-                    <Ionicons 
-                      name={contentType.icon} 
-                      size={16} 
-                      color={selectedContentType === contentType.key ? theme.colors.primary : theme.colors.text}
-                      style={styles.optionIcon}
-                    />
+                    <View style={[
+                      styles.radioButton,
+                      selectedContentType === contentType.key && styles.radioButtonSelected
+                    ]}>
+                      {selectedContentType === contentType.key && (
+                        <View style={styles.radioButtonInner} />
+                      )}
+                    </View>
                     <Text style={[
                       styles.optionText,
                       selectedContentType === contentType.key && styles.optionTextSelected

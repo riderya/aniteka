@@ -2,10 +2,13 @@ import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { PlatformBlurView } from '../Custom/PlatformBlurView';
+import { useTheme } from '../../context/ThemeContext';
 
 const HeaderTitleBar = ({ title, showBack = true, onBack }) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const { theme, isDark } = useTheme();
 
   const handleBack = () => {
     if (onBack) {
@@ -16,11 +19,11 @@ const HeaderTitleBar = ({ title, showBack = true, onBack }) => {
   };
 
   return (
-    <HeaderContainer style={{ paddingTop: insets.top }}>
+    <HeaderContainer intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
       <HeaderRow>
         {showBack && (
-          <BackButton onPress={handleBack}>
-            <Ionicons name="arrow-back" size={28} color="#888" />
+          <BackButton onPress={handleBack} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
           </BackButton>
         )}
         <HeaderTitle numberOfLines={1}>{title}</HeaderTitle>
@@ -31,8 +34,14 @@ const HeaderTitleBar = ({ title, showBack = true, onBack }) => {
 
 export default HeaderTitleBar;
 
-const HeaderContainer = styled.View`
-  padding: 12px;
+const HeaderContainer = styled(PlatformBlurView)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 16px;
+  padding-top: ${({ topOffset }) => topOffset + 16}px;
 `;
 
 const HeaderRow = styled.View`
@@ -41,13 +50,16 @@ const HeaderRow = styled.View`
 `;
 
 const BackButton = styled.TouchableOpacity`
-  padding: 4px;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
 `;
 
 const HeaderTitle = styled.Text`
   flex: 1;
   color: ${({ theme }) => theme.colors.text};
   font-size: 18px;
-  font-weight: bold;
+  font-weight: 700;
   margin-left: 12px;
 `;
