@@ -10,6 +10,7 @@ import {
   TextInput,
   ScrollView,
   Switch,
+  Platform,
 } from 'react-native';
 import axios from 'axios';
 import styled from 'styled-components/native';
@@ -142,7 +143,7 @@ const renderItem = ({ item }) => <ArticleCard item={item} theme={theme} />;
   onEndReached={handleLoadMore}
   onEndReachedThreshold={0.5}
   contentContainerStyle={{
-    paddingTop: 110,
+    paddingTop: insets.top + 56 + 20,
     paddingBottom: 20 + insets.bottom,
     paddingHorizontal: 12,
   }}
@@ -168,7 +169,7 @@ const renderItem = ({ item }) => <ArticleCard item={item} theme={theme} />;
     onRefresh={onRefresh}
     colors={[theme.colors.text]}
     tintColor={theme.colors.text}
-    progressViewOffset={insets.top + 50}
+    progressViewOffset={insets.top + 56}
     progressBackgroundColor={isDark ? theme.colors.card : undefined}
   />
   }

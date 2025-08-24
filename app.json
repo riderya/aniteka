@@ -16,7 +16,12 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.osu-tenef.yummyanimelist",
-      "associatedDomains": ["applinks:hikka.io"]
+      "associatedDomains": [
+        "applinks:hikka.io"
+      ],
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -31,30 +36,16 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "exp+yummyanimelist"
-            },
-            {
               "scheme": "yummyanimelist"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        },
-        {
-          "action": "VIEW",
-          "data": [
-            {
-              "scheme": "yummyanimelist"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
-      ]
+      ],
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "runtimeVersion": "1.0.0"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -63,12 +54,17 @@
       "expo-web-browser",
       "expo-asset",
       "expo-secure-store",
-      "expo-image-picker"
+      "expo-image-picker",
+      "expo-font"
     ],
     "extra": {
       "eas": {
         "projectId": "848ddbb0-778e-480a-bff5-11710ba78d7d"
       }
+    },
+    "owner": "osu_tenef",
+    "updates": {
+      "url": "https://u.expo.dev/848ddbb0-778e-480a-bff5-11710ba78d7d"
     }
   }
 }

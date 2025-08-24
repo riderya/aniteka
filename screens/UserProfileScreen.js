@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components/native';
-import { FlatList, ActivityIndicator, Alert, RefreshControl, View } from 'react-native';
+import { FlatList, ActivityIndicator, Alert, RefreshControl, View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
@@ -841,7 +841,7 @@ const UserProfile = () => {
             onRefresh={onRefresh}
             colors={[theme.colors.text]}
             tintColor={theme.colors.text}
-            progressViewOffset={insets.top + 50}
+            progressViewOffset={insets.top + (Platform.OS === 'ios' ? 70 : 50)}
             progressBackgroundColor={isDark ? theme.colors.card : undefined}
           />
         }

@@ -32,33 +32,27 @@ export const CONFIG = {
 
 // Функція для перевірки конфігурації
 export const validateConfig = () => {
-  const errors = [];
-  
-  // Базова перевірка конфігурації
-  if (!CONFIG.HIKKA.CLIENT_ID || CONFIG.HIKKA.CLIENT_ID === 'your-hikka-client-id') {
-    errors.push('HIKKA_CLIENT_ID не налаштований');
-  }
-  
-  if (CONFIG.SUPABASE.URL === 'https://your-project.supabase.co') {
-    errors.push('SUPABASE_URL не налаштований');
-  }
-  
-  if (CONFIG.SUPABASE.ANON_KEY === 'your-anon-key-here') {
-    errors.push('SUPABASE_ANON_KEY не налаштований');
-  }
-  
-  if (errors.length > 0) {
+  const requiredFields = [
+    'SUPABASE.URL',
+    'SUPABASE.ANON_KEY',
+    'HIKKA.CLIENT_ID',
+    'HIKKA.CLIENT_SECRET',
+    'HIKKA.REDIRECT_URI'
+  ];
 
+  const missingFields = requiredFields.filter(field => {
+    const keys = field.split('.');
+    let value = CONFIG;
+    for (const key of keys) {
+      value = value[key];
+    }
+    return !value || value === 'your-anon-key-here' || value === 'your-project.supabase.co';
+  });
+
+  if (missingFields.length > 0) {
+    console.warn('⚠️ Відсутні або неправильні налаштування:', missingFields);
     return false;
   }
-  
+
   return true;
-};
-
-// Функція для отримання конфігурації з перевіркою
-export const getConfig = () => {
-  if (!validateConfig()) {
-
-  }
-  return CONFIG;
 };

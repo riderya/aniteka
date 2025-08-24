@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
+import { RefreshControl } from 'react-native';
 import styled from 'styled-components/native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Octicons from '@expo/vector-icons/Octicons';
@@ -55,8 +56,14 @@ const AnimeListSection = ({ animeList, sortOptions, toggleSort, showRandomAnime,
         renderItem={({ item }) => <AnimeRowCard anime={item} navigation={navigation} />}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={renderHeader}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.text]}
+            tintColor={theme.colors.text}
+          />
+        }
       />
     </Container>
   );

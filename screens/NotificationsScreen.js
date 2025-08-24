@@ -9,6 +9,7 @@ import {
   Image,
   Alert,
   Linking,
+  Platform,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useTheme } from '../context/ThemeContext';
@@ -213,7 +214,7 @@ export default function NotificationsScreen({ navigation }) {
                 onRefresh={refresh}
                 colors={[theme.colors.text]}
                 tintColor={theme.colors.text}
-                progressViewOffset={insets.top + 50}
+                progressViewOffset={insets.top + (Platform.OS === 'ios' ? 70 : 50)}
                 progressBackgroundColor={isDark ? theme.colors.card : undefined}
               />
             }

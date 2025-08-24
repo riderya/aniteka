@@ -8,12 +8,6 @@ import CharacterColumnCard from '../Cards/CharacterColumnCard';
 
 const Container = styled.View``;
 
-const LineGray = styled.View`
-  margin: 25px 12px;
-  height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
-`;
-
 const AnimeMainCharacters = ({ anime }) => {
   const navigation = useNavigation();
   const slug = anime.slug;
@@ -75,7 +69,6 @@ const AnimeMainCharacters = ({ anime }) => {
           <CharacterColumnCard character={item.character} />
         )}
       />
-      <LineGray />
     </Container>
   );
 };

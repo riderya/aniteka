@@ -38,7 +38,7 @@ const LoadingContainer = styled.View`
 `;
 
 export default function RootNavigator() {
-  const { isLoading } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
   const { theme } = useTheme();
 
   if (isLoading) {

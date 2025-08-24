@@ -1,11 +1,13 @@
 import React, { useState, useCallback, useRef } from 'react';
 import styled from 'styled-components/native';
-import { Dimensions, FlatList, ActivityIndicator, RefreshControl, View } from 'react-native';
+import { Dimensions, FlatList, RefreshControl, View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/Header/Header';
 import HomeBannerSwiper from '../components/HomeBannerSwiper/HomeBannerSwiper';
 import AnimeSlider from '../components/Sliders/AnimeSlider';
 import { useTheme } from '../context/ThemeContext';
+import { useOrientation, useDimensions } from '../hooks';
+import { getResponsiveDimensions } from '../utils/orientationUtils';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -15,23 +17,10 @@ const Container = styled.View`
 `;
 
 const BannerWrapper = styled.View`
-  height: ${screenHeight * 0.8}px;
-`;
-
-const ColumnBlock = styled.View`
-  margin-top: -100px;
-  flex-direction: column;
-  gap: 40px;
-  padding-bottom: ${props => props.bottomInset + 110}px;
-`;
-
-const RefreshOverlay = styled.View`
-  position: absolute;
-  top: 60px;
-  left: 0;
-  right: 0;
-  z-index: 99999;
-  align-items: center;
+  height: ${({ orientation, dimensions }) => 
+    orientation === 'landscape' 
+      ? Math.min(dimensions.height * 0.6, 400) 
+      : dimensions.height * 0.8}px;
 `;
 
 export default function HomeScreen() {
@@ -39,6 +28,9 @@ export default function HomeScreen() {
   const [refreshKey, setRefreshKey] = useState(Date.now());
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const orientation = useOrientation();
+  const dimensions = useDimensions();
+  const responsiveDims = getResponsiveDimensions();
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -95,15 +87,15 @@ export default function HomeScreen() {
   const renderItem = ({ item }) => {
     if (item.type === 'banner') {
       return (
-        <BannerWrapper>
+        <BannerWrapper orientation={orientation} dimensions={dimensions}>
           <HomeBannerSwiper key={`banner-${refreshKey}`} />
         </BannerWrapper>
       );
     } else if (item.type === 'slider') {
       return (
         <View style={{ 
-          marginTop: item.id === 'popular' ? -100 : 0, 
-          paddingVertical: 24
+          marginTop: item.id === 'popular' ? (orientation === 'landscape' ? -60 : -150) : 0, 
+          paddingVertical: orientation === 'landscape' ? 16 : 24
         }}>
           <AnimeSlider key={item.key} {...item.sliderProps} />
         </View>
@@ -130,7 +122,7 @@ export default function HomeScreen() {
               onRefresh={onRefresh}
               colors={[theme.colors.text]}
               tintColor={theme.colors.text}
-              progressViewOffset={insets.top + 50}
+              progressViewOffset={insets.top + (Platform.OS === 'ios' ? 70 : 50)}
               progressBackgroundColor={isDark ? theme.colors.card : undefined}
             />
           }
@@ -142,11 +134,6 @@ export default function HomeScreen() {
           windowSize={5}
           initialNumToRender={2}
         />
-        {refreshing && (
-          <RefreshOverlay>
-            <ActivityIndicator size="small" color={theme.colors.primary} />
-          </RefreshOverlay>
-        )}
       </Container>
     </>
   );

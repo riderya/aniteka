@@ -325,9 +325,12 @@ const AnimeRowCard = React.memo(({
             {anime.episodes_released ?? '?'} з {anime.episodes_total ?? '?'} еп
           </Text>
           <FontAwesome name="circle" size={4} color={theme.colors.gray} />
-          <Text style={styles.scoreText}>
-            {anime.score ?? '?'}
-          </Text>
+          <View style={styles.scoreContainer}>
+            <Text style={styles.scoreText}>
+              {anime.score ?? '?'}
+            </Text>
+            <FontAwesome name="star" size={12} color={theme.colors.gray} style={styles.starIcon} />
+          </View>
           {isFavourite && (
             <Octicons name="heart-fill" size={14} color={theme.colors.error} />
           )}
@@ -407,6 +410,14 @@ const createStyles = (theme, props) => StyleSheet.create({
   scoreText: {
     fontSize: props.scoreFontSize,
     color: theme.colors.gray,
+  },
+  scoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  starIcon: {
+    marginLeft: 2,
   },
   historyActionText: {
     fontSize: props.descriptionFontSize,

@@ -12,15 +12,16 @@ const StyledGradient = styled(LinearGradient)`
 `;
 
 const GradientBlock = () => {
-  const { isDark } = useTheme();
+  const { isDark, theme } = useTheme();
 
   const colors = isDark
-    ? ['#050505', 'transparent'] // Темна тема
-    : ['#ffffff', 'transparent']; // Світла тема
+    ? [theme.colors.background, `${theme.colors.background}`, `${theme.colors.background}E6`, `${theme.colors.background}CC`, `${theme.colors.background}66`, 'transparent'] // Темна тема
+    : [theme.colors.background, `${theme.colors.background}`, `${theme.colors.background}E6`, `${theme.colors.background}CC`, `${theme.colors.background}66`, 'transparent']; // Світла тема
 
   return (
     <StyledGradient
       colors={colors}
+      locations={[0, 0.2, 0.4, 0.6, 0.8, 1]}
       start={{ x: 0.5, y: 1 }}
       end={{ x: 0.5, y: 0 }}
     />

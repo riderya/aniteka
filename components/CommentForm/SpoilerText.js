@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import { useTheme } from '../../context/ThemeContext';
-import Markdown from 'react-native-markdown-display';
+import Markdown from '../Custom/MarkdownText';
 
 const SpoilerText = ({ text, maxLines = 3 }) => {
   const { theme } = useTheme();

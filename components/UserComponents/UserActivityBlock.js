@@ -72,8 +72,8 @@ const Bar = styled.View`
   width: 15px;
   border-radius: 999px;
   background-color: ${({ theme, hasData, isToday }) => {
-    if (isToday) {
-      return hasData ? theme.colors.primary : 'rgba(255, 193, 7, 0.6)';
+    if (isToday && hasData) {
+      return theme.colors.primary;
     }
     return hasData ? theme.colors.primary : 'rgba(128, 128, 128, 0.3)';
   }};
@@ -258,7 +258,7 @@ const UserActivityBlock = ({ activity, animeDuration = 0 }) => {
              days.push({
          timestamp,
          actions: dayActivity?.actions || 0,
-         hasData: !!dayActivity || isToday, // Сьогоднішній день завжди має дані для відображення
+         hasData: !!dayActivity, // Дані є тільки якщо є активність
          isToday
        });
     }
@@ -331,10 +331,7 @@ const UserActivityBlock = ({ activity, animeDuration = 0 }) => {
                          {last8Days.map((item, index) => {
                let height = maxActions > 0 ? Math.max(0, Math.min(100, (item.actions / maxActions) * 100)) : 0;
                
-               // Завжди показуємо сьогоднішній день з мінімальною висотою, навіть якщо активності немає
-               if (item.isToday && height === 0) {
-                 height = 5; // Мінімальна висота для сьогоднішнього дня
-               }
+               // Якщо немає активності, висота залишається 0
 
               return (
                 <TouchableOpacity
@@ -344,9 +341,9 @@ const UserActivityBlock = ({ activity, animeDuration = 0 }) => {
                 >
                                      {tooltipIndex === index && (
                      <TooltipBox style={{ bottom: height + 10 }}>
-                                               <TooltipText numberOfLines={1} style={{ textAlign: 'center' }}>
-                          {item.actions > 0 ? `${item.actions} дій` : 'Немає активності'}
-                        </TooltipText>
+                                                                       <TooltipText numberOfLines={1} style={{ textAlign: 'center' }}>
+                           {item.actions > 0 ? `${item.actions} дій` : '0 дій'}
+                         </TooltipText>
                        <TooltipText numberOfLines={1} style={{ fontSize: 11, marginTop: 2, textAlign: 'center' }}>
                          {format(new Date(item.timestamp * 1000), 'dd.MM.yyyy', { locale: uk })}
                        </TooltipText>

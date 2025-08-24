@@ -233,6 +233,7 @@ export default EpisodesCounter;
 
 const Container = styled.View`
   border-color: ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.card};
   border-width: 1px;
   padding: 12px;
   border-radius: 16px;
@@ -240,9 +241,9 @@ const Container = styled.View`
 `;
 
 const Title = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-weight: 600;
   font-size: 18px;
+  font-weight: bold;
+  color: ${({ theme }) => theme.colors.text};
   margin-bottom: 12px;
 `;
 

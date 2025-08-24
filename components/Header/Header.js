@@ -7,6 +7,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { TouchableOpacity, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useNotifications } from '../../context/NotificationsContext';
+import { useOrientation } from '../../hooks';
+import { getHeaderStyles } from '../../utils/orientationUtils';
 
 
 const Header = () => {
@@ -14,12 +16,14 @@ const Header = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { unseenCount } = useNotifications();
+  const orientation = useOrientation();
+  const headerStyles = getHeaderStyles();
 
   return (
       <FixedContainer topInset={insets.top + 10}>
         <Touchable onPress={() => (navigation.getParent ? navigation.getParent() : navigation).navigate('Search')} activeOpacity={0.7}>
           {Platform.OS === 'ios' ? (
-            <BlurButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
+            <BlurButton orientation={orientation} experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
               <IconText name="search1" />
               <ButtonText>Пошук</ButtonText>
             </BlurButton>
@@ -89,13 +93,13 @@ const Touchable = styled(TouchableOpacity)`
 
 const BlurButton = styled(BlurView)`
   flex: 1;
-  height: 55px;
+  height: ${({ orientation }) => orientation === 'landscape' ? 45 : 55}px;
 
   border-radius: 999px;
-  padding: 0 16px;
+  padding: 0 ${({ orientation }) => orientation === 'landscape' ? 12 : 16}px;
   flex-direction: row;
   align-items: center;
-  gap: 12px;
+  gap: ${({ orientation }) => orientation === 'landscape' ? 8 : 12}px;
   overflow: hidden;
 `;
 

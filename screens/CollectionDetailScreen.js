@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { PlatformBlurView } from '../components/Custom/PlatformBlurView';
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
-import Markdown from 'react-native-markdown-display';
+import Markdown from '../components/Custom/MarkdownText';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import toastConfig from '../components/CustomToast';
@@ -49,6 +49,7 @@ const CollectionDetailScreen = () => {
   const [voteLoading, setVoteLoading] = useState(false);
 
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [showEditDate, setShowEditDate] = useState(false);
   const MAX_DESCRIPTION_LENGTH = 300;
 
   // Function to process spoilers in text
@@ -463,7 +464,7 @@ useFocusEffect(
 
       <StyledScrollView
         contentContainerStyle={{
-          paddingTop: 90,
+          paddingTop: insets.top + 56 + 20,
           paddingBottom: 20 + insets.bottom,
           paddingHorizontal: 12,
           backgroundColor: theme.background,
@@ -494,13 +495,25 @@ useFocusEffect(
           <HeaderTitle>{title}</HeaderTitle>
           
           <HeaderCreatedAt>
-            {formatDate(collection.created)}
-            {collection.updated > 0 && collection.updated !== collection.created && (
-              <Text style={{ color: theme.colors.gray, fontSize: 14 }}>
-                {' • Ред: ' + formatDate(collection.updated)}
-              </Text>
-            )}
+            <CreatedAtButton onPress={() => setShowEditDate(!showEditDate)}>
+              <CreatedAtText>{formatDate(collection.created)}</CreatedAtText>
+              {collection.updated > 0 && collection.updated !== collection.created && (
+                <Ionicons 
+                  name={showEditDate ? "chevron-down" : "chevron-forward"} 
+                  size={16} 
+                  color={theme.colors.gray}
+                  style={{ marginLeft: 4 }}
+                />
+              )}
+            </CreatedAtButton>
           </HeaderCreatedAt>
+          {showEditDate && collection.updated > 0 && collection.updated !== collection.created && (
+            <EditDateContainer>
+              <EditDateText>
+                Ред: {formatDate(collection.updated)}
+              </EditDateText>
+            </EditDateContainer>
+          )}
 
           {tags?.length > 0 && (
             <TagsContainer>
@@ -580,6 +593,7 @@ useFocusEffect(
 
 {collection.description && (
   <DescriptionContainer>
+    <DescriptionTitle>Опис</DescriptionTitle>
     {(() => {
       const descriptionText = isDescriptionExpanded 
         ? collection.description 
@@ -702,25 +716,40 @@ const CardWrapper = styled.View`
 const TagsContainer = styled.View`
   flex-direction: row;
   flex-wrap: wrap;
-  margin-top: 12px;
+  gap: 8px;
+  margin-bottom: 12px;
 `;
 
 const Tag = styled.Text`
-  background-color:${({ theme }) => theme.colors.card};
+  background-color: ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.text};
-  padding: 6px 12px;
-  border-radius: 16px;
-  margin-right: 8px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 4px;
   font-size: 14px;
+  font-weight: 500;
+  border: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const CreatedAtButton = styled.TouchableOpacity`
-  margin-top: 12px;
+  flex-direction: row;
+  align-items: center;
+  align-self: flex-start;
 `;
 
-const CreatedAt = styled.Text`
+const CreatedAtText = styled.Text`
   color: ${({ theme }) => theme.colors.gray};
   font-size: 14px;
+`;
+
+const EditDateContainer = styled.View`
+  margin-bottom: 12px;
+`;
+
+const EditDateText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+  margin-top: -10px;
 `;
 
 const VoteScoreText = styled.Text`
@@ -770,17 +799,17 @@ const VoteButton = styled.TouchableOpacity`
   padding: 0px;
 `;
 
-const CreatedAtText = styled.Text`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 14px;
-`;
-
 const DescriptionContainer = styled.View`
-  margin-top: 12px;
+  background-color: ${({ theme }) => theme.colors.card};
+  border-radius: 16px;
+  padding: 12px;
   margin-bottom: 24px;
-  padding-bottom: 12px;
-  border-bottom-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  shadow-color: #000;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
+  elevation: 3;
 `;
 
 const ShowMoreButton = styled.TouchableOpacity`
@@ -792,6 +821,13 @@ const ShowMoreText = styled.Text`
   color: ${({ theme }) => theme.colors.gray};
   font-size: 14px;
   font-weight: bold;
+`;
+
+const DescriptionTitle = styled.Text`
+  font-size: 18px;
+  font-weight: bold;
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 12px;
 `;
 
 // Add these styled components at the bottom of the file

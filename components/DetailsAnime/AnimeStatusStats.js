@@ -6,12 +6,6 @@ import { useTheme } from '../../context/ThemeContext';
 
 const Container = styled.View``;
 
-const LineGray = styled.View`
-  margin: 25px 0px;
-  height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
-`;
-
 const BarContainer = styled.View`
   flex-direction: row;
   height: 35px;
@@ -118,8 +112,6 @@ const AnimeStatusStats = ({ anime }) => {
           </LegendItem>
         ))}
       </FlexWrap>
-
-      <LineGray />
     </Container>
   );
 };

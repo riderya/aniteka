@@ -8,6 +8,7 @@ import {
   Modal,
   Pressable,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
@@ -104,8 +105,8 @@ const AnimeCollectionsScreen = () => {
             keyExtractor={(item, index) => item.reference + index}
             renderItem={({ item }) => <CollectionCard item={item} />}
             contentContainerStyle={{
-              paddingTop: 115,
-              paddingBottom: 12 + insets.bottom,
+              paddingTop: insets.top + 56 + 20,
+              paddingBottom: 20 + insets.bottom,
               paddingHorizontal: 12,
             }}
             ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
@@ -116,7 +117,7 @@ const AnimeCollectionsScreen = () => {
                 onRefresh={onRefresh}
                 colors={[theme.colors.text]}
                 tintColor={theme.colors.text}
-                progressViewOffset={insets.top + 50}
+                progressViewOffset={insets.top + 56}
                 progressBackgroundColor={isDark ? theme.colors.card : undefined}
               />
             }

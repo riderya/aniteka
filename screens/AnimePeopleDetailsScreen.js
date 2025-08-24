@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
 import Entypo from '@expo/vector-icons/Entypo';
-import Markdown from 'react-native-markdown-display';
+import Markdown from '../components/Custom/MarkdownText';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import avatarFallback from '../assets/image/image404.png';
@@ -395,7 +395,7 @@ const AnimePeopleDetailsScreen = () => {
 
 {mangaList.length > 0 && (
   <View>
-    <TitleLineSlider>Манга</TitleLineSlider>
+    <TitleLineSlider>Манґа</TitleLineSlider>
     <FlatList
       data={mangaList}
       keyExtractor={(_, index) => `manga-${index}`}

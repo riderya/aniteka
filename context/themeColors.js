@@ -28,7 +28,7 @@ export const lightThemeColors = {
 
 export const darkThemeColors = {
   primary: '#D46FFB',              // Яскравий акцент (фіолетовий)
-  background: '#050505',           // Головний темний фон
+  background: '#080808',           // Головний темний фон
   card: '#121212',                 // Тло карток — трохи світліше
   text: '#F0F0F0',                 // Основний текст — майже білий
   textSecondary: '#AAAAAA',       // Другорядний текст

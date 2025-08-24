@@ -3,11 +3,14 @@ import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BackButtonWrapper = styled(TouchableOpacity)`
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: ${({ top, safeAreaTop }) => (top || 0) + safeAreaTop}px;
+  left: ${({ left }) => left || 12}px;
+  right: ${({ right }) => right || 'auto'};
+  bottom: ${({ bottom }) => bottom || 'auto'};
   z-index: 10;
   width: 45px;
   height: 45px;
@@ -24,8 +27,9 @@ const StyledIcon = styled(Ionicons)`
   font-size: 24px;
 `;
 
-const BackButton = () => {
+const BackButton = ({ top, left, right, bottom }) => {
   const navigation = useNavigation();
+  const { top: safeAreaTop } = useSafeAreaInsets();
 
   const handleGoBack = () => {
     if (navigation.canGoBack()) {
@@ -39,7 +43,14 @@ const BackButton = () => {
   };
 
   return (
-    <BackButtonWrapper onPress={handleGoBack}>
+    <BackButtonWrapper 
+      onPress={handleGoBack}
+      top={top}
+      left={left}
+      right={right}
+      bottom={bottom}
+      safeAreaTop={safeAreaTop}
+    >
       <StyledIcon name="arrow-back" />
     </BackButtonWrapper>
   );

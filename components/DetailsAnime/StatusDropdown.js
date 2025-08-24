@@ -236,10 +236,10 @@ const StatusDropdown = ({ slug, episodes_total }) => {
       <Button
         onPress={onOpenModal}
         disabled={isLoading || isUpdating}
-        borderColor={isLoading ? theme.colors.gray : statusBorderColors[selectedStatus]}
+        borderColor={isLoading ? statusBorderColors['Не дивлюсь'] : statusBorderColors[selectedStatus]}
       >
         {isLoading ? (
-          <ActivityIndicator size="small" color={theme.colors.gray} />
+          <ActivityIndicator size="small" color={statusColors['Не дивлюсь']} />
         ) : (
           <>
             <Ionicons

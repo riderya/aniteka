@@ -8,12 +8,6 @@ import AnimeRating from './AnimeRating';
 const Container = styled.View`
 `;
 
-const LineGray = styled.View`
-  margin: 25px 0px;
-  height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
-`;
-
 const MainRow = styled.View`
   flex-direction: row;
   margin-left: 12px;
@@ -133,7 +127,6 @@ const AnimeRatingStats = ({ stats, score, slug }) => {
       </MainRow>
 
       <AnimeRating slug={slug} />
-      <LineGray />
     </Container>
   );
 };

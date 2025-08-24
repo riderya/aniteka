@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
-import Markdown from 'react-native-markdown-display';
+import Markdown from '../Custom/MarkdownText';
 import { View, Modal, TouchableOpacity, Pressable, Alert, Text, ActivityIndicator } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import styled from 'styled-components/native';

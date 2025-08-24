@@ -12,6 +12,8 @@ import styled from 'styled-components/native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
 import * as SecureStore from 'expo-secure-store';
+import { useOrientation } from '../../hooks';
+import { getResponsiveDimensions } from '../../utils/orientationUtils';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -22,6 +24,8 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef(null);
   const navigation = useNavigation();
+  const orientation = useOrientation();
+  const responsiveDims = getResponsiveDimensions();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,8 +68,8 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
       <Container>
         <HeaderLine>
           <Column>
-            <TitleLine>{titleLineText}</TitleLine>
-            <Description>{descriptionText}</Description>
+            <TitleLine orientation={orientation}>{titleLineText}</TitleLine>
+            <Description orientation={orientation}>{descriptionText}</Description>
           </Column>
         </HeaderLine>
 
@@ -74,7 +78,7 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
           showsHorizontalScrollIndicator={false}
           data={[...Array(6).keys()]}
           keyExtractor={(item) => `skeleton-${item}`}
-          renderItem={() => <SkeletonItem />}
+          renderItem={() => <SkeletonItem orientation={orientation} />}
         />
       </Container>
     );
@@ -157,14 +161,14 @@ const Column = styled.View`
 `;
 
 const TitleLine = styled.Text`
-  font-size: 24px;
+  font-size: ${({ orientation }) => orientation === 'landscape' ? 20 : 24}px;
   font-weight: 900;
   margin-bottom: 4px;
   color: ${({ theme }) => theme.colors.text};
 `;
 
 const Description = styled.Text`
-  font-size: 14px;
+  font-size: ${({ orientation }) => orientation === 'landscape' ? 12 : 14}px;
   font-weight: 400;
   color: ${({ theme }) => theme.colors.gray};
   margin-bottom: 8px;
@@ -190,20 +194,20 @@ const SkeletonList = styled(FlatList)`
   padding-left: 10px;
 `;
 
-const SkeletonItem = () => (
-  <SkeletonContainer>
-    <SkeletonPoster />
+const SkeletonItem = ({ orientation }) => (
+  <SkeletonContainer orientation={orientation}>
+    <SkeletonPoster orientation={orientation} />
     <SkeletonText />
   </SkeletonContainer>
 );
 
 const SkeletonContainer = styled.View`
-  width: 140px;
-  margin-right: 20px;
+  width: ${({ orientation }) => orientation === 'landscape' ? 120 : 140}px;
+  margin-right: ${({ orientation }) => orientation === 'landscape' ? 16 : 20}px;
 `;
 
 const SkeletonPoster = styled.View`
-  height: 190px;
+  height: ${({ orientation }) => orientation === 'landscape' ? 160 : 190}px;
   background-color: ${({ theme }) => theme.colors.disabled};
   border-radius: 8px;
 `;

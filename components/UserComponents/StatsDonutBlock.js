@@ -62,11 +62,18 @@ const DonutWrapper = styled.View`
 
 
 /* ====== компонент Donut ====== */
-const Donut = ({ segments, radius = 55, stroke = 25, rotation = 0 }) => {
+const Donut = ({ segments, radius = 55, stroke = 25, rotation = 0, isDark = false }) => {
   const CIRCUMFERENCE = 2 * Math.PI * radius;
   const adjustedRadius = radius - stroke / 2; // Коригуємо радіус для правильного відображення
 
   let acc = 0;
+  
+  // Перевіряємо чи всі значення дорівнюють 0
+  const allZero = segments.every(segment => segment.value === 0);
+  
+  // Колір фонового кола залежно від теми
+  const backgroundColor = isDark ? '#374151' : '#e5e7eb';
+  
   return (
     <Svg 
       width={radius * 2} 
@@ -74,11 +81,28 @@ const Donut = ({ segments, radius = 55, stroke = 25, rotation = 0 }) => {
       viewBox={`0 0 ${radius * 2} ${radius * 2}`}
       style={{ transform: [{ rotate: `${rotation}deg` }] }}
     >
-             {segments.map(({ value, color }, idx) => {
-         // Мінімальна товщина для сегментів (хоча б 1% від кола для кращої видимості)
-         const minValue = Math.max(value, 1);
-         const dash = (minValue / 100) * CIRCUMFERENCE;
-         const dashArray = `${dash} ${CIRCUMFERENCE - dash}`;
+      {/* Фоновий круг - завжди видимий */}
+      <Circle
+        cx={radius}
+        cy={radius}
+        r={adjustedRadius}
+        stroke={backgroundColor}
+        strokeWidth={stroke}
+        fill="transparent"
+        opacity={0.3}
+      />
+      
+      {/* Сегменти даних */}
+      {segments.map(({ value, color }, idx) => {
+        // Якщо всі значення 0, показуємо порожній круг
+        if (allZero) {
+          return null;
+        }
+        
+        // Мінімальна товщина для сегментів (хоча б 1% від кола для кращої видимості)
+        const minValue = Math.max(value, 1);
+        const dash = (minValue / 100) * CIRCUMFERENCE;
+        const dashArray = `${dash} ${CIRCUMFERENCE - dash}`;
         const circle = (
           <Circle
             key={idx}
@@ -203,7 +227,7 @@ const StatsDonutBlock = ({ stats }) => {
             onHandlerStateChange={onHandlerStateChange}
           >
             <TouchableOpacity activeOpacity={1}>
-              <Donut segments={segments} rotation={rotation} />
+              <Donut segments={segments} rotation={rotation} isDark={isDark} />
             </TouchableOpacity>
           </PanGestureHandler>
         </DonutWrapper>

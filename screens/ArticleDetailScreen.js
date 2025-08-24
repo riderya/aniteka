@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Image, Linking, Pressable } from 'react-native';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, Image, Linking, Pressable, FlatList, Platform } from 'react-native';
 import axios from 'axios';
 import styled from 'styled-components/native';
 import YoutubePlayer from "react-native-youtube-iframe";
@@ -14,18 +14,7 @@ import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
-
-const ArticleDetailScreen = () => {
-  const { slug } = useRoute().params;
-  const navigation = useNavigation();
-  const [article, setArticle] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const { theme, isDark } = useTheme();
-  const insets = useSafeAreaInsets();
-
-  const [galleryVisible, setGalleryVisible] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
-  const [galleryImages, setGalleryImages] = useState([]);
+import MarkdownText from '../components/Custom/MarkdownText';
 
 const CATEGORY_TRANSLATIONS = {
   news: 'Новини',
@@ -33,138 +22,354 @@ const CATEGORY_TRANSLATIONS = {
   original: 'Авторське',
 };
 
+// Debounce функція для оптимізації
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
   useEffect(() => {
-    axios.get(`https://api.hikka.io/articles/${slug}`)
-      .then(res => setArticle(res.data))
-              .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [slug]);
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
-const renderChildren = (children, customStyle = {}) =>
-  children?.map((child, index) => {
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
+// Мемоізований компонент для оптимізованого зображення
+const OptimizedImage = React.memo(({ source, style, resizeMode = "cover", onPress }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  const handleLoadStart = useCallback(() => {
+    setImageLoading(true);
+  }, []);
+
+  const handleLoadEnd = useCallback(() => {
+    setImageLoading(false);
+  }, []);
+
+  const handleError = useCallback(() => {
+    setImageError(true);
+    setImageLoading(false);
+  }, []);
+
+  const handlePress = useCallback(() => {
+    if (onPress) {
+      onPress();
+    }
+  }, [onPress]);
+
+  if (imageError) {
+    return (
+      <View style={[style, { backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: '#999', fontSize: 12 }}>Помилка завантаження</Text>
+      </View>
+    );
+  }
+
+  const ImageComponent = onPress ? Pressable : View;
+  const imageProps = onPress ? { onPress: handlePress } : {};
+
+  return (
+    <ImageComponent {...imageProps}>
+      <Image
+        source={source}
+        style={style}
+        resizeMode={resizeMode}
+        onLoadStart={handleLoadStart}
+        onLoadEnd={handleLoadEnd}
+        onError={handleError}
+        fadeDuration={300}
+      />
+      {imageLoading && (
+        <View style={[style, { position: 'absolute', backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="small" color="#999" />
+        </View>
+      )}
+    </ImageComponent>
+  );
+});
+
+// Мемоізований компонент для YouTube відео
+const OptimizedYoutubePlayer = React.memo(({ videoId, height = 210 }) => {
+  const [isReady, setIsReady] = useState(false);
+
+  const handleReady = useCallback(() => {
+    setIsReady(true);
+  }, []);
+
+  if (!videoId) return null;
+
+  return (
+    <View style={{ marginVertical: 10, height }}>
+      {!isReady && (
+        <View style={{ 
+          height, 
+          backgroundColor: '#f0f0f0', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          borderRadius: 8 
+        }}>
+          <ActivityIndicator size="large" color="#999" />
+        </View>
+      )}
+      <YoutubePlayer 
+        height={height} 
+        play={false} 
+        videoId={videoId}
+        onReady={handleReady}
+        initialPlayerParams={{
+          preventFullScreen: false,
+          cc_lang_pref: "us",
+          showClosedCaptions: true
+        }}
+      />
+    </View>
+  );
+});
+
+// Мемоізований компонент для спойлера
+const SpoilerWrapper = React.memo(({ children, theme }) => {
+  const [visible, setVisible] = useState(false);
+  
+  const toggleSpoiler = useCallback(() => {
+    setVisible(prev => !prev);
+  }, []);
+  
+  const buttonStyle = useMemo(() => ({
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4,
+    padding: 2
+  }), []);
+  
+  return (
+    <SpoilerContainer>
+      <Pressable style={buttonStyle} onPress={toggleSpoiler}>
+        <SpoilerButtonText style={{ color: theme.colors.primary }}>
+          {visible ? 'Сховати спойлер' : 'Показати спойлер'}
+        </SpoilerButtonText>
+        <Entypo 
+          name={visible ? "chevron-up" : "chevron-down"} 
+          size={20} 
+          color={theme.colors.gray} 
+        />
+      </Pressable>
+      {visible && (
+        <SpoilerContent>
+          {Array.isArray(children) ? 
+            children.map((child, index) => {
+              if (child.type === 'p') {
+                return (
+                  <View key={`spoiler-${index}`} style={{ marginBottom: 12 }}>
+                    <RenderChildren children={child.children} theme={theme} />
+                  </View>
+                );
+              }
+              if (child.type === 'ul') {
+                return (
+                  <List key={`spoiler-${index}`}>
+                    {child.children.map((li, liIndex) => (
+                      <View key={liIndex} style={{ paddingLeft: 12, marginBottom: 6, flexDirection: 'row' }}>
+                        <Text style={{ color: theme.colors.text, fontSize: 16, marginRight: 8 }}>•</Text>
+                        <View style={{ flex: 1 }}>
+                          <RenderChildren children={li.children[0].children} theme={theme} customStyle={{ color: theme.colors.text, fontSize: 16 }} />
+                        </View>
+                      </View>
+                    ))}
+                  </List>
+                );
+              }
+              if (child.type === 'h1' || child.type === 'h2' || child.type === 'h3' || child.type === 'h4' || child.type === 'h5' || child.type === 'h6') {
+                const fontSize = {
+                  h1: 28, h2: 24, h3: 22, h4: 20, h5: 18, h6: 16
+                }[child.type];
+                const marginTop = {
+                  h1: 24, h2: 22, h3: 20, h4: 18, h5: 16, h6: 14
+                }[child.type];
+                const marginBottom = {
+                  h1: 12, h2: 11, h3: 10, h4: 9, h5: 8, h6: 7
+                }[child.type];
+                
+                return (
+                  <View key={`spoiler-${index}`} style={{ marginTop, marginBottom }}>
+                    <MarkdownText style={{ body: { color: theme.colors.text, fontSize, fontWeight: 'bold' } }}>
+                      <RenderChildren children={child.children} theme={theme} />
+                    </MarkdownText>
+                  </View>
+                );
+              }
+              return <RenderBlock key={`spoiler-${index}`} block={child} index={`spoiler-${index}`} theme={theme} />;
+            }) 
+            : 
+            <Text style={{ color: theme.colors.text }}>Немає вмісту</Text>
+          }
+        </SpoilerContent>
+      )}
+    </SpoilerContainer>
+  );
+});
+
+// Мемоізований компонент для рендерингу дітей
+const RenderChildren = React.memo(({ children, theme, customStyle = {} }) => {
+  // Мемоізуємо стилі для звичайного тексту
+  const textStyle = useMemo(() => ({
+    body: {
+      color: customStyle.color || theme.colors.text,
+      fontSize: customStyle.fontSize || 16,
+      fontWeight: 'normal',
+    }
+  }), [theme.colors.text, customStyle.color, customStyle.fontSize]);
+
+  // Мемоізуємо стилі для посилань
+  const linkStyle = useMemo(() => ({
+    body: {
+      color: theme.colors.primary,
+      fontSize: customStyle.fontSize || 16,
+      fontWeight: 'normal',
+    },
+    link: {
+      color: theme.colors.primary,
+      textDecorationLine: 'underline',
+    }
+  }), [theme.colors.primary, customStyle.fontSize]);
+
+  const renderChild = useCallback((child, index) => {
+    if (!child) return null;
+    
     if (typeof child.text === 'string') {
-      let style = { ...customStyle };
-      if (child.bold) style.fontWeight = 'bold';
-
       const cleanText = child.text
         .replace(/\s+/g, ' ')
         .replace(/^\s+|\s+$/g, '');
 
-      return <Text key={index} style={style}>{cleanText}</Text>;
+      const finalStyle = {
+        ...textStyle,
+        body: {
+          ...textStyle.body,
+          fontWeight: child.bold ? 'bold' : 'normal',
+        }
+      };
+
+      return (
+        <MarkdownText key={index} style={finalStyle}>
+          {cleanText}
+        </MarkdownText>
+      );
     }
 
     if (child.type === 'a') {
+      const finalLinkStyle = {
+        ...linkStyle,
+        body: {
+          ...linkStyle.body,
+          fontWeight: child.bold ? 'bold' : 'normal',
+        }
+      };
+
       return (
-        <Text
-          key={index}
-          style={{
-            color: theme.colors.primary,
-            textDecorationLine: 'underline',
-            ...customStyle,
-          }}
-          onPress={() => Linking.openURL(child.url)}
-        >
-          {renderChildren(child.children, customStyle)}
-        </Text>
+        <MarkdownText key={index} style={finalLinkStyle}>
+          {child.children?.[0]?.text || ''}
+        </MarkdownText>
       );
     }
 
     return null;
-  });
+  }, [textStyle, linkStyle]);
 
+  if (!children || !Array.isArray(children)) return null;
+  return children.map(renderChild);
+});
 
+// Мемоізований компонент для рендерингу блоків
+const RenderBlock = React.memo(({ block, index, theme, onImagePress }) => {
+  // Мемоізуємо стилі для заголовків
+  const headingStyles = useMemo(() => ({
+    h1: { marginTop: 24, marginBottom: 12, fontSize: 28 },
+    h2: { marginTop: 22, marginBottom: 11, fontSize: 24 },
+    h3: { marginTop: 20, marginBottom: 10, fontSize: 22 },
+    h4: { marginTop: 18, marginBottom: 9, fontSize: 20 },
+    h5: { marginTop: 16, marginBottom: 8, fontSize: 18 },
+    h6: { marginTop: 14, marginBottom: 7, fontSize: 16 },
+  }), []);
 
-  useEffect(() => {
-    if (!article) return;
+  // Мемоізуємо функцію для отримання YouTube ID
+  const getVideoId = useCallback((url) => {
+    const match = url.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+    return match?.[1] || null;
+  }, []);
 
-    const allImages = [];
-
-    const collectImages = (blocks) => {
-      blocks.forEach(block => {
-        if (block.type === 'image_group' && Array.isArray(block.children)) {
-          block.children.forEach(img => {
-            if (img.url) {
-              allImages.push({ uri: img.url });
-            }
-          });
-        }
-        if (block.children) collectImages(block.children);
-      });
-    };
-
-    collectImages(article.document);
-    setGalleryImages(allImages);
-  }, [article]);
-
-  const renderDocument = (document) => {
+  const renderBlockContent = useCallback(() => {
+    if (!block) return null;
     
-const SpoilerWrapper = ({ children }) => {
-  const [visible, setVisible] = useState(false);
-  return (
-    <SpoilerContainer>
-      <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} onPress={() => setVisible(!visible)}>
-        <SpoilerButtonText style={{ color: theme.colors.primary }}>
-          {visible ? 'Сховати спойлер' : 'Показати спойлер'}
-        </SpoilerButtonText>
-        <Entypo name="select-arrows" size={20} color={theme.colors.gray} />
-      </Pressable>
-      {visible && (
-  <SpoilerContent>
-    {renderChildren(children, { color: theme.colors.text })}
-  </SpoilerContent>
-)}
-
-    </SpoilerContainer>
-  );
-};
-
-
- const renderBlock = (block, i) => {
     if (!block.type && Array.isArray(block.children)) {
-      return block.children.map((child, index) => renderBlock(child, `${i}-${index}`));
+      return block.children.map((child, childIndex) => (
+        <RenderBlock key={`${index}-${childIndex}`} block={child} index={`${index}-${childIndex}`} theme={theme} onImagePress={onImagePress} />
+      ));
     }
 
     switch (block.type) {
       case 'p':
-        return <Paragraph key={i}>{renderChildren(block.children)}</Paragraph>;
+        return (
+          <View style={{ marginBottom: 12 }}>
+            <RenderChildren children={block.children} theme={theme} />
+          </View>
+        );
       case 'ul':
         return (
-          <List key={i}>
-            {block.children.map((li, index) => (
-              <ListItem key={index}>{renderChildren(li.children[0].children)}</ListItem>
+          <List>
+            {block.children.map((li, liIndex) => (
+              <View key={liIndex} style={{ paddingLeft: 12, marginBottom: 6, flexDirection: 'row' }}>
+                <Text style={{ color: theme.colors.text, fontSize: 16, marginRight: 8 }}>•</Text>
+                <View style={{ flex: 1 }}>
+                  <RenderChildren children={li.children[0].children} theme={theme} customStyle={{ color: theme.colors.text, fontSize: 16 }} />
+                </View>
+              </View>
             ))}
           </List>
         );
       case 'h1':
-        return <H1 key={i}>{renderChildren(block.children)}</H1>;
       case 'h2':
-        return <H2 key={i}>{renderChildren(block.children)}</H2>;
       case 'h3':
-        return <H3 key={i}>{renderChildren(block.children)}</H3>;
       case 'h4':
-        return <H4 key={i}>{renderChildren(block.children)}</H4>;
       case 'h5':
-        return <H5 key={i}>{renderChildren(block.children)}</H5>;
       case 'h6':
-        return <H6 key={i}>{renderChildren(block.children)}</H6>;
+        const style = headingStyles[block.type];
+        return (
+          <View style={{ marginTop: style.marginTop, marginBottom: style.marginBottom }}>
+            <MarkdownText style={{ body: { color: theme.colors.text, fontSize: style.fontSize, fontWeight: 'bold' } }}>
+              <RenderChildren children={block.children} theme={theme} />
+            </MarkdownText>
+          </View>
+        );
       case 'blockquote':
         return (
-          <Blockquote key={i}>
-            {block.children?.map((child, index) => (
-<BlockquoteText key={index}>
-  {(child.text?.replace(/\s+/g, ' ').trim()) || renderChildren(child.children)}
-</BlockquoteText>
-
+          <Blockquote>
+            {block.children?.map((child, childIndex) => (
+              <View key={childIndex}>
+                {child.text ? (
+                  <MarkdownText style={{ body: { color: theme.colors.gray, fontSize: 16, fontStyle: 'italic' } }}>
+                    {child.text.replace(/\s+/g, ' ').trim()}
+                  </MarkdownText>
+                ) : (
+                  <RenderChildren children={child.children} theme={theme} customStyle={{ color: theme.colors.gray, fontSize: 16 }} />
+                )}
+              </View>
             ))}
           </Blockquote>
         );
       case 'preview':
-        return block.children?.map((child, index) => renderBlock(child, `${i}-${index}`));
+        return block.children?.map((child, childIndex) => (
+          <RenderBlock key={`${index}-${childIndex}`} block={child} index={`${index}-${childIndex}`} theme={theme} onImagePress={onImagePress} />
+        ));
       case 'image':
         return (
-          <FullWidthImage
-            key={i}
+          <OptimizedImage
             source={{ uri: block.url }}
+            style={{ width: '100%', height: 220, borderRadius: 10, marginBottom: 16 }}
             resizeMode="cover"
           />
         );
@@ -172,67 +377,291 @@ const SpoilerWrapper = ({ children }) => {
         const images = block.children || [];
         if (images.length === 1) {
           return (
-            <Pressable
-              key={i}
-              onPress={() => {
-                const index = galleryImages.findIndex(img => img.uri === images[0].url);
-                setGalleryIndex(index >= 0 ? index : 0);
-                setGalleryVisible(true);
-              }}
-            >
-              <FullWidthImage
-                source={{ uri: images[0].url }}
-                resizeMode="cover"
-              />
-            </Pressable>
+            <OptimizedImage
+              source={{ uri: images[0].url }}
+              style={{ width: '100%', height: 220, borderRadius: 10, marginBottom: 16 }}
+              resizeMode="cover"
+              onPress={() => onImagePress(images[0].url)}
+            />
           );
         }
         return (
-          <ImageRow key={i}>
-            {images.map((img, index) => (
-              <Pressable
-                key={index}
-                onPress={() => {
-                  const galleryIdx = galleryImages.findIndex(g => g.uri === img.url);
-                  setGalleryIndex(galleryIdx >= 0 ? galleryIdx : 0);
-                  setGalleryVisible(true);
-                }}
-                style={{ width: '48.5%', marginBottom: 10 }}
-              >
-                <StyledImage source={{ uri: img.url }} resizeMode="cover" />
-              </Pressable>
+          <ImageRow>
+            {images.map((img, imgIndex) => (
+              <OptimizedImage
+                key={imgIndex}
+                source={{ uri: img.url }}
+                style={{ width: '48.5%', height: 180, borderRadius: 8, marginBottom: 10 }}
+                resizeMode="cover"
+                onPress={() => onImagePress(img.url)}
+              />
             ))}
           </ImageRow>
         );
       case 'video':
-        const getVideoId = (url) => {
-          const match = url.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
-          return match?.[1] || null;
-        };
         const videoId = getVideoId(block.url);
-        if (!videoId) return null;
-        return (
-          <View key={i} style={{ marginVertical: 10 }}>
-            <YoutubePlayer height={210} play={false} videoId={videoId} />
-          </View>
-        );
+        return <OptimizedYoutubePlayer videoId={videoId} />;
       case 'spoiler':
-        return <SpoilerWrapper key={i} children={block.children} />;
+        return <SpoilerWrapper children={block.children} theme={theme} />;
       default:
         break;
     }
 
     if (block.children && Array.isArray(block.children)) {
-      return block.children.map((child, index) => renderBlock(child, `${i}-${index}`));
+      return block.children.map((child, childIndex) => (
+        <RenderBlock key={`${index}-${childIndex}`} block={child} index={`${index}-${childIndex}`} theme={theme} onImagePress={onImagePress} />
+      ));
     }
 
     return null;
-  };
+  }, [block, index, theme, onImagePress, headingStyles, getVideoId]);
 
-  return document.map((block, i) => renderBlock(block, i));
-};
+  return renderBlockContent();
+});
 
-  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 40 }} />;
+// Мемоізований компонент для автора
+const AuthorInfo = React.memo(({ article, theme, navigation, categoryTranslations }) => {
+  const handleAuthorPress = useCallback(() => {
+    if (article?.author?.username) {
+      navigation.navigate('UserProfileScreen', { username: article.author.username });
+    }
+  }, [navigation, article?.author?.username]);
+
+  const formattedDate = useMemo(() => {
+    if (!article?.created) return '';
+    return formatDistanceToNow(new Date(article.created * 1000), {
+      addSuffix: true,
+      locale: uk,
+    });
+  }, [article?.created]);
+
+  if (!article?.author) return null;
+
+  return (
+    <AuthorContainer onPress={handleAuthorPress} activeOpacity={0.7}>
+      <Avatar source={{ uri: article.author.avatar }} />
+      <View>
+        <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 4, color: theme.colors.text }}>
+          {article.author.username}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={{ color: '#888', fontSize: 12 }}>
+            {categoryTranslations[article.category] || 'Категорія'}
+          </Text>
+          <FontAwesome
+            name="circle"
+            size={4}
+            color={theme.colors.gray}
+            style={{ marginHorizontal: 6 }}
+          />
+          <Text style={{ color: '#888', fontSize: 12 }}>
+            {formattedDate}
+          </Text>
+        </View>
+      </View>
+    </AuthorContainer>
+  );
+});
+
+// Мемоізований компонент для тегів
+const TagsList = React.memo(({ tags, theme }) => {
+  if (!tags || !Array.isArray(tags)) return null;
+  
+  return (
+    <TagContainer>
+      {tags.map(tag => (
+        <Tag key={tag.name}>#{tag.name}</Tag>
+      ))}
+    </TagContainer>
+  );
+});
+
+// Мемоізований компонент для рендерингу елемента FlatList
+const DocumentItem = React.memo(({ item, index, theme, onImagePress }) => (
+  <RenderBlock 
+    block={item} 
+    index={index} 
+    theme={theme} 
+    onImagePress={onImagePress}
+  />
+));
+
+const ArticleDetailScreen = () => {
+  const { slug } = useRoute().params;
+  const navigation = useNavigation();
+  const [article, setArticle] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { theme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const flatListRef = useRef(null);
+
+  const [galleryVisible, setGalleryVisible] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [galleryImages, setGalleryImages] = useState([]);
+
+  // Debounce для оптимізації
+  const debouncedSlug = useDebounce(slug, 300);
+
+  // Мемоізована функція для збору зображень
+  const collectImages = useCallback((blocks) => {
+    if (!blocks || !Array.isArray(blocks)) return [];
+    
+    const allImages = [];
+    
+    const processBlocks = (blockList) => {
+      if (!Array.isArray(blockList)) return;
+      
+      blockList.forEach(block => {
+        if (block?.type === 'image_group' && Array.isArray(block.children)) {
+          block.children.forEach(img => {
+            if (img?.url) {
+              allImages.push({ uri: img.url });
+            }
+          });
+        }
+        if (block?.children) processBlocks(block.children);
+      });
+    };
+
+    processBlocks(blocks);
+    return allImages;
+  }, []);
+
+  useEffect(() => {
+    if (!debouncedSlug) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    axios.get(`https://api.hikka.io/articles/${debouncedSlug}`)
+      .then(res => {
+        setArticle(res.data);
+        // Збираємо зображення одразу після отримання даних
+        if (res.data?.document) {
+          const images = collectImages(res.data.document);
+          setGalleryImages(images);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching article:', err);
+        setError('Помилка завантаження статті');
+      })
+      .finally(() => setLoading(false));
+  }, [debouncedSlug, collectImages]);
+
+  // Мемоізована функція для обробки натискання на зображення
+  const handleImagePress = useCallback((imageUrl) => {
+    if (!galleryImages || !Array.isArray(galleryImages)) return;
+    const index = galleryImages.findIndex(img => img.uri === imageUrl);
+    setGalleryIndex(index >= 0 ? index : 0);
+    setGalleryVisible(true);
+  }, [galleryImages]);
+
+  // Мемоізований рендеринг документа
+  const documentData = useMemo(() => {
+    if (!article?.document || !Array.isArray(article.document)) return [];
+    return article.document;
+  }, [article?.document]);
+
+  const flatListStyle = useMemo(() => ({
+    backgroundColor: theme.colors.background,
+    paddingTop: insets.top + 56 + 20, // insets.top + header height (16+16+24) + additional 12px
+    paddingHorizontal: 12,
+    paddingBottom: insets.bottom,
+  }), [theme.colors.background, insets.top, insets.bottom]);
+
+  const flatListContentStyle = useMemo(() => ({
+    paddingBottom: 20 + insets.bottom,
+  }), [insets.bottom]);
+
+  // Мемоізована функція для рендерингу елемента
+  const renderItem = useCallback(({ item, index }) => (
+    <DocumentItem 
+      item={item} 
+      index={index} 
+      theme={theme} 
+      onImagePress={handleImagePress}
+    />
+  ), [theme, handleImagePress]);
+
+
+
+  // Мемоізована функція для ключа елемента
+  const keyExtractor = useCallback((item, index) => `block-${index}`, []);
+
+  // Мемоізований header компонент
+  const ListHeaderComponent = useMemo(() => {
+    if (!article) return null;
+    
+    return (
+      <>
+        <AuthorInfo 
+          article={article} 
+          theme={theme} 
+          navigation={navigation} 
+          categoryTranslations={CATEGORY_TRANSLATIONS}
+        />
+        <Title>{article.title}</Title>
+        <TagsList tags={article.tags} theme={theme} />
+      </>
+    );
+  }, [article, theme, navigation]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 16, color: theme.colors.text }}>Завантаження статті...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <Text style={{ color: theme.colors.text, fontSize: 16, textAlign: 'center', marginHorizontal: 20 }}>
+          {error}
+        </Text>
+        <Pressable 
+          style={{ 
+            marginTop: 16, 
+            paddingHorizontal: 20, 
+            paddingVertical: 10, 
+            backgroundColor: theme.colors.primary, 
+            borderRadius: 8 
+          }}
+          onPress={() => {
+            setLoading(true);
+            setError(null);
+            // Повторна спроба завантаження
+            axios.get(`https://api.hikka.io/articles/${slug}`)
+              .then(res => {
+                setArticle(res.data);
+                if (res.data?.document) {
+                  const images = collectImages(res.data.document);
+                  setGalleryImages(images);
+                }
+              })
+              .catch(() => setError('Помилка завантаження статті'))
+              .finally(() => setLoading(false));
+          }}
+        >
+          <Text style={{ color: 'white', fontWeight: '600' }}>Спробувати знову</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // Перевіряємо чи є дані перед рендерингом
+  if (!article) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 16, color: theme.colors.text }}>Завантаження статті...</Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -240,56 +669,21 @@ const SpoilerWrapper = ({ children }) => {
         <HeaderTitleBar title={`Стаття: ${article.title}`} />
       </BlurOverlay>
 
-      <ScrollView
-      style={{ backgroundColor: theme.colors.background }}
-        contentContainerStyle={{
-          paddingTop: 110,
-          paddingBottom: 20 + insets.bottom,
-          paddingHorizontal: 12,
-        }}
-      >
-
-<AuthorContainer 
-  onPress={() => navigation.navigate('UserProfileScreen', { username: article.author.username })}
-  activeOpacity={0.7}
->
-  <Avatar source={{ uri: article.author.avatar }} />
-  <View>
-    <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 4, color: theme.colors.text }}>
-      {article.author.username}
-    </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ color: '#888', fontSize: 12 }}>
-                {CATEGORY_TRANSLATIONS[article.category] || 'Категорія'}
-              </Text>
-              <FontAwesome
-                name="circle"
-                size={4}
-                color={theme.colors.gray}
-                style={{ marginHorizontal: 6 }}
-              />
-              <Text style={{ color: '#888', fontSize: 12 }}>
-                {formatDistanceToNow(new Date(article.created * 1000), {
-                  addSuffix: true,
-                  locale: uk,
-                })}
-              </Text>
-            </View>
-  </View>
-</AuthorContainer>
-
-
-        <Title>{article.title}</Title>
-
-        <TagContainer>
-          {article.tags.map(tag => (
-            <Tag key={tag.name}>#{tag.name}</Tag>
-          ))}
-        </TagContainer>
-
-        {renderDocument(article.document)}
-        
-      </ScrollView>
+      <FlatList
+        ref={flatListRef}
+        style={flatListStyle}
+        contentContainerStyle={flatListContentStyle}
+        data={documentData}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        initialNumToRender={5}
+        maxToRenderPerBatch={3}
+        windowSize={10}
+        removeClippedSubviews={true}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={ListHeaderComponent}
+        ListFooterComponent={() => <View style={{ height: 100 }} />}
+      />
 
       <ImageViewing
         images={galleryImages}
@@ -301,7 +695,7 @@ const SpoilerWrapper = ({ children }) => {
   );
 };
 
-export default ArticleDetailScreen;
+export default React.memo(ArticleDetailScreen);
 
 // Styled components
 

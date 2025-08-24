@@ -45,20 +45,26 @@ const AnimeDetailsScreen = ({ route }) => {
 
   return (
     <ScreenWrapper>
-      <FixedBackButtonWrapper>
-        <BackButton />
-      </FixedBackButtonWrapper>
-
+        <BackButton top={12} />
       <ScrollView contentContainerStyle={{ paddingBottom: bottom }}>
         <TopDetail anime={anime} />
+        <Divider />
         <AnimeMainCharacters anime={anime}/>
+        <Divider />
         <AnimeRatingStats stats={anime.stats} score={anime.score} slug={anime.slug} />
+        <Divider />
         <AnimeStatusStats anime={anime} />
+        <Divider />
         <AnimeFranchiseList slug={anime.slug} />
+        <Divider />
         <VideoSlider anime={anime} />
+        <Divider />
         <MusicSlider anime={anime} />
+        <Divider />
         <AnimeStaffSlider slug={anime.slug} title={anime.title_ua || anime.title_en || anime.title_ja || '?'} />
+        <Divider />
         <AnimeRecommendationsSlider slug={anime.slug} />
+        <Divider />
         <AnimeSendButton slug={anime.slug} title={anime.title_ua || anime.title_en || anime.title_ja || '?'} commentsCount={anime.comments_count} />
       </ScrollView>
     </ScreenWrapper>
@@ -73,16 +79,15 @@ const ScreenWrapper = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const FixedBackButtonWrapper = styled.View`
-  position: absolute;
-  top: 50px;
-  left: 12px;
-  z-index: 10;
-`;
-
 const Centered = styled.View`
   flex: 1;
   justify-content: center;
   align-items: center;
   background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const Divider = styled.View`
+  height: 1px;
+  background-color: ${({ theme }) => theme.colors.card};
+  margin: 25px 12px;
 `;

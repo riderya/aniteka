@@ -1,13 +1,14 @@
 // TopDetail.js
 import { TouchableOpacity } from 'react-native';
 import React, { useState, useRef } from 'react';
-import { Alert, View, StyleSheet, Modal } from 'react-native';
+import { Alert, View, StyleSheet, Modal, Text } from 'react-native';
 import ImageViewing from 'react-native-image-viewing';
 import styled from 'styled-components/native';
 import * as Clipboard from 'expo-clipboard';
-import Markdown from 'react-native-markdown-display';
+import Markdown from '../Custom/MarkdownText';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import AnilistBanner from '../BackgroundImg/AnilistBanner';
 import KitsuBanner from '../BackgroundImg/KitsuBanner';
@@ -27,6 +28,7 @@ import AnimatedModal from './AnimatedModalBottom';
 const TopDetail = ({ anime }) => {
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
+  const { top: safeAreaTop } = useSafeAreaInsets();
   const fallbackImage = require('../../assets/image/image404.png');
   const [isInfoModalVisible, setInfoModalVisible] = useState(false);
   const [isStudiosModalVisible, setStudiosModalVisible] = useState(false);
@@ -46,15 +48,16 @@ const TopDetail = ({ anime }) => {
 
   const studios = anime.companies?.filter(c => c.type === 'studio') || [];
 
-  const lineHeight = 22;
   const maxLines = 5;
-  const maxHeight = lineHeight * maxLines;
 
   const [expanded, setExpanded] = useState(false);
-  const [showToggle, setShowToggle] = useState(false);
-  const [measuredHeight, setMeasuredHeight] = useState(0);
 
   const toggleExpanded = () => setExpanded(prev => !prev);
+
+  // Перевіряємо, чи текст довший за 5 рядків
+  const description = anime.synopsis_ua || anime.synopsis_en || 'Опис відсутній.';
+  // Приблизна оцінка: 5 рядків * ~40 символів на рядок = ~200 символів
+  const shouldShowToggle = description.length > 200 && !expanded;
 
   const media_Type = {
     tv: 'ТБ-серіал',
@@ -162,7 +165,7 @@ const TopDetail = ({ anime }) => {
   <GradientBlock />
 </BackgroundWrapper>
 
-      <Content>
+      <Content style={{ paddingTop: safeAreaTop + 12 }}>
         <Container>
                  <TouchableOpacity onPress={() => {
                    setGalleryIndex(0);
@@ -220,6 +223,7 @@ const TopDetail = ({ anime }) => {
           <EpisodesCounter slug={anime.slug} episodes_total={anime.episodes_total}/>
 
           <InfoContent>
+            <InfoTitle>Інформація</InfoTitle>
             <Score>{`${anime.score}`}<StyledStar name="star" /></Score>
             <InfoRow>
               <InfoBold>Тип:</InfoBold>
@@ -261,28 +265,15 @@ const TopDetail = ({ anime }) => {
       }
       style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}
     >
-      <TouchableOpacity
-        onPress={() => {
-          if (studios[0].company.image) {
-            const studioIndex = galleryImages.findIndex(img => img.uri === studios[0].company.image);
-            if (studioIndex >= 0) {
-              setGalleryIndex(studioIndex);
-              setGalleryVisible(true);
-            }
-          }
-        }}
-        activeOpacity={0.8}
-      >
-        <StudioLogo
-          source={
-            studios[0].company.image
-              ? { uri: studios[0].company.image }
-              : fallbackImage
-          }
-          onError={() => {}}
-          defaultSource={fallbackImage}
-        />
-      </TouchableOpacity>
+      <StudioLogo
+        source={
+          studios[0].company.image
+            ? { uri: studios[0].company.image }
+            : fallbackImage
+        }
+        onError={() => {}}
+        defaultSource={fallbackImage}
+      />
       {/* <StudioName>{studios[0].company.name}</StudioName> */}
     </TouchableOpacity>
 
@@ -314,39 +305,33 @@ const TopDetail = ({ anime }) => {
           </InfoContent>
         </Block>
 
-        <Column style={{ marginTop: 12 }}>
-          <MeasuredWrapper
-            onLayout={e => {
-              const height = e.nativeEvent.layout.height;
-              setMeasuredHeight(height);
-              setShowToggle(height > maxHeight);
-            }}
-          >
-            <DescriptionWrapper expanded={expanded}>
-              <Markdown
-                style={{
-                  body: {
-                    color: theme.colors.gray,
-                    fontSize: 16,
-                    lineHeight,
-                  },
-                  link: {
-                    color: theme.colors.primary,
-                  },
-                }}
-              >
-                {anime.synopsis_ua || anime.synopsis_en || 'Опис відсутній.'}
-              </Markdown>
-            </DescriptionWrapper>
-          </MeasuredWrapper>
+        <DescriptionContainer>
+          <DescriptionTitle>Опис</DescriptionTitle>
+          <DescriptionWrapper>
+            <Markdown
+              style={{
+                body: {
+                  color: theme.colors.text,
+                  fontSize: 16,
+                  lineHeight: 22,
+                },
+                link: {
+                  color: theme.colors.primary,
+                },
+              }}
+              numberOfLines={expanded ? undefined : maxLines}
+              ellipsizeMode="tail"
+            >
+              {anime.synopsis_ua || anime.synopsis_en || 'Опис відсутній.'}
+            </Markdown>
+          </DescriptionWrapper>
 
-          {showToggle && (
+          {(shouldShowToggle || expanded) && (
             <ToggleButton onPress={toggleExpanded}>
-              <ToggleText>{expanded ? 'Згорнути...' : 'Показати більше...'}</ToggleText>
+              <ToggleText>{expanded ? 'Сховати' : 'Показати більше...'}</ToggleText>
             </ToggleButton>
           )}
-        </Column>
-        <LineGray />
+        </DescriptionContainer>
       </Content>
 
       {/* Модалка інформації */}
@@ -401,29 +386,15 @@ const TopDetail = ({ anime }) => {
               }}
             >
               <InfoRow style={{ gap: 12 }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (studioItem.company.image) {
-                      const studioIndex = galleryImages.findIndex(img => img.uri === studioItem.company.image);
-                      if (studioIndex >= 0) {
-                        setStudiosModalVisible(false);
-                        setGalleryIndex(studioIndex);
-                        setGalleryVisible(true);
-                      }
-                    }
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <StudioLogo
-                    source={
-                      studioItem.company.image
-                        ? { uri: studioItem.company.image }
-                        : fallbackImage
-                    }
-                    onError={() => {}}
-                    defaultSource={fallbackImage}
-                  />
-                </TouchableOpacity>
+                <StudioLogo
+                  source={
+                    studioItem.company.image
+                      ? { uri: studioItem.company.image }
+                      : fallbackImage
+                  }
+                  onError={() => {}}
+                  defaultSource={fallbackImage}
+                />
                 <StudioName>{studioItem.company.name}</StudioName>
               </InfoRow >
             </TouchableOpacity>
@@ -436,6 +407,7 @@ const TopDetail = ({ anime }) => {
         imageIndex={galleryIndex}
         visible={galleryVisible}
         onRequestClose={() => setGalleryVisible(false)}
+        presentationStyle="overFullScreen"
       />
 
 
@@ -451,14 +423,7 @@ export default TopDetail;
 
 const Content = styled.View`
   position: relative;
-  margin-top: 50px;
   padding: 0px 12px;
-`;
-
-const LineGray = styled.View`
-  margin: 25px 0px;
-  height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
 `;
 
 const BackgroundWrapper = styled.View`
@@ -587,12 +552,20 @@ const StyledIconInfo = styled(MaterialCommunityIcons)`
   margin-top: 6px;
 `;
 
+const InfoTitle = styled.Text`
+  font-size: 18px;
+  font-weight: bold;
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 12px;
+`;
+
 const InfoContent = styled.View`
   flex-direction: column;
   gap: 12px;
   padding: 12px;
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.card};
   border-radius: 16px;
   margin-top: 15px;
 `;
@@ -643,23 +616,32 @@ const GenreName = styled.Text`
   font-size: 14px;
   padding: 6px 12px;
   border-radius: 8px;
-  background-color: ${({ theme }) => theme.colors.card};
+  background-color: ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const MeasuredWrapper = styled.View`
-  width: 100%;
+const DescriptionContainer = styled.View`
+  background-color: ${({ theme }) => theme.colors.card};
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 15px;
 `;
 
-const DescriptionWrapper = styled.View`
-  max-height: ${({ expanded }) => (expanded ? 'none' : '120px')};
-  overflow: hidden;
+const DescriptionTitle = styled.Text`
+  font-size: 18px;
+  font-weight: bold;
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 12px;
 `;
+
+const DescriptionWrapper = styled.View``;
 
 const ToggleButton = styled.TouchableOpacity`
   align-items: center;
   width: 100%;
-  margin-left: 11px;
+  margin-top: 8px;
 `;
 
 const ToggleText = styled.Text`

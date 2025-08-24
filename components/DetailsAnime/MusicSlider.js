@@ -13,12 +13,6 @@ const Spacer = styled.View`
   width: 12px;
 `;
 
-const LineGray = styled.View`
-  margin: 25px 12px;
-  height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
-`;
-
 const Card = styled.TouchableOpacity`
   background-color: ${({ theme }) => theme.colors.border};
   border-width: 1px;
@@ -157,8 +151,6 @@ const MusicSlider = ({ anime }) => {
           </Card>
         )}
       />
-
-      <LineGray />
     </Container>
   );
 };

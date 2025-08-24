@@ -8,14 +8,6 @@ import StaffColumnCard from '../Cards/StaffColumnCard';
 
 const Container = styled.View``;
 
-const LineGray = styled.View`
-  margin-top: 25px;
-  height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
-  margin-left: 12px;
-  margin-right: 12px;
-`;
-
 const StaffName = styled.Text`
   font-size: 14px;
   font-weight: 500;
@@ -80,8 +72,6 @@ const AnimeStaffSlider = ({ slug, title }) => {
           <StaffColumnCard person={item.person} roles={item.roles} />
         )}
       />
-
-      <LineGray />
     </Container>
   );
 };

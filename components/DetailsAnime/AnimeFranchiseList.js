@@ -68,12 +68,6 @@ const IconStar = styled(AntDesign)`
   margin-left: -6px;
 `;
 
-const LineGray = styled.View`
-  margin: 25px 0;
-  height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
-`
-
 const FranchiseList = ({ slug }) => {
   const [franchise, setFranchise] = useState([])
   const [loading, setLoading] = useState(true)
@@ -181,8 +175,6 @@ const FranchiseList = ({ slug }) => {
           <ToggleText>{expanded ? 'Згорнути...' : 'Показати більше...'}</ToggleText>
         </ToggleButton>
       )}
-
-      <LineGray />
     </Container>
   )
 }

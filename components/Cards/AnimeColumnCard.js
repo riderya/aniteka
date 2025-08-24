@@ -5,6 +5,8 @@ import { useWatchStatus } from '../../context/WatchStatusContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
+import { useOrientation } from '../../hooks';
+import { getResponsiveDimensions } from '../../utils/orientationUtils';
 
 const TOKEN_KEY = 'hikka_token';
 
@@ -107,27 +109,36 @@ const AnimeColumnCard = React.memo(({
   const { theme } = useTheme();
   const [userStatus, setUserStatus] = useState(null);
   const { getAnimeStatus } = useWatchStatus();
+  const orientation = useOrientation();
+  const responsiveDims = getResponsiveDimensions();
   
   // Memoize status colors to prevent recalculation
   const statusColors = useMemo(() => getStatusColors(theme), [theme]);
 
-  // Create styles based on props
-  const styles = useMemo(() => createStyles(theme, {
-    cardWidth: typeof cardWidth === 'string' ? undefined : cardWidth,
-    imageWidth: typeof imageWidth === 'string' ? undefined : imageWidth,
-    imageHeight,
-    titleFontSize,
-    footerFontSize,
-    badgeFontSize,
-    badgePadding,
-    badgeBottom,
-    badgeLeft,
-    badgeRight,
-    marginTop,
-    marginBottom,
-    imageBorderRadius,
-    titleNumberOfLines
-  }), [theme, cardWidth, imageWidth, imageHeight, titleFontSize, footerFontSize, badgeFontSize, badgePadding, badgeBottom, badgeLeft, badgeRight, marginTop, marginBottom, imageBorderRadius, titleNumberOfLines]);
+  // Create styles based on props and orientation
+  const styles = useMemo(() => {
+    const adaptiveCardWidth = orientation === 'landscape' ? responsiveDims.cardWidth : cardWidth;
+    const adaptiveImageHeight = orientation === 'landscape' ? responsiveDims.imageHeight : imageHeight;
+    const adaptiveTitleFontSize = orientation === 'landscape' ? responsiveDims.fontSize.medium : titleFontSize;
+    const adaptiveFooterFontSize = orientation === 'landscape' ? responsiveDims.fontSize.small : footerFontSize;
+    
+    return createStyles(theme, {
+      cardWidth: typeof adaptiveCardWidth === 'string' ? undefined : adaptiveCardWidth,
+      imageWidth: typeof imageWidth === 'string' ? undefined : imageWidth,
+      imageHeight: adaptiveImageHeight,
+      titleFontSize: adaptiveTitleFontSize,
+      footerFontSize: adaptiveFooterFontSize,
+      badgeFontSize,
+      badgePadding,
+      badgeBottom,
+      badgeLeft,
+      badgeRight,
+      marginTop,
+      marginBottom,
+      imageBorderRadius,
+      titleNumberOfLines
+    });
+  }, [theme, cardWidth, imageWidth, imageHeight, titleFontSize, footerFontSize, badgeFontSize, badgePadding, badgeBottom, badgeLeft, badgeRight, marginTop, marginBottom, imageBorderRadius, titleNumberOfLines, orientation, responsiveDims]);
 
   // Форматуємо дію історії
   const historyAction = useMemo(() => formatHistoryAction(historyData), [historyData]);
@@ -219,9 +230,12 @@ const AnimeColumnCard = React.memo(({
             {anime.episodes_released ?? '?'} з {anime.episodes_total ?? '?'} еп
           </Text>
           <FontAwesome name="circle" size={4} color={theme.colors.gray} />
-          <Text style={styles.textFooter}>
-            {anime.score ?? '?'}
-          </Text>
+          <View style={styles.scoreContainer}>
+            <Text style={styles.textFooter}>
+              {anime.score ?? '?'}
+            </Text>
+            <FontAwesome name="star" size={12} color={theme.colors.gray} style={styles.starIcon} />
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -280,6 +294,14 @@ const createStyles = (theme, props) => StyleSheet.create({
   textFooter: {
     fontSize: props.footerFontSize,
     color: theme.colors.gray,
+  },
+  scoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  starIcon: {
+    marginLeft: 2,
   },
 });
 

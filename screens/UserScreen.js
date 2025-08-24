@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components/native';
-import { FlatList, ActivityIndicator, Alert, RefreshControl, View } from 'react-native';
+import { FlatList, ActivityIndicator, Alert, RefreshControl, View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -8,7 +8,6 @@ import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import toastConfig from '../components/CustomToast';
 
-import Header from '../components/Header/Header';
 import UserAvatar from '../components/UserComponents/UserAvatar';
 import FollowStatsBlock from '../components/UserComponents/FollowStatsBlock';
 import UserActivityBlock from '../components/UserComponents/UserActivityBlock';
@@ -98,6 +97,11 @@ const ErrorContainer = styled.View`
   justify-content: center;
   align-items: center;
   padding: 20px;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const Container = styled.View`
+  flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
@@ -314,7 +318,7 @@ const UserScreen = () => {
       const data = await response.json();
       setUserData(data);
     } catch (err) {
-      
+      console.error('UserScreen - fetchUserProfile error:', err);
       setError('Не вдалося завантажити профіль користувача');
     }
   };
@@ -594,6 +598,7 @@ const UserScreen = () => {
   }, [userData?.username]);
 
   // Перевіряємо чи користувач авторизований
+  
   if (!isAuthenticated) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -640,27 +645,30 @@ const UserScreen = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <Header />
-      <FlatList
-        data={renderData}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[theme.colors.text]}
-            tintColor={theme.colors.text}
-            progressViewOffset={insets.top + 50}
-            progressBackgroundColor={isDark ? theme.colors.card : undefined}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 115 }}
-      />
+    <>
+      <Container theme={theme}>
+        <FlatList
+          data={renderData}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[theme.colors.text]}
+              tintColor={theme.colors.text}
+              progressViewOffset={insets.top + (Platform.OS === 'ios' ? 70 : 50)}
+              progressBackgroundColor={isDark ? theme.colors.card : undefined}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + 110
+          }}
+        />
+      </Container>
       <Toast config={toastConfig} position="bottom" />
-    </View>
+    </>
   );
 };
 

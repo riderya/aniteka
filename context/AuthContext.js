@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
         setIsAuthenticated(false);
       }
     } catch (error) {
-      
+      console.error('Помилка перевірки статусу авторизації:', error);
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
       });
       return response.ok;
     } catch (error) {
-      
+      console.error('Помилка валідації токена:', error);
       return false;
     }
   };
@@ -75,17 +75,19 @@ export function AuthProvider({ children }) {
           const saved = await saveUserToSupabaseWithFallback(data);
           if (saved.success) {
             if (saved.isNewUser) {
-      
+              console.log('Новий користувач створений в Supabase');
             } else {
-              
+              // console.log('Існуючий користувач оновлений в Supabase');
             }
           } else {
-            
+            console.error('Помилка збереження в Supabase:', saved.error);
           }
         }
+      } else {
+        console.error('AuthContext - Failed to fetch user data, status:', response.status);
       }
     } catch (error) {
-      
+      console.error('Помилка отримання даних користувача:', error);
     }
   };
 
@@ -101,7 +103,7 @@ export function AuthProvider({ children }) {
         await updateLastLogin(userData.reference);
       }
     } catch (error) {
-      
+      console.error('Помилка входу в систему:', error);
       throw error;
     }
   };
@@ -114,7 +116,7 @@ export function AuthProvider({ children }) {
       setUserData(null);
       setIsAuthenticated(false);
     } catch (error) {
-      
+      console.error('Помилка виходу з системи:', error);
     }
   };
 

@@ -1,15 +1,15 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import {
   ActivityIndicator,
   Switch,
   FlatList,
   Dimensions,
   Modal,
-  ScrollView,
   View,
   SafeAreaView,
   Animated,
   Easing,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -148,8 +148,6 @@ const HEADER_HEIGHT = 60;
 
 const AnimeScheduleScreen = () => {
   const [animeList, setAnimeList] = useState([]);
-  const [groupedList, setGroupedList] = useState([]);
-  const [todayList, setTodayList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [year, setYear] = useState(2025);
   const [season, setSeason] = useState('summer');
@@ -160,7 +158,158 @@ const AnimeScheduleScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
-const fetchSchedule = async () => {
+  // Оптимізована структура даних для FlatList
+  const flatListData = useMemo(() => {
+    if (!animeList.length) return [];
+    
+    const { todayItems, groupedArray } = groupByDay(animeList);
+    const data = [];
+    
+    // Додаємо фільтри як перший елемент
+    data.push({ type: 'filters', id: 'filters' });
+    
+    // Додаємо сьогоднішні аніме якщо є
+    if (todayItems.length > 0) {
+      data.push({ 
+        type: 'dayHeader', 
+        id: 'today-header',
+        title: 'Сьогодні',
+        date: `${new Date().getDate()} ${['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'][new Date().getMonth()]}`,
+        isToday: true
+      });
+      data.push({ type: 'animeGrid', id: 'today-anime', data: todayItems });
+    }
+    
+    // Додаємо інші дні
+    groupedArray.forEach((group, index) => {
+      data.push({ 
+        type: 'dayHeader', 
+        id: `day-${index}`,
+        title: group.day,
+        date: group.date
+      });
+      data.push({ type: 'animeGrid', id: `anime-${index}`, data: group.data });
+    });
+    
+    return data;
+  }, [animeList]);
+
+  // Мемоізовані функції рендерингу для кращої продуктивності
+  const renderAnimeCard = useCallback(({ item, index }) => {
+    const isLastInRow = (index + 1) % numColumns === 0;
+    return (
+      <CardWrapper style={{ marginRight: isLastInRow ? 0 : 12 }}>
+        <AnimeColumnCard
+          anime={item.anime}
+          onPress={() =>
+            navigation.navigate('AnimeDetails', { slug: item.anime.slug })
+          }
+          cardWidth={CARD_WIDTH}
+          imageWidth={CARD_WIDTH}
+          imageHeight={165}
+        />
+      </CardWrapper>
+    );
+  }, [navigation]);
+
+  const renderFilters = useCallback(() => (
+    <FiltersContainer>
+      <SelectBox onPress={() => setModalVisible('year')}>
+        <SelectText>{year}</SelectText>
+      </SelectBox>
+      <SelectBox onPress={() => setModalVisible('season')}>
+        <SelectText>
+          {SEASONS.find((s) => s.value === season)?.label || 'Сезон'}
+        </SelectText>
+      </SelectBox>
+      <SelectBox onPress={() => setModalVisible('status')}>
+        <SelectText>
+          {status.length === 0
+            ? 'Статус'
+            : STATUSES.filter((s) => status.includes(s.value))
+                .map((s) => s.label)
+                .join(', ')}
+        </SelectText>
+      </SelectBox>
+      <SwitchRow>
+        <Label>Аніме у списку</Label>
+        <Switch value={onlyWatch} onValueChange={setOnlyWatch} />
+      </SwitchRow>
+      <ResetButton onPress={resetFilters}>
+        <ResetText>Очистити</ResetText>
+      </ResetButton>
+    </FiltersContainer>
+  ), [year, season, status, onlyWatch, resetFilters]);
+
+  const renderDayHeader = useCallback(({ title, date, isToday }) => (
+    <DayHeaderContainer style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <DayTitle>{title}</DayTitle>
+      </View>
+      {date && (
+        <DayDate>
+          <DateText>{date}</DateText>
+        </DayDate>
+      )}
+      {isToday && <GreenDot />}
+    </DayHeaderContainer>
+  ), []);
+
+  const renderAnimeGrid = useCallback(({ data }) => (
+    <View style={{ paddingHorizontal: 12 }}>
+      <FlatList
+        data={data}
+        keyExtractor={(item, index) => `${item.anime.slug}-${index}`}
+        renderItem={renderAnimeCard}
+        numColumns={numColumns}
+        scrollEnabled={false}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        initialNumToRender={3}
+      />
+    </View>
+  ), [renderAnimeCard]);
+
+  const renderItem = useCallback(({ item }) => {
+    switch (item.type) {
+      case 'filters':
+        return renderFilters();
+      case 'dayHeader':
+        return renderDayHeader(item);
+      case 'animeGrid':
+        return renderAnimeGrid(item);
+      default:
+        return null;
+    }
+  }, [renderFilters, renderDayHeader, renderAnimeGrid]);
+
+  // Оптимізований keyExtractor
+  const keyExtractor = useCallback((item) => item.id, []);
+
+  // Оптимізований getItemLayout для кращої продуктивності
+  const getItemLayout = useCallback((data, index) => {
+    const item = data[index];
+    let height = 200; // базова висота
+    
+    if (item.type === 'filters') {
+      height = 200; // висота фільтрів
+    } else if (item.type === 'dayHeader') {
+      height = 60; // висота заголовка дня
+    } else if (item.type === 'animeGrid') {
+      const rows = Math.ceil(item.data.length / numColumns);
+      height = rows * 200 + 20; // висота сітки аніме
+    }
+    
+    return {
+      length: height,
+      offset: height * index,
+      index,
+    };
+  }, [numColumns]);
+
+const fetchSchedule = useCallback(async () => {
   setLoading(true);
   try {
     let axiosConfig = {};
@@ -180,59 +329,41 @@ const fetchSchedule = async () => {
       {
         airing_season: [season, year],
         status,
-        only_watch: onlyWatch,  // передаємо true або false
+        only_watch: onlyWatch,
       },
       axiosConfig
     );
 
     const list = response.data.list;
-    const { todayItems, groupedArray } = groupByDay(list);
     setAnimeList(list);
-    setTodayList(todayItems);
-    setGroupedList(groupedArray);
   } catch (err) {
-    
+    console.error('Error fetching schedule:', err);
   } finally {
     setLoading(false);
   }
-};
+}, [season, year, status, onlyWatch]);
 
   useEffect(() => {
     fetchSchedule();
   }, [year, season, status, onlyWatch]);
 
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setYear(2025);
     setSeason('summer');
     setStatus(BASE_STATUSES);
     setOnlyWatch(false);
-  };
+  }, []);
 
-  const onStatusChange = (value) => {
+  const onStatusChange = useCallback((value) => {
     const isSelected = status.includes(value);
     let newStatus = isSelected
       ? status.filter((s) => s !== value)
       : [...status, value];
     if (newStatus.length === 0) return;
     setStatus(newStatus);
-  };
+  }, [status]);
 
-  const renderAnimeCard = ({ item, index }) => {
-    const isLastInRow = (index + 1) % numColumns === 0;
-    return (
-      <CardWrapper style={{ marginRight: isLastInRow ? 0 : 12 }}>
-        <AnimeColumnCard
-          anime={item.anime}
-          onPress={() =>
-            navigation.navigate('AnimeDetails', { slug: item.anime.slug })
-          }
-          cardWidth={CARD_WIDTH}
-          imageWidth={CARD_WIDTH}
-          imageHeight={165}
-        />
-      </CardWrapper>
-    );
-  };
+
 
   const Checkbox = ({ checked }) => (
   <CheckboxContainer>
@@ -267,137 +398,71 @@ const renderModal = (type, options, selectedValues, onSelect) => (
 
 
   return (
-    <>
-      <BlurOverlay experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
-        <HeaderTitleBar title="Календар" />
-      </BlurOverlay>
-
-      <ScrollContainer insets={insets}>
-        <FiltersContainer>
-          <SelectBox onPress={() => setModalVisible('year')}>
-            <SelectText>{year}</SelectText>
-          </SelectBox>
-          <SelectBox onPress={() => setModalVisible('season')}>
-            <SelectText>
-              {SEASONS.find((s) => s.value === season)?.label || 'Сезон'}
-            </SelectText>
-          </SelectBox>
-          <SelectBox onPress={() => setModalVisible('status')}>
-            <SelectText>
-              {status.length === 0
-                ? 'Статус'
-                : STATUSES.filter((s) => status.includes(s.value))
-                    .map((s) => s.label)
-                    .join(', ')}
-            </SelectText>
-          </SelectBox>
-          <SwitchRow>
-            <Label>Аніме у списку</Label>
-            <Switch value={onlyWatch} onValueChange={setOnlyWatch} />
-          </SwitchRow>
-          <ResetButton onPress={resetFilters}>
-            <ResetText>Очистити</ResetText>
-          </ResetButton>
-        </FiltersContainer>
-
-        {loading ? (
-          <Center>
-            <ActivityIndicator size="large" color="#fff" />
-          </Center>
-        ) : animeList.length === 0 ? (
-          <Center>
-            <NoDataText>Розклад аніме порожній</NoDataText>
-          </Center>
-        ) : (
-          <>
-{todayList.length > 0 && (
-  <DayGroup>
-    <DayHeaderContainer style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <DayTitle>Сьогодні</DayTitle>
-      </View>
-      <DayDate>
-        <DateText>
-          {new Date().getDate()}{' '}
-          {['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'][new Date().getMonth()]}
-        </DateText>
-      </DayDate>
-      <GreenDot />
-    </DayHeaderContainer>
-
-    <View style={{ paddingHorizontal: 12 }}>
-      <FlatList
-        data={todayList}
-        keyExtractor={(item, index) => `${item.anime.slug}-today-${index}`}
-        renderItem={renderAnimeCard}
-        numColumns={numColumns}
-        scrollEnabled={false}
+    <FlatListContainer style={{ paddingTop: insets.top }}>
+      <HeaderTitleBar 
+        title="Календар" 
+        style={{
+          position: 'absolute',
+          top: insets.top,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+        }}
       />
-    </View>
-  </DayGroup>
-)}
-
-
-{groupedList.map((group, index) => (
-  <DayGroup key={`${group.day}-${index}`}>
-    <DayHeaderContainer>
-      <DayTitle>{group.day}</DayTitle>
-      {group.date && (
-        <DayDate>
-          <DateText>{group.date}</DateText>
-        </DayDate>
+      
+      {loading ? (
+        <Center>
+          <ActivityIndicator size="large" color="#fff" />
+        </Center>
+      ) : animeList.length === 0 ? (
+        <Center>
+          <NoDataText>Розклад аніме порожній</NoDataText>
+        </Center>
+      ) : (
+        <FlatList
+          data={flatListData}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ 
+            paddingBottom: insets.bottom,
+            paddingTop: 76, // Висота хедера + відступ
+          }}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={5}
+          windowSize={5}
+          initialNumToRender={3}
+          getItemLayout={getItemLayout}
+          updateCellsBatchingPeriod={50}
+          onEndReachedThreshold={0.5}
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+          }}
+        />
       )}
-    </DayHeaderContainer>
 
-    <View style={{ paddingHorizontal: 12 }}>
-      <FlatList
-        data={group.data}
-        keyExtractor={(item, i) => `${item.anime.slug}-${i}`}
-        renderItem={renderAnimeCard}
-        numColumns={numColumns}
-        scrollEnabled={false}
-      />
-    </View>
-  </DayGroup>
-))}
-
-          </>
-        )}
-
-        {renderModal(
-          'year',
-          YEARS.map((y) => ({ label: `${y}`, value: y })),
-          [year],
-          (val) => {
-            setYear(val);
-            setModalVisible(null);
-          }
-        )}
-        {renderModal('season', SEASONS, [season], (val) => {
-          setSeason(val);
+      {renderModal(
+        'year',
+        YEARS.map((y) => ({ label: `${y}`, value: y })),
+        [year],
+        (val) => {
+          setYear(val);
           setModalVisible(null);
-        })}
-        {renderModal('status', STATUSES, status, onStatusChange)}
-      </ScrollContainer>
-      </>
+        }
+      )}
+      {renderModal('season', SEASONS, [season], (val) => {
+        setSeason(val);
+        setModalVisible(null);
+      })}
+      {renderModal('status', STATUSES, status, onStatusChange)}
+    </FlatListContainer>
   );
 };
 
-// Styled Components
-const BlurOverlay = styled(BlurView)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  border-bottom-width: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
-`;
-
-const ScrollContainer = styled.ScrollView`
-  padding-top: ${(props) => props.insets.top + HEADER_HEIGHT}px;
-  padding-bottom: ${(props) => props.insets.bottom}px;
+const FlatListContainer = styled.View`
+  flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
+  position: relative;
 `;
 
 const FiltersContainer = styled.View`

@@ -56,8 +56,7 @@ const ArticlesSlider = React.memo(({ slug, title }) => {
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         contentContainerStyle={{ paddingHorizontal: 12 }}
-        snapToInterval={CARD_WIDTH + 12}
-        decelerationRate="fast"
+        decelerationRate="normal"
         ItemSeparatorComponent={ItemSeparator}
         removeClippedSubviews={true}
         maxToRenderPerBatch={3}

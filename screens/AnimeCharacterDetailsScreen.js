@@ -8,7 +8,7 @@ import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
 import { BlurView } from 'expo-blur';
 import Entypo from '@expo/vector-icons/Entypo';
-import Markdown from 'react-native-markdown-display';
+import Markdown from '../components/Custom/MarkdownText';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import avatarFallback from '../assets/image/image404.png';
 import BackButton from '../components/DetailsAnime/BackButton';
@@ -444,7 +444,7 @@ const AnimeCharacterDetailsScreen = () => {
 
 {mangaList.length > 0 && (
   <View>
-    <TitleLineSlider>Манга</TitleLineSlider>
+    <TitleLineSlider>Манґа</TitleLineSlider>
     <FlatList
       data={mangaList}
       keyExtractor={(_, index) => `manga-${index}`}

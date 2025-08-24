@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Dimensions, ActivityIndicator, FlatList, TouchableOpacity } from 'react-native';
+import { Dimensions, ActivityIndicator, FlatList, TouchableOpacity, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import styled from 'styled-components/native';
 import { useTheme } from '../../context/ThemeContext';
@@ -14,6 +14,51 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 const { width: windowWidth } = Dimensions.get('window');
 const SPACING = 0;
 const SLIDE_WIDTH = windowWidth - SPACING * 2;
+
+// Skeleton component
+const SkeletonView = ({ width, height, style }) => {
+  const { isDark } = useTheme();
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, []);
+
+  const opacity = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.7],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          backgroundColor: isDark ? '#1A1A1A' : '#F2F2F2',
+          borderRadius: 8,
+          opacity,
+        },
+        style,
+      ]}
+    />
+  );
+};
 
 const HomeBannerSwiper = () => {
   const [animeList, setAnimeList] = useState([]);
@@ -101,11 +146,10 @@ const HomeBannerSwiper = () => {
     const details = animeDetails[item.slug] || { genres: ['Жанри відсутні'], description: 'Опис відсутній' };
 
 
-return (
+  return (
   <Slide key={`slide-${item.slug || item.id || Math.random().toString(36).substr(2, 9)}`}>
     <GradientBlock />
     <BackgroundImage source={{ uri: imageUrl }} />
-    <StyledBlurView intensity={30} tint={isDark ? 'dark' : 'light'} />
     <Content>
       <Info>
         <Title numberOfLines={2}>{item.title_ua || 'Назва відсутня'}</Title>
@@ -151,11 +195,36 @@ return (
 };
 
 if (loading) {
-return (
-  <Center>
-    <ActivityIndicator size="large" />
-  </Center>
-);
+  return (
+    <Container>
+      <SkeletonSlide>
+        <GradientBlock />
+        <SkeletonBackground />
+        <Content>
+          <Info>
+            <SkeletonView width="80%" height={40} style={{ marginBottom: 8 }} />
+            <SkeletonView width="60%" height={16} style={{ marginBottom: 12 }} />
+            <SkeletonView width="30%" height={24} style={{ marginBottom: 8, borderRadius: 12 }} />
+            
+            <Row>
+              <SkeletonView width={80} height={36} style={{ borderRadius: 18 }} />
+              <SkeletonView width={60} height={36} style={{ borderRadius: 18, marginLeft: 5 }} />
+              <SkeletonView width={80} height={36} style={{ borderRadius: 18, marginLeft: 5 }} />
+            </Row>
+
+            <SkeletonView width="100%" height={16} style={{ marginBottom: 4 }} />
+            <SkeletonView width="90%" height={16} style={{ marginBottom: 4 }} />
+            <SkeletonView width="70%" height={16} style={{ marginBottom: 16 }} />
+
+            <Row>
+              <SkeletonView width={120} height={48} style={{ borderRadius: 24 }} />
+              <SkeletonView width={120} height={48} style={{ borderRadius: 24, marginLeft: 4 }} />
+            </Row>
+          </Info>
+        </Content>
+      </SkeletonSlide>
+    </Container>
+  );
 }
 
 return (
@@ -189,7 +258,7 @@ return (
 };
 
 const Container = styled.View`
-height: 100%;
+height: 95%;
 margin-bottom: 20px;
 `;
 
@@ -207,7 +276,7 @@ top: 0;
 right: 0;
 bottom: 0;
 left: 0;
-opacity: 0.7;
+opacity: 1;
 `;
 
 const StyledBlurView = styled(PlatformBlurView)`
@@ -326,6 +395,23 @@ const Description = styled.Text`
   color: ${({ theme }) => theme.colors.gray};
   line-height:   19.6px;
   margin-bottom: 16px;
+`;
+
+const SkeletonSlide = styled.View`
+  width: ${SLIDE_WIDTH}px;
+  margin-right: ${SPACING}px;
+  flex: 1;
+  overflow: hidden;
+`;
+
+const SkeletonBackground = styled.View`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
+  opacity: 0.7;
 `;
 
 const Center = styled.View`
