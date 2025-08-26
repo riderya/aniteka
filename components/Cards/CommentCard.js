@@ -52,6 +52,23 @@ const ReplyText = styled.Text`
   color: ${({ theme }) => theme.colors.gray}; font-weight: bold;
 `;
 
+const OptimisticIndicator = styled.View`
+  background-color: ${({ theme }) => theme.colors.primary}20;
+  border: 1px solid ${({ theme }) => theme.colors.primary};
+  border-radius: 12px;
+  padding: 4px 8px;
+  margin-left: 8px;
+  flex-direction: row;
+  align-items: center;
+`;
+
+const OptimisticText = styled.Text`
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 4px;
+`;
+
 const ModalBackdrop = styled.Pressable`
   flex: 1; background-color: rgba(0, 0, 0, 0.6); justify-content: center; align-items: center;
 `;
@@ -224,6 +241,16 @@ const CommentCard = ({
   }, []);
 
   const handleVote = async (score) => {
+    // Не дозволяємо голосувати за оптимістичні коментарі
+    if (item.is_optimistic) {
+      Toast.show({
+        type: 'info',
+        text1: 'Зачекайте',
+        text2: 'Коментар ще відправляється...',
+      });
+      return;
+    }
+    
     if (!commentSlug) return;
     try {
       const token = await SecureStore.getItemAsync('hikka_token');
@@ -277,6 +304,16 @@ const CommentCard = ({
   };
 
   const handleDelete = async () => {
+    // Не дозволяємо видаляти оптимістичні коментарі
+    if (item.is_optimistic) {
+      Toast.show({
+        type: 'info',
+        text1: 'Зачекайте',
+        text2: 'Коментар ще відправляється...',
+      });
+      return;
+    }
+    
     if (!commentSlug) return;
     try {
       const token = await SecureStore.getItemAsync('hikka_token');
@@ -301,6 +338,10 @@ const CommentCard = ({
   };
 
   const handleLongPress = () => {
+    // Не дозволяємо відкривати меню для оптимістичних коментарів
+    if (item.is_optimistic) {
+      return;
+    }
     setModalVisible(true);
   };
 
@@ -394,8 +435,12 @@ const CommentCard = ({
 
   return (
     <>
-      <TouchableOpacity onPress={handleLongPress} activeOpacity={0.9}>
-        <CommentCardWrapper>
+      <TouchableOpacity 
+        onPress={handleLongPress} 
+        activeOpacity={item.is_optimistic ? 1 : 0.9}
+        disabled={item.is_optimistic}
+      >
+        <CommentCardWrapper style={{ opacity: item.is_optimistic ? 0.8 : 1 }}>
           <RowInfo>
             <TouchableOpacity onPress={handleUserPress} activeOpacity={0.7}>
               <Avatar
@@ -412,6 +457,12 @@ const CommentCard = ({
                 <RowInfoTitle>
                   <Username>{item.author?.username || 'Користувач'}</Username>
                   <DateText>{formattedDate}</DateText>
+                  {item.is_optimistic && (
+                    <OptimisticIndicator>
+                      <ActivityIndicator size="small" color={theme.colors.primary} />
+                      <OptimisticText>Відправляється...</OptimisticText>
+                    </OptimisticIndicator>
+                  )}
                 </RowInfoTitle>
               </TouchableOpacity>
 
@@ -422,7 +473,10 @@ const CommentCard = ({
                 <RowLike>
                   <Pressable
                     onPress={() => handleVote(-1)}
-                    style={{ opacity: userVote === -1 ? 1 : 0.5 }}
+                    style={{ 
+                      opacity: item.is_optimistic ? 0.3 : (userVote === -1 ? 1 : 0.5) 
+                    }}
+                    disabled={item.is_optimistic}
                   >
                     <Ionicons
                       name="chevron-down"
@@ -435,7 +489,10 @@ const CommentCard = ({
 
                   <Pressable
                     onPress={() => handleVote(1)}
-                    style={{ opacity: userVote === 1 ? 1 : 0.5 }}
+                    style={{ 
+                      opacity: item.is_optimistic ? 0.3 : (userVote === 1 ? 1 : 0.5) 
+                    }}
+                    disabled={item.is_optimistic}
                   >
                     <Ionicons
                       name="chevron-up"

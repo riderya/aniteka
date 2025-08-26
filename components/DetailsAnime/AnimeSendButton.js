@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import styled from 'styled-components/native';
+import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RulesModal from '../CommentForm/RulesModal';
 
-const LineGray = styled.View`
-  height: 1px;
-  background-color: ${({ theme }) => theme.colors.borderInput};
+const SendContainer = styled.View`
+  background-color: ${({ theme }) => theme.colors.inputBackground};
+  margin: 12px;
+  border-radius: 16px;
+  overflow: hidden;
 `;
 
 const TopBar = styled.TouchableOpacity`
@@ -61,16 +65,14 @@ const ButtonText = styled.Text`
   font-size: 16px;
 `;
 
-// Modal styles moved to separate component RulesModal
-
 const AnimeSendButton = ({ slug, title, commentsCount }) => {
   const navigation = useNavigation();
   const [rulesVisible, setRulesVisible] = useState(false);
+  const insets = useSafeAreaInsets();
 
   return (
-    <>
-      <LineGray />
-      <TopBar         onPress={() =>
+    <SendContainer insets={insets}>
+      <TopBar onPress={() =>
           navigation.navigate('AnimeCommentsDetailsScreen', {
             slug,
             title,
@@ -102,7 +104,7 @@ const AnimeSendButton = ({ slug, title, commentsCount }) => {
       </InputButton>
 
       <RulesModal visible={rulesVisible} onClose={() => setRulesVisible(false)} />
-    </>
+    </SendContainer>
   );
 };
 

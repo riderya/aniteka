@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { PlatformBlurView } from '../Custom/PlatformBlurView';
 import { useTheme } from '../../context/ThemeContext';
 
-const HeaderTitleBar = ({ title, showBack = true, onBack }) => {
+const HeaderTitleBar = ({ title, showBack = true, onBack, rightButton, onShare }) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
@@ -18,6 +18,12 @@ const HeaderTitleBar = ({ title, showBack = true, onBack }) => {
     }
   };
 
+  const handleShare = () => {
+    if (onShare) {
+      onShare();
+    }
+  };
+
   return (
     <HeaderContainer intensity={100} tint={isDark ? 'dark' : 'light'} topOffset={insets.top}>
       <HeaderRow>
@@ -26,7 +32,25 @@ const HeaderTitleBar = ({ title, showBack = true, onBack }) => {
             <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
           </BackButton>
         )}
-        <HeaderTitle numberOfLines={1}>{title}</HeaderTitle>
+        <HeaderTitle 
+          numberOfLines={1} 
+          hasBackButton={showBack}
+          hasRightButton={!!rightButton || !!onShare}
+        >
+          {title}
+        </HeaderTitle>
+        <RightButtonsContainer>
+          {onShare && (
+            <ShareButton onPress={handleShare} activeOpacity={0.7}>
+              <Ionicons name="share-outline" size={24} color={theme.colors.text} />
+            </ShareButton>
+          )}
+          {rightButton && (
+            <RightButtonContainer>
+              {rightButton}
+            </RightButtonContainer>
+          )}
+        </RightButtonsContainer>
       </HeaderRow>
     </HeaderContainer>
   );
@@ -47,6 +71,7 @@ const HeaderContainer = styled(PlatformBlurView)`
 const HeaderRow = styled.View`
   flex-direction: row;
   align-items: center;
+  position: relative;
 `;
 
 const BackButton = styled.TouchableOpacity`
@@ -54,12 +79,38 @@ const BackButton = styled.TouchableOpacity`
   justify-content: center;
   width: 24px;
   height: 24px;
+  z-index: 1;
 `;
 
 const HeaderTitle = styled.Text`
-  flex: 1;
+  position: absolute;
+  left: 50px;
+  right: 50px;
   color: ${({ theme }) => theme.colors.text};
   font-size: 18px;
   font-weight: 700;
-  margin-left: 12px;
+  text-align: center;
+  z-index: 0;
+`;
+
+const RightButtonsContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 1;
+  position: absolute;
+  right: 0;
+`;
+
+const ShareButton = styled.TouchableOpacity`
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: ${({ hasRightButton }) => hasRightButton ? '8px' : '0px'};
+`;
+
+const RightButtonContainer = styled.View`
+  align-items: center;
+  justify-content: center;
 `;

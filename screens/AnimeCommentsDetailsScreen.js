@@ -6,6 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -60,28 +61,24 @@ const CommentsHeader = styled.View`
   margin-bottom: 12px;
 `;
 
-const FilterButton = styled.TouchableOpacity`
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  height: 50px;
-  border-radius: 999px;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  opacity: 0.5;
-`;
 
-const FilterText = styled.Text`
-  color: ${({ theme }) => theme.colors.gray};
-  font-weight: 600;
-  font-size: 14px;
-`;
 
 const CommentCount = styled.Text`
   font-size: 16px;
   font-weight: bold;
   text-transform: uppercase;
   color: ${({ theme }) => theme.colors.text};
+`;
+
+const CommentFormContainer = styled.View`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: ${({ theme }) => theme.colors.background};
+  border-top-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
+  z-index: 1000;
 `;
 
 // ---------- Spoiler Parser ----------
@@ -121,17 +118,30 @@ const AnimeCommentsDetailsScreen = () => {
   const [hasMore, setHasMore] = useState(true);
   const [spoilerOpen, setSpoilerOpen] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
-  const [sortOrder, setSortOrder] = useState('desc');
   const [isFetching, setIsFetching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Поточний користувач (reference) з SecureStore
   const [currentUserRef, setCurrentUserRef] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     const getUserRef = async () => {
         const ref = await SecureStore.getItemAsync('hikka_user_reference');
         setCurrentUserRef(ref);
+        
+        // Отримуємо інформацію про користувача
+        if (ref) {
+          try {
+            const token = await SecureStore.getItemAsync('hikka_token');
+            const response = await axios.get(`https://api.hikka.io/user/${ref}`, {
+              headers: { auth: token }
+            });
+            setCurrentUser(response.data);
+          } catch (e) {
+            console.error('Помилка при отриманні інформації про користувача:', e);
+          }
+        }
     };
     getUserRef();
   }, []);
@@ -143,13 +153,41 @@ const AnimeCommentsDetailsScreen = () => {
     setComments((prev) => prev.filter((c) => c.reference !== deletedRef));
   };
 
-  const toggleSortOrder = () => {
-    setComments([]);
-    setPage(1);
-    setHasMore(true);
-    setLoading(true);
-    setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'));
+  const handleCommentSent = async (optimisticComment = null, commentToRemove = null) => {
+    if (commentToRemove) {
+      // Видаляємо оптимістичний коментар у випадку помилки
+      setComments((prev) => prev.filter((c) => c.reference !== commentToRemove));
+    } else if (optimisticComment) {
+      // Додаємо оптимістичний коментар на початок списку
+      setComments((prev) => [optimisticComment, ...prev]);
+    } else {
+      // Оновлюємо список коментарів, замінюючи оптимістичні коментарі на реальні
+      try {
+        const res = await axios.get(
+          `https://api.hikka.io/comments/anime/${slug}/list?page=1&size=15`
+        );
+        let newComments = res.data.list || [];
+        
+        // Замінюємо оптимістичні коментарі на реальні
+        setComments((prev) => {
+          const optimisticComments = prev.filter(c => c.is_optimistic);
+          const realComments = newComments.filter(c => !c.is_optimistic);
+          
+          // Якщо є оптимістичні коментарі, замінюємо їх на реальні
+          if (optimisticComments.length > 0) {
+            return realComments;
+          }
+          
+          return newComments;
+        });
+        
+        setHasMore(res.data.pagination.page < res.data.pagination.pages);
+      } catch (e) {
+        console.error('Помилка при оновленні коментарів:', e);
+      }
+    }
   };
+
 
   const fetchComments = async () => {
     if (isFetching || !hasMore) return;
@@ -159,12 +197,6 @@ const AnimeCommentsDetailsScreen = () => {
         `https://api.hikka.io/comments/anime/${slug}/list?page=${page}&size=15`
       );
       let newComments = res.data.list || [];
-
-      newComments.sort((a, b) => {
-        return sortOrder === 'desc'
-          ? b.created - a.created
-          : a.created - b.created;
-      });
 
       setComments((prev) => {
         const existingRefs = new Set(prev.map((c) => c.reference));
@@ -192,11 +224,6 @@ const AnimeCommentsDetailsScreen = () => {
         `https://api.hikka.io/comments/anime/${slug}/list?page=1&size=15`
       );
       let newComments = res.data.list || [];
-      newComments.sort((a, b) => {
-        return sortOrder === 'desc'
-          ? b.created - a.created
-          : a.created - b.created;
-      });
       setComments(newComments);
       setHasMore(res.data.pagination.page < res.data.pagination.pages);
     } catch (e) {
@@ -208,7 +235,7 @@ const AnimeCommentsDetailsScreen = () => {
 
   useEffect(() => {
     fetchComments();
-  }, [page, sortOrder]);
+  }, [page]);
 
   const handleEndReached = () => {
     if (hasMore && !loading) {
@@ -217,15 +244,8 @@ const AnimeCommentsDetailsScreen = () => {
   };
 
   const renderListHeader = () => (
-    <CommentsHeader style={{ paddingTop: headerHeight }}>
+    <CommentsHeader>
       <CommentCount>{commentsCount} Всього</CommentCount>
-      <FilterButton disabled={true}>
-        <Ionicons name="filter" size={18} color={theme.colors.gray} />
-        <FilterText>
-          {sortOrder === 'desc' ? 'Спочатку нові' : 'Спочатку старі'}
-        </FilterText>
-        <Ionicons name="chevron-down" size={16} color={theme.colors.gray} />
-      </FilterButton>
     </CommentsHeader>
   );
 
@@ -258,32 +278,46 @@ const AnimeCommentsDetailsScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={40}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <Container>
         <BlurOverlay experimentalBlurMethod="dimezisBlurView"  intensity={100} tint={isDark ? 'dark' : 'light'}>
           <HeaderTitleBar title={`Коментарі: ${title}`} />
         </BlurOverlay>
 
-        <View style={{ flex: 0.85 }}>
-          <FlatList
-            data={comments}
-            keyExtractor={(item) => item.reference}
-            renderItem={renderItem}
-            onEndReached={handleEndReached}
-            onEndReachedThreshold={0.3}
-            ListHeaderComponent={renderListHeader}
-            contentContainerStyle={{ paddingBottom: 20 }}
-            refreshing={refreshing}
-            onRefresh={onRefresh}
+        <FlatList
+          data={comments}
+          keyExtractor={(item) => item.reference}
+          renderItem={renderItem}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.3}
+          ListHeaderComponent={renderListHeader}
+          contentContainerStyle={{ paddingTop: insets.top + 56 + 20, paddingBottom: insets.bottom + 120 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.colors.text}
+              colors={[theme.colors.text]}
+              progressViewOffset={insets.top + 56}
+              progressBackgroundColor={isDark ? theme.colors.card : undefined}
+            />
+          }
+          style={{ flex: 1 }}
+        />
+        
+        <CommentFormContainer>
+          <CommentForm 
+            content_type="anime" 
+            slug={slug} 
+            onCommentSent={handleCommentSent}
+            currentUser={currentUser}
           />
-        </View>
+        </CommentFormContainer>
 
-        <View style={{ flex: 0.15 }}>
-          <CommentForm content_type="anime" slug={slug} />
-        </View>
+
       </Container>
     </KeyboardAvoidingView>
   );

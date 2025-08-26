@@ -35,16 +35,12 @@ const ResultsContainer = styled.View`
 `;
 
 const BackButton = styled.TouchableOpacity`
-  position: absolute;
-  right: 12px;
-  top: 45px;
-  margin-bottom: 16px;
-  padding: 12px 24px;
+  padding: 8px 16px;
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.borderInput};
   border-radius: 999px;
-  align-self: flex-start;
-  z-index: 99999;
+  align-items: center;
+  justify-content: center;
 `;
 
 const BackButtonText = styled.Text`
@@ -318,12 +314,15 @@ export default function AnimeFilterScreen() {
         />
       ) : (
         <ResultsContainer>
-          <BackButton onPress={() => setShowResults(false)}>
-            <BackButtonText>Змінити</BackButtonText>
-          </BackButton>
-
           <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
-            <HeaderTitleBar title="Фільтр" />
+            <HeaderTitleBar 
+              title="Фільтр" 
+              rightButton={
+                <BackButton onPress={() => setShowResults(false)}>
+                  <BackButtonText>Змінити</BackButtonText>
+                </BackButton>
+              }
+            />
           </BlurOverlay>
 
           <AnimeResults

@@ -5,19 +5,6 @@ import { useNavigation } from '@react-navigation/native';
 import RowLineHeader from './RowLineHeader';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
 
-const Container = styled.View`
-  background-color: ${({ theme }) => theme.colors.border};
-  padding-top: 20px;
-`;
-
-const LineGray = styled.View`
-  margin-top: 25px;
-  height: 1px;
-  background-color: ${({ theme }) => theme.colors.border};
-`;
-
-// Відтепер використовуємо готову картку AnimeColumnCard
-
 const Spacer = styled.View`
   width: 12px;
 `;
@@ -81,10 +68,10 @@ const AnimeRecommendationsSlider = ({ slug }) => {
 
   if (loading) {
     return (
-      <Container>
+      <>
         <RowLineHeader title="Схожий контент" />
         <ActivityIndicator size="small" style={{ marginVertical: 20 }} />
-      </Container>
+      </>
     );
   }
 
@@ -98,7 +85,7 @@ const AnimeRecommendationsSlider = ({ slug }) => {
   };
 
   return (
-    <Container>
+    <>
       <RowLineHeader title="Схожий контент" />
       <FlatList
         horizontal
@@ -134,8 +121,7 @@ const AnimeRecommendationsSlider = ({ slug }) => {
           </View>
         )}
       />
-      <LineGray />
-    </Container>
+    </>
   );
 };
 

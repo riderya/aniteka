@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { FontAwesome } from '@expo/vector-icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../../context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RulesModal from './RulesModal';
 
 const getAuthToken = async () => {
@@ -15,15 +22,82 @@ const getAuthToken = async () => {
   return token;
 };
 
-export default function CommentForm({ content_type, slug }) {
+const { height: screenHeight } = Dimensions.get('window');
+
+export default function CommentForm({ content_type, slug, onCommentSent, currentUser }) {
   const [spoiler, setSpoiler] = useState(false);
   const [comment, setComment] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [rulesModalVisible, setRulesModalVisible] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isSending, setIsSending] = useState(false);
   const { theme, isDark } = useTheme();
   const isCommentTooShort = comment.trim().length < 5;
+  const insets = useSafeAreaInsets();
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (event) => {
+        setKeyboardVisible(true);
+        // Обмежуємо максимальну висоту клавіатури для стабільності
+        const keyboardHeightValue = Math.min(Math.max(event.endCoordinates.height, 200), screenHeight * 0.6);
+        setKeyboardHeight(keyboardHeightValue);
+        
+        // Тільки для Android використовуємо анімації
+        if (Platform.OS === 'android') {
+          Animated.timing(slideAnim, {
+            toValue: keyboardHeightValue,
+            duration: 250,
+            useNativeDriver: false,
+          }).start();
+        }
+      }
+    );
+    
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+        setKeyboardHeight(0);
+        
+        // Тільки для Android використовуємо анімації
+        if (Platform.OS === 'android') {
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 250,
+            useNativeDriver: false,
+          }).start();
+        }
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, [slideAnim]);
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+    inputRef.current?.blur();
+  };
+
+  const handleKeyPress = (event) => {
+    // Enter завжди створює новий рядок, не відправляє коментар
+    if (event.nativeEvent.key === 'Enter') {
+      // Дозволяємо стандартну поведінку Enter (новий рядок)
+      return;
+    }
+  };
 
   const handleSend = async () => {
+    if (isSending) return;
+    
+    setIsSending(true);
     let finalComment = comment.trim();
 
     if (spoiler && !finalComment.startsWith(':::spoiler')) {
@@ -34,7 +108,25 @@ export default function CommentForm({ content_type, slug }) {
 
     if (!token) {
       Alert.alert('Помилка', 'Потрібна авторизація для відправки коментаря.');
+      setIsSending(false);
       return;
+    }
+
+    // Створюємо оптимістичний коментар
+    let optimisticComment = null;
+    if (onCommentSent && currentUser) {
+      optimisticComment = {
+        reference: `temp_${Date.now()}`,
+        text: finalComment,
+        created: new Date().toISOString(),
+        user: currentUser,
+        likes: 0,
+        dislikes: 0,
+        is_liked: false,
+        is_disliked: false,
+        is_optimistic: true, // Позначаємо як оптимістичний
+      };
+      onCommentSent(optimisticComment);
     }
 
     try {
@@ -53,67 +145,130 @@ export default function CommentForm({ content_type, slug }) {
       const result = await response.json();
 
       if (!response.ok) {
-
         Alert.alert('Помилка', result?.detail || 'Не вдалося надіслати коментар');
+        // Видаляємо оптимістичний коментар у випадку помилки
+        if (optimisticComment && onCommentSent) {
+          onCommentSent(null, optimisticComment.reference);
+        }
+        setIsSending(false);
         return;
       }
 
-      Alert.alert('Успішно', 'Коментар надіслано!');
       setComment('');
       setSpoiler(false);
+      dismissKeyboard();
+      // Оновлюємо список коментарів після успішної відправки
+      if (onCommentSent) {
+        onCommentSent();
+      }
     } catch (e) {
       Alert.alert('Помилка', 'Сталася помилка під час відправки коментаря');
-      
+      // Видаляємо оптимістичний коментар у випадку помилки
+      if (optimisticComment && onCommentSent) {
+        onCommentSent(null, optimisticComment.reference);
+      }
+    } finally {
+      setIsSending(false);
     }
   };
 
+  // Різні підходи для різних платформ
+  const maxKeyboardHeight = Math.max(keyboardHeight, 200);
+  const safeBottom = Platform.OS === 'ios' ? insets.bottom  : insets.bottom + 12;
+  
+  let elevatedBottom;
+  if (Platform.OS === 'ios') {
+    // На iOS використовуємо відносне позиціонування від низу екрану
+    elevatedBottom = maxKeyboardHeight;
+  } else {
+    // На Android використовуємо абсолютне позиціонування
+    elevatedBottom = maxKeyboardHeight + 55;
+  }
+  
+  const containerBottom = slideAnim.interpolate({
+    inputRange: [0, maxKeyboardHeight],
+    outputRange: [safeBottom, elevatedBottom],
+    extrapolate: 'clamp',
+  });
+
   return (
     <>
-      <Container>
-        <RowTop>
-          <SpoilerToggleBar onPress={() => setModalVisible(true)}>
-            <SpoilerText>
-              {spoiler ? (
-                <>
-                  Містить <GrayText>спойлер</GrayText>
-                </>
-              ) : (
-                <>
-                  Не містить <GrayText>спойлер</GrayText>
-                </>
-              )}
-            </SpoilerText>
-          </SpoilerToggleBar>
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <BackgroundContainer theme={theme}>
+          <AnimatedContainer 
+            theme={theme}
+            insets={insets}
+            style={{
+              bottom: Platform.OS === 'ios' ? (keyboardVisible ? 12 : insets.bottom + 12) : containerBottom,
+              zIndex: 1000,
+            }}
+          >
+          <RowTop theme={theme}>
+            <SpoilerToggleBar onPress={() => {
+              dismissKeyboard();
+              setModalVisible(true);
+            }}>
+              <SpoilerText>
+                {spoiler ? (
+                  <>
+                    Містить <GrayText>спойлер</GrayText>
+                  </>
+                ) : (
+                  <>
+                    Не містить <GrayText>спойлер</GrayText>
+                  </>
+                )}
+              </SpoilerText>
+            </SpoilerToggleBar>
 
-          <RulesButton onPress={() => setRulesModalVisible(true)}>
-            <FontAwesome name="clipboard" size={14} color={theme.colors.gray} />
-            <RulesText>Правила</RulesText>
-          </RulesButton>
-        </RowTop>
+            <RulesButton onPress={() => {
+              dismissKeyboard();
+              setRulesModalVisible(true);
+            }}>
+              <FontAwesome name="clipboard" size={14} color={theme.colors.gray} />
+              <RulesText>Правила</RulesText>
+            </RulesButton>
+          </RowTop>
 
-        <Row>
-        <CommentInput
-          placeholder="Ваш коментар"
-          placeholderTextColor={theme.colors.gray}
-          multiline
-          value={comment}
-          onChangeText={setComment}
-        />
+          <Row theme={theme}>
+            <CommentInput
+              ref={inputRef}
+              placeholder="Ваш коментар"
+              placeholderTextColor={theme.colors.gray}
+              multiline
+              value={comment}
+              onChangeText={setComment}
+              onKeyPress={handleKeyPress}
+              returnKeyType="default"
+              blurOnSubmit={false}
+              enablesReturnKeyAutomatically={false}
+              textAlignVertical="top"
+              keyboardAppearance={isDark ? 'dark' : 'light'}
+              style={{
+                paddingTop: 12,
+                paddingBottom: 12,
+                backgroundColor: 'transparent',
+              }}
+            />
 
-<SendButton
-  onPress={handleSend}
-  disabled={isCommentTooShort}
-  style={{ opacity: isCommentTooShort ? 0.5 : 1 }}
->
-  <Ionicons
-    name="send"
-    size={26}
-    color={isCommentTooShort ? theme.colors.borderInput : theme.colors.gray}
-  />
-</SendButton>
-
-        </Row>
-      </Container>
+            <SendButton
+              onPress={handleSend}
+              disabled={isCommentTooShort || isSending}
+              style={{ 
+                opacity: (isCommentTooShort || isSending) ? 0.5 : 1,
+                transform: [{ scale: isSending ? 0.9 : 1 }]
+              }}
+            >
+              <Ionicons
+                name={isSending ? "hourglass" : "send"}
+                size={26}
+                color={(isCommentTooShort || isSending) ? theme.colors.borderInput : theme.colors.gray}
+              />
+            </SendButton>
+          </Row>
+        </AnimatedContainer>
+        </BackgroundContainer>
+      </TouchableWithoutFeedback>
 
       {/* Модалка: Спойлер */}
       <Modal transparent visible={modalVisible} animationType="fade">
@@ -147,11 +302,25 @@ export default function CommentForm({ content_type, slug }) {
 }
 
 
-const Container = styled.View`
-  position: relative;
-  background-color: ${({ theme }) => theme.colors.card};
-  flex: 1;
+const BackgroundContainer = styled.View`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: ${({ theme }) => theme.colors.background};
+  z-index: 999;
 `;
+
+const Container = styled.View`
+  position: absolute;
+  background-color: ${({ theme }) => theme.colors.card};
+  border-radius: 16px;
+  overflow: hidden;
+  left: 12px;
+  right: 12px;
+`;
+
+const AnimatedContainer = Animated.createAnimatedComponent(Container);
 
 const RowTop = styled.View`
   flex-direction: row;
@@ -160,6 +329,8 @@ const RowTop = styled.View`
   height: 30px;
   background-color: ${({ theme }) => theme.colors.card};
   padding: 0px 12px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
 `;
 
 const SpoilerToggleBar = styled.TouchableOpacity`
@@ -194,15 +365,22 @@ const Row = styled.View`
   justify-content: space-between;
   background-color: ${({ theme }) => theme.colors.inputBackground};
   padding: 0px 12px;
-  height: 60px;
+  min-height: 60px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
 `;
 
 const CommentInput = styled.TextInput`
   flex: 1;
   color: ${({ theme }) => theme.colors.text};
   font-size: 14px;
-  padding: 12px 0px;
-  min-height: 80px;
+  min-height: 36px;
+  max-height: 120px;
+  line-height: 20px;
+  ${Platform.OS === 'android' ? `
+    padding-top: 8px;
+    padding-bottom: 8px;
+  ` : ''}
 `;
 
 const SendButton = styled.TouchableOpacity``;

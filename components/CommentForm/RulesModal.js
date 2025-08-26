@@ -12,7 +12,7 @@ const ModalBackdrop = styled.View`
 const ModalCard = styled.View`
   width: 90%;
   background-color: ${({ theme }) => theme.colors.card};
-  border-radius: 12px;
+  border-radius: 36px;
   padding: 18px;
 `;
 
@@ -33,7 +33,7 @@ const ModalActions = styled.View`
 
 const CloseBtn = styled.TouchableOpacity`
   background-color: ${({ theme }) => theme.colors.disabled};
-  border-radius: 16px;
+  border-radius: 999px;
   padding: 12px;
   align-items: center;
 `;

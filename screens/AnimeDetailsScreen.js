@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import TopDetail from '../components/DetailsAnime/TopDetail';
@@ -21,7 +21,7 @@ const AnimeDetailsScreen = ({ route }) => {
   const [anime, setAnime] = useState(null);
   const [loading, setLoading] = useState(true);
   const { theme, isDark } = useTheme();
-  const { bottom } = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const fetchAnimeDetails = async () => {
@@ -46,7 +46,7 @@ const AnimeDetailsScreen = ({ route }) => {
   return (
     <ScreenWrapper>
         <BackButton top={12} />
-      <ScrollView contentContainerStyle={{ paddingBottom: bottom }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         <TopDetail anime={anime} />
         <Divider />
         <AnimeMainCharacters anime={anime}/>
@@ -63,8 +63,7 @@ const AnimeDetailsScreen = ({ route }) => {
         <Divider />
         <AnimeStaffSlider slug={anime.slug} title={anime.title_ua || anime.title_en || anime.title_ja || '?'} />
         <Divider />
-        <AnimeRecommendationsSlider slug={anime.slug} />
-        <Divider />
+        <RecommendationsSection slug={anime.slug} />
         <AnimeSendButton slug={anime.slug} title={anime.title_ua || anime.title_en || anime.title_ja || '?'} commentsCount={anime.comments_count} />
       </ScrollView>
     </ScreenWrapper>
@@ -91,3 +90,32 @@ const Divider = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
   margin: 25px 12px;
 `;
+
+const RecommendationsSection = ({ slug }) => {
+  const [hasRecommendations, setHasRecommendations] = useState(false);
+
+  useEffect(() => {
+    const checkRecommendations = async () => {
+      try {
+        const response = await fetch(`https://api.hikka.io/anime/${slug}/recommendations?page=1&size=1`);
+        const data = await response.json();
+        setHasRecommendations(data.list && data.list.length > 0);
+      } catch (error) {
+        setHasRecommendations(false);
+      }
+    };
+    
+    checkRecommendations();
+  }, [slug]);
+
+  if (!hasRecommendations) {
+    return null;
+  }
+
+  return (
+    <>
+      <AnimeRecommendationsSlider slug={slug} />
+      <Divider />
+    </>
+  );
+};

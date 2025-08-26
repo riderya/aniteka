@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Text,
+  Share,
 } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
@@ -70,6 +71,19 @@ const AnimeCharactersScreen = () => {
   const CHARACTERS_PER_PAGE = 20;
 
   const headerHeight = insets.top + 60;
+
+  const handleShare = useCallback(async () => {
+    try {
+      const shareUrl = `https://hikka.io/anime/${slug}/characters`;
+      await Share.share({
+        message: `Дивіться всіх персонажів аніме "${title}" на Hikka: ${shareUrl}`,
+        url: shareUrl,
+        title: `Персонажі аніме: ${title}`,
+      });
+    } catch (error) {
+      console.log('Помилка при поділі:', error);
+    }
+  }, [slug, title]);
 
   const fetchCharacters = useCallback(async (page = 1, isLoadMore = false) => {
     try {
@@ -151,7 +165,10 @@ const AnimeCharactersScreen = () => {
   return (
     <Container>
       <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
-        <HeaderTitleBar title={`Всі персонажі: ${title}`} />
+        <HeaderTitleBar 
+          title={`Всі персонажі: ${title}`} 
+          onShare={handleShare}
+        />
       </BlurOverlay>
 
       <FlatList
