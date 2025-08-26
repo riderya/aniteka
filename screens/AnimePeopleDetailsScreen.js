@@ -31,13 +31,6 @@ const CenteredContainer = styled(Container)`
   justify-content: center;
 `;
 
-const FixedBackButtonWrapper = styled.View`
-  position: absolute;
-  top: 50px;
-  left: 12px;
-  z-index: 10;
-`;
-
 const Spacer = styled.View`
   width: 12px;
 `;
@@ -241,14 +234,12 @@ const AnimePeopleDetailsScreen = () => {
 
   return (
     <Container>
-      <FixedBackButtonWrapper>
-        <BackButton />
-      </FixedBackButtonWrapper>
+        <BackButton top={12}/>
 
-      <Content
-        headerHeight={headerHeight}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
-        >
+      <Content contentContainerStyle={{
+        paddingBottom: insets.bottom + 20,
+        paddingTop: insets.top + 12,
+       }}>
         <PeopleImageWrapper>
           <PeopleImage 
   source={

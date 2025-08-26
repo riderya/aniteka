@@ -6,6 +6,7 @@ import { PlatformBlurView } from '../Custom/PlatformBlurView';
 import { useNavigation } from '@react-navigation/native';
 import AnilistBanner from '../../components/BackgroundImg/AnilistBanner';
 import KitsuBanner   from '../../components/BackgroundImg/KitsuBanner';
+import TMDBBanner    from '../../components/BackgroundImg/TMDBBanner';
 
 const { width }   = Dimensions.get('window');
 const CARD_WIDTH  = width * 0.85;
@@ -77,7 +78,7 @@ const TrendingSlider = () => {
 
   const CardItem = memo(({ item }) => {
     const navigation = useNavigation();
-    const [bannerStage, setBannerStage] = useState('anilist');
+    const [bannerStage, setBannerStage] = useState('tmdb');
 
     return (
       <TouchableOpacity
@@ -85,6 +86,17 @@ const TrendingSlider = () => {
         onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
       >
         <Card>
+          {bannerStage === 'tmdb' && (
+            <TMDBBanner
+              tmdbId={item.tmdb_id}
+              title={item.title_en || item.title_ua || item.title_ja}
+              mediaType={item.media_type === 'tv' ? 'tv' : 'movie'}
+              onLoaded={url => {
+                if (!url) setBannerStage('anilist');
+              }}
+            />
+          )}
+
           {bannerStage === 'anilist' && (
             <AnilistBanner
               mal_id={item.mal_id}

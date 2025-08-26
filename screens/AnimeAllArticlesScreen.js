@@ -40,7 +40,7 @@ const FilterButton = styled.TouchableOpacity`
   background-color: ${({ theme }) => theme.colors.inputBackground};
   border-radius: 999px;
   flex-direction: row;
-  gap: 4px;
+  gap: 8px;
   align-items: center;
   justify-content: center;
 `;

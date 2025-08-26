@@ -20,13 +20,6 @@ const Container = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const FixedBackButtonWrapper = styled.View`
-  position: absolute;
-  top: 50px;
-  left: 12px;
-  z-index: 10;
-`;
-
 const Spacer = styled.View`
   width: 12px;
 `;
@@ -43,7 +36,6 @@ const BlockBorder = styled.View`
 `;
 
 const Content = styled.ScrollView`
-  padding-top: ${({ headerHeight }) => headerHeight}px;
   width: 100%;
 `;
 
@@ -291,14 +283,12 @@ const AnimeCharacterDetailsScreen = () => {
 
   return (
     <Container>
-      <FixedBackButtonWrapper>
-        <BackButton />
-      </FixedBackButtonWrapper>
+        <BackButton top={12}/>
 
-      <Content
-              headerHeight={headerHeight}
-              contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
-              >
+      <Content contentContainerStyle={{
+        paddingBottom: insets.bottom + 20,
+        paddingTop: insets.top + 12,
+       }}>
         <CharacterImageWrapper>
           <CharacterImage 
   source={

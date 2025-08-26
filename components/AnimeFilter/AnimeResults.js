@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
 import { FlatList, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Container = styled.View`
   flex: 1;
@@ -47,6 +48,7 @@ export default function AnimeResults({ animeList, loadingAnime, onEndReached }) 
   const cardWidth = 115;
   const spacing = 12;
   const numColumns = Math.floor(width / (cardWidth + spacing));
+  const insets = useSafeAreaInsets();
 
   if (loadingAnime && animeList.length === 0) {
     return <LoadingIndicator size="large" color="#6c47ff" />;
@@ -83,10 +85,13 @@ export default function AnimeResults({ animeList, loadingAnime, onEndReached }) 
         keyExtractor={(item) => item.slug}
         numColumns={numColumns}
         style={{ backgroundColor: theme.colors.background }}
-        contentContainerStyle={{ paddingTop: 115, paddingHorizontal: 6 }}
+        contentContainerStyle={{ 
+          paddingTop: insets.top + 56 + 20,
+          paddingBottom: 20 + insets.bottom,
+         }}
         columnWrapperStyle={{
           justifyContent: 'space-between',
-          paddingHorizontal: 6,
+          paddingHorizontal: 12,
         }}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}

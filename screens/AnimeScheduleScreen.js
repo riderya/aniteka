@@ -20,6 +20,7 @@ import styled from 'styled-components/native';
 import axios from 'axios';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import AnimeColumnCard from '../components/Cards/AnimeColumnCard';
+import { FontAwesome6 } from '@expo/vector-icons';
 
 const SEASONS = [
   { label: 'Зима', value: 'winter' },
@@ -37,7 +38,6 @@ const STATUSES = [
 ];
 
 const BASE_STATUSES = ['ongoing', 'announced'];
-const YEARS = Array.from({ length: 6 }, (_, i) => 2023 + i);
 
 const groupByDay = (list) => {
   const daysOfWeek = {
@@ -104,7 +104,7 @@ const groupByDay = (list) => {
   return { todayItems, groupedArray };
 };
 
-const GreenDot = () => {
+const GreenDot = React.memo(() => {
   const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -137,36 +137,66 @@ const GreenDot = () => {
       }}
     />
   );
-};
-
-
+});
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = 115;
 const numColumns = Math.floor(SCREEN_WIDTH / CARD_WIDTH);
 const HEADER_HEIGHT = 60;
 
+// Константи для висот елементів
+const FILTER_BUTTON_HEIGHT = 80;
+const DAY_HEADER_HEIGHT = 60;
+const CARD_HEIGHT = 200;
+const CARD_MARGIN = 15;
+
 const AnimeScheduleScreen = () => {
   const [animeList, setAnimeList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [year, setYear] = useState(2025);
+  const currentYear = new Date().getFullYear();
+  const YEARS = useMemo(() => {
+    const startYear = 2023;
+    const yearsCount = currentYear - startYear + 1;
+    return Array.from({ length: yearsCount }, (_, i) => startYear + i);
+  }, [currentYear]);
+  
+  const [year, setYear] = useState(currentYear);
   const [season, setSeason] = useState('summer');
   const [status, setStatus] = useState(BASE_STATUSES);
   const [onlyWatch, setOnlyWatch] = useState(false);
-  const [modalVisible, setModalVisible] = useState(null);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  
+  // Тимчасові значення для фільтрів в модальному вікні
+  const [tempYear, setTempYear] = useState(currentYear);
+  const [tempSeason, setTempSeason] = useState('summer');
+  const [tempStatus, setTempStatus] = useState(BASE_STATUSES);
+  const [tempOnlyWatch, setTempOnlyWatch] = useState(false);
+  
   const { theme, isDark } = useTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+
+  // Мемоізовані дані для сьогоднішньої дати
+  const todayDateString = useMemo(() => {
+    const months = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
+    return `${new Date().getDate()} ${months[new Date().getMonth()]}`;
+  }, []);
+
+  // Мемоізована групування даних
+  const groupedData = useMemo(() => {
+    if (!animeList.length) return { todayItems: [], groupedArray: [] };
+    return groupByDay(animeList);
+  }, [animeList]);
 
   // Оптимізована структура даних для FlatList
   const flatListData = useMemo(() => {
     if (!animeList.length) return [];
     
-    const { todayItems, groupedArray } = groupByDay(animeList);
+    const { todayItems, groupedArray } = groupedData;
     const data = [];
     
-    // Додаємо фільтри як перший елемент
-    data.push({ type: 'filters', id: 'filters' });
+    // Додаємо кнопку фільтрів як перший елемент
+    data.push({ type: 'filterButton', id: 'filterButton' });
     
     // Додаємо сьогоднішні аніме якщо є
     if (todayItems.length > 0) {
@@ -174,7 +204,7 @@ const AnimeScheduleScreen = () => {
         type: 'dayHeader', 
         id: 'today-header',
         title: 'Сьогодні',
-        date: `${new Date().getDate()} ${['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'][new Date().getMonth()]}`,
+        date: todayDateString,
         isToday: true
       });
       data.push({ type: 'animeGrid', id: 'today-anime', data: todayItems });
@@ -191,8 +221,14 @@ const AnimeScheduleScreen = () => {
       data.push({ type: 'animeGrid', id: `anime-${index}`, data: group.data });
     });
     
+    console.log('flatListData length:', data.length);
     return data;
-  }, [animeList]);
+  }, [groupedData, todayDateString]);
+
+  // Мемоізована функція навігації
+  const handleAnimePress = useCallback((slug) => {
+    navigation.navigate('AnimeDetails', { slug });
+  }, [navigation]);
 
   // Мемоізовані функції рендерингу для кращої продуктивності
   const renderAnimeCard = useCallback(({ item, index }) => {
@@ -201,105 +237,128 @@ const AnimeScheduleScreen = () => {
       <CardWrapper style={{ marginRight: isLastInRow ? 0 : 12 }}>
         <AnimeColumnCard
           anime={item.anime}
-          onPress={() =>
-            navigation.navigate('AnimeDetails', { slug: item.anime.slug })
-          }
+          onPress={() => handleAnimePress(item.anime.slug)}
           cardWidth={CARD_WIDTH}
           imageWidth={CARD_WIDTH}
           imageHeight={165}
         />
       </CardWrapper>
     );
-  }, [navigation]);
+  }, [handleAnimePress]);
 
-  const renderFilters = useCallback(() => (
-    <FiltersContainer>
-      <SelectBox onPress={() => setModalVisible('year')}>
-        <SelectText>{year}</SelectText>
-      </SelectBox>
-      <SelectBox onPress={() => setModalVisible('season')}>
-        <SelectText>
-          {SEASONS.find((s) => s.value === season)?.label || 'Сезон'}
-        </SelectText>
-      </SelectBox>
-      <SelectBox onPress={() => setModalVisible('status')}>
-        <SelectText>
-          {status.length === 0
-            ? 'Статус'
-            : STATUSES.filter((s) => status.includes(s.value))
-                .map((s) => s.label)
-                .join(', ')}
-        </SelectText>
-      </SelectBox>
-      <SwitchRow>
-        <Label>Аніме у списку</Label>
-        <Switch value={onlyWatch} onValueChange={setOnlyWatch} />
-      </SwitchRow>
-      <ResetButton onPress={resetFilters}>
-        <ResetText>Очистити</ResetText>
-      </ResetButton>
-    </FiltersContainer>
-  ), [year, season, status, onlyWatch, resetFilters]);
+  const renderFilterButton = useCallback(() => (
+    <FilterButtonContainer>
+      <FilterButton onPress={handleFilterPress}>
+        <FontAwesome6 name="filter" size={18} color={theme.colors.gray} />
+        <FilterButtonText>Фільтр</FilterButtonText>
+      </FilterButton>
+    </FilterButtonContainer>
+  ), [handleFilterPress]);
 
-  const renderDayHeader = useCallback(({ title, date, isToday }) => (
-    <DayHeaderContainer style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <DayTitle>{title}</DayTitle>
+  const renderDayHeader = useCallback(({ title, date, isToday }) => {
+    if (!title) {
+      console.warn('renderDayHeader: no title provided');
+      return <View style={{ height: DAY_HEADER_HEIGHT }} />;
+    }
+    
+    return (
+      <DayHeaderContainer style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <DayTitle>{title}</DayTitle>
+        </View>
+        {date && (
+          <DayDate>
+            <DateText>{date}</DateText>
+          </DayDate>
+        )}
+        {isToday && <GreenDot />}
+      </DayHeaderContainer>
+    );
+  }, []);
+
+  // Оптимізований рендеринг сітки аніме без вкладених FlatList
+  const renderAnimeGrid = useCallback(({ data }) => {
+    if (!data || data.length === 0) {
+      console.warn('renderAnimeGrid: no data provided');
+      return <View style={{ paddingHorizontal: 12, height: 100 }} />;
+    }
+    
+    const rows = [];
+    for (let i = 0; i < data.length; i += numColumns) {
+      const rowItems = data.slice(i, i + numColumns);
+      const row = (
+        <View key={`row-${i}`} style={{ flexDirection: 'row', marginBottom: CARD_MARGIN }}>
+          {rowItems.map((item, index) => {
+            if (!item || !item.anime) {
+              console.warn('renderAnimeGrid: invalid item at index', i + index);
+              return null;
+            }
+            
+            const isLastInRow = (i + index + 1) % numColumns === 0;
+            return (
+              <CardWrapper key={`${item.anime.slug}-${i + index}`} style={{ marginRight: isLastInRow ? 0 : 12 }}>
+                <AnimeColumnCard
+                  anime={item.anime}
+                  onPress={() => handleAnimePress(item.anime.slug)}
+                  cardWidth={CARD_WIDTH}
+                  imageWidth={CARD_WIDTH}
+                  imageHeight={165}
+                />
+              </CardWrapper>
+            );
+          })}
+        </View>
+      );
+      rows.push(row);
+    }
+    
+    return (
+      <View style={{ paddingHorizontal: 12 }}>
+        {rows}
       </View>
-      {date && (
-        <DayDate>
-          <DateText>{date}</DateText>
-        </DayDate>
-      )}
-      {isToday && <GreenDot />}
-    </DayHeaderContainer>
-  ), []);
-
-  const renderAnimeGrid = useCallback(({ data }) => (
-    <View style={{ paddingHorizontal: 12 }}>
-      <FlatList
-        data={data}
-        keyExtractor={(item, index) => `${item.anime.slug}-${index}`}
-        renderItem={renderAnimeCard}
-        numColumns={numColumns}
-        scrollEnabled={false}
-        showsVerticalScrollIndicator={false}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={5}
-        windowSize={5}
-        initialNumToRender={3}
-      />
-    </View>
-  ), [renderAnimeCard]);
+    );
+  }, [handleAnimePress]);
 
   const renderItem = useCallback(({ item }) => {
+    if (!item) {
+      console.warn('renderItem: item is null or undefined');
+      return null;
+    }
+    
     switch (item.type) {
-      case 'filters':
-        return renderFilters();
+      case 'filterButton':
+        return renderFilterButton();
       case 'dayHeader':
         return renderDayHeader(item);
       case 'animeGrid':
         return renderAnimeGrid(item);
       default:
+        console.warn('renderItem: unknown item type:', item.type);
         return null;
     }
-  }, [renderFilters, renderDayHeader, renderAnimeGrid]);
+  }, [renderFilterButton, renderDayHeader, renderAnimeGrid]);
 
   // Оптимізований keyExtractor
   const keyExtractor = useCallback((item) => item.id, []);
 
-  // Оптимізований getItemLayout для кращої продуктивності
+  // Оптимізований getItemLayout з попередньо обчисленими висотами
   const getItemLayout = useCallback((data, index) => {
-    const item = data[index];
-    let height = 200; // базова висота
+    if (!data || !data[index]) {
+      return {
+        length: 100,
+        offset: 100 * index,
+        index,
+      };
+    }
     
-    if (item.type === 'filters') {
-      height = 200; // висота фільтрів
-    } else if (item.type === 'dayHeader') {
-      height = 60; // висота заголовка дня
+    const item = data[index];
+    let height = FILTER_BUTTON_HEIGHT; // базова висота для кнопки фільтрів
+    
+    if (item.type === 'dayHeader') {
+      height = DAY_HEADER_HEIGHT;
     } else if (item.type === 'animeGrid') {
       const rows = Math.ceil(item.data.length / numColumns);
-      height = rows * 200 + 20; // висота сітки аніме
+      height = rows * CARD_HEIGHT + (rows - 1) * CARD_MARGIN + 40; // збільшена висота сітки аніме
     }
     
     return {
@@ -343,72 +402,139 @@ const fetchSchedule = useCallback(async () => {
   }
 }, [season, year, status, onlyWatch]);
 
+// Мемоізовані колбеки для кращої продуктивності
+const handleFilterPress = useCallback(() => {
+  setTempYear(year);
+  setTempSeason(season);
+  setTempStatus(status);
+  setTempOnlyWatch(onlyWatch);
+  setFilterModalVisible(true);
+}, [year, season, status, onlyWatch]);
+
+const handleApplyFilters = useCallback(() => {
+  setYear(tempYear);
+  setSeason(tempSeason);
+  setStatus(tempStatus);
+  setOnlyWatch(tempOnlyWatch);
+  setFilterModalVisible(false);
+}, [tempYear, tempSeason, tempStatus, tempOnlyWatch]);
+
+const handleCloseModal = useCallback(() => {
+  setFilterModalVisible(false);
+}, []);
+
   useEffect(() => {
     fetchSchedule();
   }, [year, season, status, onlyWatch]);
 
   const resetFilters = useCallback(() => {
-    setYear(2025);
-    setSeason('summer');
-    setStatus(BASE_STATUSES);
-    setOnlyWatch(false);
-  }, []);
+    setTempYear(currentYear);
+    setTempSeason('summer');
+    setTempStatus(BASE_STATUSES);
+    setTempOnlyWatch(false);
+  }, [currentYear]);
 
   const onStatusChange = useCallback((value) => {
-    const isSelected = status.includes(value);
-    let newStatus = isSelected
-      ? status.filter((s) => s !== value)
-      : [...status, value];
-    if (newStatus.length === 0) return;
-    setStatus(newStatus);
-  }, [status]);
+    setTempStatus([value]);
+  }, []);
 
+  const RadioButton = React.memo(({ checked }) => (
+    <RadioButtonContainer checked={checked}>
+      {checked && <RadioButtonInner />}
+    </RadioButtonContainer>
+  ));
 
+  const renderFilterModal = useCallback(() => (
+    <Modal visible={filterModalVisible} transparent animationType="slide">
+      <ModalBackdrop>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Фільтри</ModalTitle>
+            <CloseButton onPress={handleCloseModal}>
+              <CloseButtonText>✕</CloseButtonText>
+            </CloseButton>
+          </ModalHeader>
+          
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Рік */}
+            <FilterSection>
+              <FilterSectionTitle>Рік</FilterSectionTitle>
+              <FilterOptions>
+                {YEARS.map((y) => (
+                  <FilterOption 
+                    key={y} 
+                    onPress={() => setTempYear(y)}
+                    isSelected={tempYear === y}
+                  >
+                    <RadioButton checked={tempYear === y} />
+                    <FilterOptionText isSelected={tempYear === y}>{y}</FilterOptionText>
+                  </FilterOption>
+                ))}
+              </FilterOptions>
+            </FilterSection>
 
-  const Checkbox = ({ checked }) => (
-  <CheckboxContainer>
-    {checked && <CheckboxInner />}
-  </CheckboxContainer>
-);
+            {/* Сезон */}
+            <FilterSection>
+              <FilterSectionTitle>Сезон</FilterSectionTitle>
+              <FilterOptions>
+                {SEASONS.map((s) => (
+                  <FilterOption 
+                    key={s.value} 
+                    onPress={() => setTempSeason(s.value)}
+                    isSelected={tempSeason === s.value}
+                  >
+                    <RadioButton checked={tempSeason === s.value} />
+                    <FilterOptionText isSelected={tempSeason === s.value}>{s.label}</FilterOptionText>
+                  </FilterOption>
+                ))}
+              </FilterOptions>
+            </FilterSection>
 
-const renderModal = (type, options, selectedValues, onSelect) => (
-  <Modal visible={modalVisible === type} transparent animationType="slide">
-    <ModalBackdrop>
-      <ModalContent>
-        <ScrollView>
-          {options.map((opt) => {
-            const isSelected = selectedValues.includes(opt.value);
-            return (
-              <ModalOption key={opt.value} onPress={() => onSelect(opt.value)}>
-                <ModalOptionRow>
-                  <Checkbox checked={isSelected} />
-                  <ModalText>{opt.label}</ModalText>
-                </ModalOptionRow>
-              </ModalOption>
-            );
-          })}
-        </ScrollView>
-        <ModalClose onPress={() => setModalVisible(null)}>
-          <ModalText>Закрити</ModalText>
-        </ModalClose>
-      </ModalContent>
-    </ModalBackdrop>
-  </Modal>
-);
+            {/* Статус */}
+            <FilterSection>
+              <FilterSectionTitle>Статус</FilterSectionTitle>
+              <FilterOptions>
+                {STATUSES.map((s) => {
+                  const isSelected = tempStatus.includes(s.value);
+                  return (
+                    <FilterOption 
+                      key={s.value} 
+                      onPress={() => onStatusChange(s.value)}
+                      isSelected={isSelected}
+                    >
+                      <RadioButton checked={isSelected} />
+                      <FilterOptionText isSelected={isSelected}>{s.label}</FilterOptionText>
+                    </FilterOption>
+                  );
+                })}
+              </FilterOptions>
+            </FilterSection>
 
+            {/* Аніме у списку */}
+            <FilterSection>
+              <SwitchRow>
+                <Label>Аніме у списку</Label>
+                <Switch value={tempOnlyWatch} onValueChange={setTempOnlyWatch} />
+              </SwitchRow>
+            </FilterSection>
+          </ScrollView>
+
+          <ModalActions>
+            <ResetButton onPress={resetFilters}>
+              <ResetText>Очистити</ResetText>
+            </ResetButton>
+            <ApplyButton onPress={handleApplyFilters}>
+              <ApplyText>Застосувати</ApplyText>
+            </ApplyButton>
+          </ModalActions>
+        </ModalContent>
+      </ModalBackdrop>
+    </Modal>
+  ), [filterModalVisible, tempYear, tempSeason, tempStatus, tempOnlyWatch, YEARS, SEASONS, STATUSES, onStatusChange, resetFilters, handleApplyFilters, handleCloseModal]);
 
   return (
-    <FlatListContainer style={{ paddingTop: insets.top }}>
-      <HeaderTitleBar 
-        title="Календар" 
-        style={{
-          position: 'absolute',
-          top: insets.top,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-        }}
-      />
+    <FlatListContainer>
+      <HeaderTitleBar title="Календар" />
       
       {loading ? (
         <Center>
@@ -425,36 +551,25 @@ const renderModal = (type, options, selectedValues, onSelect) => (
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ 
-            paddingBottom: insets.bottom,
-            paddingTop: 76, // Висота хедера + відступ
+            paddingTop: insets.top + 56 + 20,
+            paddingBottom: 20 + insets.bottom,
           }}
           removeClippedSubviews={true}
-          maxToRenderPerBatch={5}
-          windowSize={5}
-          initialNumToRender={3}
-          getItemLayout={getItemLayout}
-          updateCellsBatchingPeriod={50}
-          onEndReachedThreshold={0.5}
+          maxToRenderPerBatch={3}
+          windowSize={3}
+          initialNumToRender={2}
+          updateCellsBatchingPeriod={100}
+          onEndReachedThreshold={0.1}
           maintainVisibleContentPosition={{
             minIndexForVisible: 0,
           }}
+          disableVirtualization={false}
+          legacyImplementation={false}
+          scrollEventThrottle={16}
         />
       )}
 
-      {renderModal(
-        'year',
-        YEARS.map((y) => ({ label: `${y}`, value: y })),
-        [year],
-        (val) => {
-          setYear(val);
-          setModalVisible(null);
-        }
-      )}
-      {renderModal('season', SEASONS, [season], (val) => {
-        setSeason(val);
-        setModalVisible(null);
-      })}
-      {renderModal('status', STATUSES, status, onStatusChange)}
+      {renderFilterModal()}
     </FlatListContainer>
   );
 };
@@ -463,25 +578,6 @@ const FlatListContainer = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
   position: relative;
-`;
-
-const FiltersContainer = styled.View`
-  margin: 0px 12px;
-  gap: 12px;
-`;
-
-const SelectBox = styled.TouchableOpacity`
-  background-color: ${({ theme }) => theme.colors.card};
-  border: 1px;
-  border-color: ${({ theme }) => theme.colors.border};
-  border-radius: 12px;
-  padding: 14px;
-`;
-
-const SelectText = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 14px;
-  font-weight: 600;
 `;
 
 const SwitchRow = styled.View`
@@ -556,7 +652,7 @@ const DateText = styled.Text`
 
 
 const CardWrapper = styled.View`
-  margin-bottom: 25px;
+  margin-bottom: 15px;
 `;
 
 const ModalBackdrop = styled.View`
@@ -573,47 +669,132 @@ const ModalContent = styled.View`
   max-height: 80%;
 `;
 
-const ModalOption = styled.Pressable`
-  padding: 10px 0;
-  border-bottom-width: 1px;
-  border-bottom-color: ${({ theme }) => theme.colors.border};
-`;
 
-const ModalText = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-weight: 500;
-  font-size: 14px;
-`;
 
-const ModalClose = styled.TouchableOpacity`
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  padding: 14px 12px;
-  border-radius: 999px;
-  margin-top: 12px;
-  align-items: center;
-`;
-
-const ModalOptionRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-`;
-
-const CheckboxContainer = styled.View`
+const RadioButtonContainer = styled.View`
   width: 18px;
   height: 18px;
   border-radius: 999px;
   border-width: 2px;
-  border-color: ${({ theme }) => theme.colors.borderInput};
+  border-color: ${({ theme, checked }) => 
+    checked ? theme.colors.primary : theme.colors.border};
+  justify-content: center;
+  align-items: center;
+  background-color: ${({ theme, checked }) => 
+    checked ? `${theme.colors.primary}20` : 'transparent'};
+`;
+
+const RadioButtonInner = styled.View`
+  width: 8px;
+  height: 8px;
+  background-color: ${({ theme }) => theme.colors.primary};
+  border-radius: 999px;
+`;
+
+const FilterButtonContainer = styled.View`
+  margin: 0px 12px;
+  margin-bottom: 12px;
+`;
+
+const FilterButton = styled.TouchableOpacity`
+  padding: 8px 16px;
+  height: 50px;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
+  border-radius: 999px;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const FilterButtonText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-weight: bold;
+`;
+
+const FilterIcon = styled.Text`
+  font-size: 16px;
+`;
+
+const ModalHeader = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom-width: 1px;
+  border-bottom-color: ${({ theme }) => theme.colors.border};
+`;
+
+const ModalTitle = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 18px;
+  font-weight: bold;
+`;
+
+const CloseButton = styled.TouchableOpacity`
+  width: 30px;
+  height: 30px;
   justify-content: center;
   align-items: center;
 `;
 
-const CheckboxInner = styled.View`
-  width: 10px;
-  height: 10px;
+const CloseButtonText = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 18px;
+  font-weight: bold;
+`;
+
+const FilterSection = styled.View`
+  margin-bottom: 20px;
+`;
+
+const FilterSectionTitle = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+`;
+
+const FilterOptions = styled.View`
+  gap: 8px;
+`;
+
+const FilterOption = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  padding: 12px;
+  background-color: transparent;
+  border-radius: 8px;
+  gap: 12px;
+`;
+
+const FilterOptionText = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 14px;
+  font-weight: 500;
+`;
+
+const ModalActions = styled.View`
+  flex-direction: row;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top-width: 1px;
+  border-top-color: ${({ theme }) => theme.colors.border};
+`;
+
+const ApplyButton = styled.TouchableOpacity`
+  flex: 1;
   background-color: ${({ theme }) => theme.colors.primary};
-  border-radius: 999px;
+  padding: 14px 12px;
+  border-radius: 12px;
+  align-items: center;
+`;
+
+const ApplyText = styled.Text`
+  color: ${({ theme }) => theme.colors.background};
+  font-weight: bold;
 `;
 
 

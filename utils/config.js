@@ -1,12 +1,9 @@
-// Конфігурація додатку
-// Для продакшену використовуйте змінні середовища
-
 export const CONFIG = {
   // Supabase налаштування
   SUPABASE: {
-    URL: process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co',
-    ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key-here',
-    SERVICE_ROLE_KEY: process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || 'your-service-role-key-here',
+    URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    SERVICE_ROLE_KEY: process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY,
   },
   
   // Hikka налаштування
@@ -19,6 +16,8 @@ export const CONFIG = {
   // API налаштування
   API: {
     HIKKA_BASE_URL: 'https://api.hikka.io',
+    TMDB_BASE_URL: 'https://api.themoviedb.org/3',
+    TMDB_API_KEY: process.env.EXPO_PUBLIC_TMDB_API_KEY,
     TIMEOUT: 10000, // 10 секунд
   },
   
@@ -37,7 +36,8 @@ export const validateConfig = () => {
     'SUPABASE.ANON_KEY',
     'HIKKA.CLIENT_ID',
     'HIKKA.CLIENT_SECRET',
-    'HIKKA.REDIRECT_URI'
+    'HIKKA.REDIRECT_URI',
+    'API.TMDB_API_KEY'
   ];
 
   const missingFields = requiredFields.filter(field => {

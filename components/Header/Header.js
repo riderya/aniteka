@@ -21,7 +21,7 @@ const Header = () => {
 
   return (
       <FixedContainer topInset={insets.top + 10}>
-        <Touchable onPress={() => (navigation.getParent ? navigation.getParent() : navigation).navigate('Search')} activeOpacity={0.7}>
+        <Touchable onPress={() => navigation.navigate('Search')} activeOpacity={0.7}>
           {Platform.OS === 'ios' ? (
             <BlurButton orientation={orientation} experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
               <IconText name="search1" />
@@ -35,7 +35,7 @@ const Header = () => {
           )}
         </Touchable>
 
-        <TouchableOpacity onPress={() => (navigation.getParent ? navigation.getParent() : navigation).navigate('Settings')} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')} activeOpacity={0.7}>
           {Platform.OS === 'ios' ? (
             <BlurIconButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
               <IconText name="setting" />
@@ -47,7 +47,7 @@ const Header = () => {
           )}
         </TouchableOpacity>
 
-                 <TouchableOpacity onPress={() => (navigation.getParent ? navigation.getParent() : navigation).navigate('Notifications')} activeOpacity={0.7}>
+                 <TouchableOpacity onPress={() => navigation.navigate('Notifications')} activeOpacity={0.7}>
            {Platform.OS === 'ios' ? (
             <BlurIconButton experimentalBlurMethod="dimezisBlurView" intensity={100} tint={isDark ? 'dark' : 'light'}>
              <IconTextNotifications name="notifications-outline" />

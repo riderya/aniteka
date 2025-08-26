@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import AnilistBanner from '../BackgroundImg/AnilistBanner';
 import KitsuBanner from '../BackgroundImg/KitsuBanner';
+import TMDBBanner from '../BackgroundImg/TMDBBanner';
 import GradientBlock from '../GradientBlock/GradientBlock';
 import StatusDropdown from './StatusDropdown';
 import LikeAnimeButton from './LikeAnimeButton';
@@ -33,7 +34,9 @@ const TopDetail = ({ anime }) => {
   const [isInfoModalVisible, setInfoModalVisible] = useState(false);
   const [isStudiosModalVisible, setStudiosModalVisible] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [tmdbBannerLoaded, setTmdbBannerLoaded] = useState(null);
   const [anilistBannerLoaded, setAnilistBannerLoaded] = useState(null);
+  const [kitsuBannerLoaded, setKitsuBannerLoaded] = useState(null);
   
   const [galleryVisible, setGalleryVisible] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -127,9 +130,10 @@ const TopDetail = ({ anime }) => {
     }}
     activeOpacity={0.9}
   >
-    <AnilistBanner
-      mal_id={anime.mal_id}
-      type="ANIME"
+    <TMDBBanner
+      tmdbId={anime.tmdb_id}
+      title={anime.title_en || anime.title_ua || anime.title_ja}
+      mediaType={anime.media_type === 'tv' ? 'tv' : 'movie'}
       onLoaded={(url) => {
         if (url) {
           setBannerUrls(prev => {
@@ -140,12 +144,32 @@ const TopDetail = ({ anime }) => {
             return prev;
           });
         } else {
-          setAnilistBannerLoaded(false);
+          setTmdbBannerLoaded(false);
         }
       }}
     />
     
-    {anilistBannerLoaded === false && (
+    {tmdbBannerLoaded === false && (
+      <AnilistBanner
+        mal_id={anime.mal_id}
+        type="ANIME"
+        onLoaded={(url) => {
+          if (url) {
+            setBannerUrls(prev => {
+              // Перевіряємо, чи URL вже не додано
+              if (!prev.includes(url)) {
+                return [...prev, url];
+              }
+              return prev;
+            });
+          } else {
+            setAnilistBannerLoaded(false);
+          }
+        }}
+      />
+    )}
+    
+    {tmdbBannerLoaded === false && anilistBannerLoaded === false && (
       <KitsuBanner
         slug={anime.slug}
         onLoaded={(url) => {

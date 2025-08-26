@@ -134,7 +134,7 @@ const AnimeCommentsDetailsScreen = () => {
         if (ref) {
           try {
             const token = await SecureStore.getItemAsync('hikka_token');
-            const response = await axios.get(`https://api.hikka.io/user/${ref}`, {
+            const response = await axios.get('https://api.hikka.io/user/me', {
               headers: { auth: token }
             });
             setCurrentUser(response.data);

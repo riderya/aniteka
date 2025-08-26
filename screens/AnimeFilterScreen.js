@@ -317,6 +317,7 @@ export default function AnimeFilterScreen() {
           <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
             <HeaderTitleBar 
               title="Фільтр" 
+              onBack={() => setShowResults(false)}
               rightButton={
                 <BackButton onPress={() => setShowResults(false)}>
                   <BackButtonText>Змінити</BackButtonText>
