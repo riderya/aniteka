@@ -17,14 +17,29 @@ const CollectionCard = React.memo(({ item, compact = false, cardWidth: customCar
   const imageHeight = cardWidth * 0.6;
 
   const { animeList, first, second, moreCount } = useMemo(() => {
-    const list = item.collection?.map(col => col.content).filter(Boolean) || [];
+    // Перевіряємо різні можливі структури даних
+    let list = [];
+    
+    if (item.collection && Array.isArray(item.collection)) {
+      // Якщо item.collection - це масив об'єктів з content
+      if (item.collection[0] && item.collection[0].content) {
+        list = item.collection.map(col => col.content).filter(Boolean);
+      } else {
+        // Якщо item.collection - це масив об'єктів без content
+        list = item.collection.filter(Boolean);
+      }
+    }
+    
+    // Використовуємо entries для загальної кількості, якщо доступно
+    const totalCount = item.entries || list.length;
+    
     return {
       animeList: list,
       first: list[0],
       second: list[1],
-      moreCount: list.length - 2
+      moreCount: totalCount
     };
-  }, [item.collection]);
+  }, [item.collection, item.entries]);
 
   const handlePress = useMemo(() => () => {
     navigation.navigate('CollectionDetailScreen', { reference: item.reference });
@@ -57,14 +72,14 @@ const CollectionCard = React.memo(({ item, compact = false, cardWidth: customCar
 
         <CardWrapper style={{ paddingTop: imageHeight }}>
           <AnimeStack>
-            {first && (
+            {first && first.image && (
               <FirstImage 
                 source={{ uri: first.image }} 
                 style={{ height: imageHeight }} 
                 resizeMode="cover"
               />
             )}
-            {second && (
+            {second && second.image && (
               <SecondImage 
                 source={{ uri: second.image }} 
                 style={{ height: imageHeight }} 

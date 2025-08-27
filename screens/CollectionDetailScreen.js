@@ -839,7 +839,7 @@ const AuthorContainer = styled.TouchableOpacity`
   border-radius: 16px;
   background-color: ${({ theme }) => theme.colors.card};
   border: 1px;
-  border-color: ${({ theme }) => theme.colors.card};
+  border-color: ${({ theme }) => theme.colors.border};
 `;
 
 const AuthorAvatar = styled.Image`

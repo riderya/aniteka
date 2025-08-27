@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components/native';
 import axios from 'axios';
+import { useRoute } from '@react-navigation/native';
 import AnimeFilters from '../components/AnimeFilter/FilterPanel';
 import AnimeResults from '../components/AnimeFilter/AnimeResults';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
@@ -49,6 +50,7 @@ const BackButtonText = styled.Text`
 `;
 
 export default function AnimeFilterScreen() {
+  const route = useRoute();
   const [allGenres, setAllGenres] = useState([]);
   const [loadingGenres, setLoadingGenres] = useState(true);
   const { theme, isDark } = useTheme();
@@ -57,7 +59,7 @@ export default function AnimeFilterScreen() {
   const [tokenReady, setTokenReady] = useState(false);
 
   const [filters, setFilters] = useState({
-    selectedGenres: [],
+    selectedGenres: route.params?.initialGenre ? [route.params.initialGenre] : [],
     selectedMediaTypes: [],
     selectedStudios: [],
     selectedSources: [],
@@ -118,6 +120,17 @@ export default function AnimeFilterScreen() {
     };
     fetchGenres();
   }, []);
+
+  // Автоматичне застосування фільтра, якщо передано початковий жанр
+  useEffect(() => {
+    if (route.params?.initialGenre && tokenReady && authToken && !loadingGenres) {
+      // Невелика затримка, щоб жанри встигли завантажитися
+      const timer = setTimeout(() => {
+        applyFilters();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [route.params?.initialGenre, tokenReady, authToken, applyFilters, loadingGenres]);
 
   const toggleOption = (key) => (slug) => {
     setFilters((prev) => {
@@ -249,11 +262,11 @@ export default function AnimeFilterScreen() {
     fetchAnimeByFilters();
   }, [page, fetchAnimeByFilters, tokenReady]);
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     if (!tokenReady || !authToken) return;
     resetPage();
     fetchAnimeByFilters(true);
-  };
+  }, [tokenReady, authToken, fetchAnimeByFilters]);
 
   const loadMore = () => {
     if (loadingAnime || !hasMore) return;
@@ -262,7 +275,7 @@ export default function AnimeFilterScreen() {
 
   const resetFilters = () => {
     setFilters({
-      selectedGenres: [],
+      selectedGenres: route.params?.initialGenre ? [route.params.initialGenre] : [],
       selectedMediaTypes: [],
       selectedStudios: [],
       selectedSources: [],
@@ -271,7 +284,7 @@ export default function AnimeFilterScreen() {
       selectedRatings: [],
       yearFrom: null,
       yearTo: null,
-      selectedSort: null,
+      selectedSort: 'score:desc',
     });
     setAnimeList([]);
     setShowResults(false);
