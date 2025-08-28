@@ -13,7 +13,7 @@ import AnimeCharactersScreen from '../screens/AnimeInfo/AnimeCharactersScreen';
 import AnimeStaffScreen from '../screens/AnimeInfo/AnimeStaffScreen';
 import AnimeCharacterDetailsScreen from '../screens/AnimeCharacterDetailsScreen';
 import AnimePeopleDetailsScreen from '../screens/AnimePeopleDetailsScreen';
-import AnimeCommentsDetailsScreen from '../screens/AnimeCommentsDetailsScreen';
+import CommentsDetailsScreen from '../screens/CommentsDetailsScreen';
 import CompanyDetailScreen from '../screens/CompanyDetailScreen';
 import AnimeFilterScreen from '../screens/AnimeFilterScreen';
 import AnimeScheduleScreen from '../screens/AnimeScheduleScreen';
@@ -26,6 +26,8 @@ import UserProfileScreen from '../screens/UserProfileScreen';
 
 import UserInventoryScreen from '../components/Shop/UserInventoryScreen';
 import ShopScreen from '../components/Shop/ShopScreen';
+import CommentRepliesScreen from '../screens/CommentRepliesScreen';
+import AnimeFranchiseScreen from '../screens/AnimeFranchiseScreen';
 
 
 const RootStack = createStackNavigator();
@@ -62,7 +64,7 @@ export default function RootNavigator() {
       <RootStack.Screen name="AnimeStaffScreen" component={AnimeStaffScreen} />
       <RootStack.Screen name="AnimeCharacterDetailsScreen" component={AnimeCharacterDetailsScreen} />
       <RootStack.Screen name="AnimePeopleDetailsScreen" component={AnimePeopleDetailsScreen} />
-      <RootStack.Screen name="AnimeCommentsDetailsScreen" component={AnimeCommentsDetailsScreen} />
+      <RootStack.Screen name="CommentsDetailsScreen" component={CommentsDetailsScreen} />
       <RootStack.Screen name="CompanyDetailScreen" component={CompanyDetailScreen} />
       <RootStack.Screen name="AnimeFilterScreen" component={AnimeFilterScreen} />
       <RootStack.Screen name="AnimeScheduleScreen" component={AnimeScheduleScreen} />
@@ -75,6 +77,8 @@ export default function RootNavigator() {
 
        <RootStack.Screen name="Inventory" component={UserInventoryScreen} />
        <RootStack.Screen name="Shop" component={ShopScreen} />
+       <RootStack.Screen name="CommentRepliesScreen" component={CommentRepliesScreen} />
+       <RootStack.Screen name="AnimeFranchise" component={AnimeFranchiseScreen} />
 
     </RootStack.Navigator>
   );

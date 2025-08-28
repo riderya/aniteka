@@ -3,13 +3,15 @@ import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
 import Markdown from '../Custom/MarkdownText';
-import { View, Modal, TouchableOpacity, Pressable, Alert, Text, ActivityIndicator } from 'react-native';
+import { View, Modal, TouchableOpacity, Pressable, Alert, Text } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
+import { processCommentText } from '../../utils/textUtils';
+
 
 
 dayjs.extend(isToday);
@@ -52,6 +54,31 @@ const ReplyText = styled.Text`
   color: ${({ theme }) => theme.colors.gray}; font-weight: bold;
 `;
 
+const ReplyIndicatorContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin-top: 8px;
+  margin-left: 62px; /* Відступ під аватар */
+`;
+
+const ReplyLine = styled.View`
+  width: 2px;
+  height: 20px;
+  background-color: ${({ theme }) => theme.colors.border};
+  margin-right: 8px;
+`;
+
+const ReplyIndicatorText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+  font-weight: 500;
+`;
+
+const ReplyIndicatorButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+`;
+
 const OptimisticIndicator = styled.View`
   background-color: ${({ theme }) => theme.colors.primary}20;
   border: 1px solid ${({ theme }) => theme.colors.primary};
@@ -84,116 +111,6 @@ const ModalButtonText = styled.Text`
   color: ${({ theme }) => theme.colors.gray}; font-size: 16px; font-weight: 500;
 `;
 
-// === Внутрішній компонент SpoilerText ===
-const SpoilerText = ({ text, theme }) => {
-  const [revealed, setRevealed] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const toggleSpoiler = async () => {
-    if (!revealed) {
-      setLoading(true);
-      // Імітуємо завантаження для кращого UX
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setLoading(false);
-    }
-    setRevealed(prev => !prev);
-  };
-
-  return (
-    <TouchableOpacity onPress={toggleSpoiler} activeOpacity={0.8} style={{ width: '100%', marginVertical: 4 }}>
-      {revealed ? (
-        <RevealedContainer theme={theme}>
-          <Markdown 
-            style={{
-              body: {
-                color: theme.colors.text,
-                fontSize: 14,
-                lineHeight: 20,
-              },
-              link: {
-                color: theme.colors.primary,
-              },
-            }}
-          >
-            {text}
-          </Markdown>
-        </RevealedContainer>
-      ) : (
-        <SpoilerContainer theme={theme}>
-          <HiddenText>{text}</HiddenText>
-          <SpoilerOverlay theme={theme}>
-            <SpoilerMessage>
-              {loading ? (
-                <>
-                  <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginBottom: 8 }} />
-                  <SpoilerMessageLine theme={theme}>Завантаження...</SpoilerMessageLine>
-                </>
-              ) : (
-                <>
-                  <SpoilerMessageLine theme={theme}>Цей текст може містити спойлер.</SpoilerMessageLine>
-                  <SpoilerMessageLineBold theme={theme}>Натисніть, щоб прочитати</SpoilerMessageLineBold>
-                </>
-              )}
-            </SpoilerMessage>
-          </SpoilerOverlay>
-        </SpoilerContainer>
-      )}
-    </TouchableOpacity>
-  );
-};
-
-const SpoilerContainer = styled.View`
-  position: relative;
-  padding: 8px;
-  border-radius: 6px;
-  overflow: hidden;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-`;
-
-const HiddenText = styled(Text)`
-  font-size: 14px;
-  line-height: 20px;
-  color: transparent;
-`;
-
-const SpoilerOverlay = styled.View`
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  justify-content: center;
-  align-items: center;
-  border-radius: 6px;
-`;
-
-const SpoilerMessage = styled.View`
-  align-items: center;
-  padding: 8px;
-`;
-
-const SpoilerMessageLine = styled(Text)`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 12px;
-  line-height: 18px;
-  text-align: center;
-  font-style: italic;
-`;
-
-const SpoilerMessageLineBold = styled(Text)`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 12px;
-  line-height: 18px;
-  text-align: center;
-  font-weight: bold;
-`;
-
-const RevealedContainer = styled.View`
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  padding: 8px;
-  border-radius: 6px;
-`;
 
 // === Основний CommentCard ===
 const CommentCard = ({
@@ -201,20 +118,62 @@ const CommentCard = ({
   index,
   theme,
   comment,
-  spoilerOpen,
-  setSpoilerOpen,
-  parseTextWithSpoilers,
   onDelete,
   navigation,
+  content_type = 'anime',
+  slug,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [voteScore, setVoteScore] = useState(item.vote_score);
   const [userVote, setUserVote] = useState(0);
   const [currentUserRef, setCurrentUserRef] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [textTooLong, setTextTooLong] = useState(false);
+  const [repliesCount, setRepliesCount] = useState(0);
 
   const commentSlug = item.slug || item.reference;
+  const fullText = item.text || '';
+
+  const maxLines = 5;
+  const shouldShowToggle = fullText.length > 200 && !isExpanded; // 5 рядків * ~40 символів
+
+  // Функція для перевірки наявності спойлерів у тексті
+  const hasSpoilers = (text) => {
+    const spoilerRegex = /:::spoiler\s*\n?([\s\S]*?)\n?:::/g;
+    return spoilerRegex.test(text);
+  };
+
+  // Функція для створення скороченого тексту з обробкою спойлерів
+  const getTruncatedText = (text, maxLength = 200) => {
+    // Спочатку очищуємо текст
+    const cleanedText = processCommentText(text);
+    
+    if (cleanedText.length <= maxLength) return cleanedText;
+    
+    const truncated = cleanedText.substring(0, maxLength);
+    const spoilerRegex = /:::spoiler\s*\n?([\s\S]*?)\n?:::/g;
+    
+    // Перевіряємо, чи є спойлери в повному тексті
+    const hasSpoilersInFull = hasSpoilers(cleanedText);
+    
+    // Замінюємо спойлери на [спойлер] в скороченому тексті
+    let processedText = truncated.replace(spoilerRegex, '[спойлер]');
+    
+    // Якщо в повному тексті є спойлери, але в скороченому їх немає (обрізалися),
+    // або якщо скорочений текст закінчується на частині спойлера
+    if (hasSpoilersInFull && !processedText.includes('[спойлер]')) {
+      // Перевіряємо, чи скорочений текст закінчується на частині спойлера
+      const lastSpoilerStart = cleanedText.lastIndexOf(':::spoiler', maxLength);
+      if (lastSpoilerStart !== -1 && lastSpoilerStart < maxLength) {
+        // Обрізаємо до початку спойлера і додаємо [спойлер]
+        processedText = truncated.substring(0, lastSpoilerStart) + '[спойлер]';
+      } else {
+        // Якщо спойлер повністю за межами скороченого тексту, додаємо [спойлер] в кінець
+        processedText += ' [спойлер]';
+      }
+    }
+    
+    return processedText + '...';
+  };
 
   useEffect(() => {
     (async () => {
@@ -237,8 +196,27 @@ const CommentCard = ({
         }
       }
     };
+
+    const fetchRepliesCount = async () => {
+      if (!commentSlug) return;
+      try {
+        const res = await axios.get(`https://api.hikka.io/comments/thread/${commentSlug}`);
+        setRepliesCount(res.data.replies?.length || 0);
+      } catch (e) {
+        // Якщо немає відповідей або API не підтримує відповіді, встановлюємо 0
+        if (e.response?.status === 404 || e.response?.status === 400) {
+          setRepliesCount(0);
+        } else {
+          console.error('Помилка при отриманні кількості відповідей:', e);
+          setRepliesCount(0);
+        }
+      }
+    };
+
     fetchVote();
-  }, []);
+    fetchRepliesCount();
+
+  }, [fullText, commentSlug, comment]);
 
   const handleVote = async (score) => {
     // Не дозволяємо голосувати за оптимістичні коментарі
@@ -350,7 +328,9 @@ const CommentCard = ({
   };
 
   const handleCopy = () => {
-    Clipboard.setString(item.text || '');
+    // Очищуємо текст перед копіюванням
+    const cleanedText = processCommentText(item.text || '');
+    Clipboard.setString(cleanedText);
     Toast.show({
       type: 'success',
       text1: 'Скопійовано',
@@ -372,45 +352,10 @@ const CommentCard = ({
     }
   };
 
-  const fullText = item.text || '';
-  const parsed = parseTextWithSpoilers(fullText);
-
-  // Обробник для визначення чи текст довший за 4 рядки
-  const onTextLayout = (e) => {
-    if (e.nativeEvent.lines.length > 4) {
-      setTextTooLong(true);
-    } else {
-      setTextTooLong(false);
-    }
-  };
-
-  const renderMarkdownWithSpoilers = () => {
-    // Простіша реалізація - показуємо весь текст як один блок
-    if (!isExpanded) {
-      return (
-        <>
-          <Text
-            onTextLayout={onTextLayout}
-            numberOfLines={4}
-            ellipsizeMode="tail"
-            style={{
-              color: theme.colors.text,
-              fontSize: 14,
-              lineHeight: 18,
-              marginVertical: 4,
-            }}
-          >
-            {fullText}
-          </Text>
-
-          {textTooLong && (
-            <TouchableOpacity onPress={() => setIsExpanded(true)}>
-              <ShowText style={{ marginTop: 4 }}>Показати більше...</ShowText>
-            </TouchableOpacity>
-          )}
-        </>
-      );
-    } else {
+    const renderMarkdownWithSpoilers = () => {
+      // Очищуємо текст перед відображенням
+      const cleanedFullText = processCommentText(fullText);
+      
       return (
         <>
           <Markdown
@@ -421,89 +366,139 @@ const CommentCard = ({
                 lineHeight: 18,
               },
               link: { color: theme.colors.primary },
+              paragraph: {
+                marginVertical: 0,
+              },
             }}
+            numberOfLines={isExpanded ? undefined : maxLines}
+            ellipsizeMode="tail"
+            hideSpoilers={!isExpanded}
           >
-            {fullText}
+            {isExpanded ? cleanedFullText : getTruncatedText(cleanedFullText)}
           </Markdown>
-          <TouchableOpacity onPress={() => setIsExpanded(false)}>
-            <ShowText style={{ marginTop: 4 }}>Згорнути</ShowText>
-          </TouchableOpacity>
+
+          {(shouldShowToggle || isExpanded) && (
+            <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
+              <ShowText style={{ marginTop: 4 }}>
+                {isExpanded ? 'Згорнути' : 'Показати більше...'}
+              </ShowText>
+            </TouchableOpacity>
+          )}
         </>
       );
-    }
-  };
+    };
 
   return (
     <>
       <TouchableOpacity 
-        onPress={handleLongPress} 
+        onLongPress={handleLongPress} 
         activeOpacity={item.is_optimistic ? 1 : 0.9}
         disabled={item.is_optimistic}
       >
         <CommentCardWrapper style={{ opacity: item.is_optimistic ? 0.8 : 1 }}>
-          <RowInfo>
-            <TouchableOpacity onPress={handleUserPress} activeOpacity={0.7}>
-              <Avatar
-                source={{
-                  uri:
-                    item.author?.avatar && item.author.avatar !== 'string'
-                      ? item.author.avatar
-                      : 'https://i.ibb.co/THsRK3W/avatar.jpg',
-                }}
-              />
-            </TouchableOpacity>
-            <CommentBody>
+                      <RowInfo>
               <TouchableOpacity onPress={handleUserPress} activeOpacity={0.7}>
-                <RowInfoTitle>
-                  <Username>{item.author?.username || 'Користувач'}</Username>
-                  <DateText>{formattedDate}</DateText>
-                  {item.is_optimistic && (
-                    <OptimisticIndicator>
-                      <ActivityIndicator size="small" color={theme.colors.primary} />
-                      <OptimisticText>Відправляється...</OptimisticText>
-                    </OptimisticIndicator>
-                  )}
-                </RowInfoTitle>
+                <Avatar
+                  source={{
+                    uri:
+                      item.author?.avatar && item.author.avatar !== 'string'
+                        ? item.author.avatar
+                        : 'https://i.ibb.co/THsRK3W/avatar.jpg',
+                  }}
+                />
               </TouchableOpacity>
+              <CommentBody>
+                <TouchableOpacity onPress={handleUserPress} activeOpacity={0.7}>
+                                    <RowInfoTitle>
+                                         <Username>{item.author?.username || 'Користувач'}</Username>
+                     <DateText>{formattedDate}</DateText>
+                  </RowInfoTitle>
+                </TouchableOpacity>
 
               {renderMarkdownWithSpoilers()}
 
-              <RowSpaceBeetwin>
-                <ReplyText>Відповісти</ReplyText>
-                <RowLike>
-                  <Pressable
-                    onPress={() => handleVote(-1)}
-                    style={{ 
-                      opacity: item.is_optimistic ? 0.3 : (userVote === -1 ? 1 : 0.5) 
+                                             <RowSpaceBeetwin>
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      if (navigation) {
+                        navigation.replace('CommentRepliesScreen', {
+                          parentComment: item,
+                          contentType: content_type,
+                          slug: slug,
+                          title: 'Відповіді на коментар'
+                        });
+                      }
                     }}
-                    disabled={item.is_optimistic}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons
-                      name="chevron-down"
-                      size={22}
-                      color={userVote === -1 ? theme.colors.error : theme.colors.gray}
-                    />
-                  </Pressable>
+                    <ReplyText>Відповісти</ReplyText>
+                  </TouchableOpacity>
+                  <RowLike>
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation(); // Зупиняємо поширення події
+                        handleVote(-1);
+                      }}
+                      style={{ 
+                        opacity: item.is_optimistic ? 0.3 : (userVote === -1 ? 1 : 0.5) 
+                      }}
+                      disabled={item.is_optimistic}
+                    >
+                      <Ionicons
+                        name="chevron-down"
+                        size={22}
+                        color={userVote === -1 ? theme.colors.error : theme.colors.gray}
+                      />
+                    </Pressable>
 
-                  <LikeText vote={voteScore}>{voteScore}</LikeText>
+                    <LikeText vote={voteScore}>{voteScore}</LikeText>
 
-                  <Pressable
-                    onPress={() => handleVote(1)}
-                    style={{ 
-                      opacity: item.is_optimistic ? 0.3 : (userVote === 1 ? 1 : 0.5) 
-                    }}
-                    disabled={item.is_optimistic}
-                  >
-                    <Ionicons
-                      name="chevron-up"
-                      size={22}
-                      color={userVote === 1 ? theme.colors.success : theme.colors.gray}
-                    />
-                  </Pressable>
-                </RowLike>
-              </RowSpaceBeetwin>
-            </CommentBody>
-          </RowInfo>
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation(); // Зупиняємо поширення події
+                        handleVote(1);
+                      }}
+                      style={{ 
+                        opacity: item.is_optimistic ? 0.3 : (userVote === 1 ? 1 : 0.5) 
+                      }}
+                      disabled={item.is_optimistic}
+                    >
+                      <Ionicons
+                        name="chevron-up"
+                        size={22}
+                        color={userVote === 1 ? theme.colors.success : theme.colors.gray}
+                      />
+                    </Pressable>
+                  </RowLike>
+                </RowSpaceBeetwin>
+              </CommentBody>
+            </RowInfo>
+            
+            {/* Індикатор відповідей */}
+            {repliesCount > 0 && (
+              <ReplyIndicatorContainer>
+                <ReplyLine />
+                <ReplyIndicatorButton
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    if (navigation) {
+                      navigation.replace('CommentRepliesScreen', {
+                        parentComment: item,
+                        contentType: content_type,
+                        slug: slug,
+                        title: 'Відповіді на коментар'
+                      });
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <ReplyIndicatorText>
+                    Показати {repliesCount} {repliesCount === 1 ? 'відповідь' : repliesCount < 5 ? 'відповіді' : 'відповідей'} {'>'}
+                  </ReplyIndicatorText>
+                </ReplyIndicatorButton>
+              </ReplyIndicatorContainer>
+            )}
         </CommentCardWrapper>
       </TouchableOpacity>
 

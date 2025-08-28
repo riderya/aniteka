@@ -125,7 +125,7 @@ const AnimeAllLatestComments = () => {
         renderItem={renderComment}
         keyExtractor={keyExtractor}
         contentContainerStyle={{
-          paddingTop: 100,
+          paddingTop: insets.top + 56 + 30,
           paddingBottom: 20 + insets.bottom,
           paddingHorizontal: 12,
         }}

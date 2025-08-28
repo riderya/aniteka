@@ -73,7 +73,7 @@ const AnimeSendButton = ({ slug, title, commentsCount }) => {
   return (
     <SendContainer insets={insets}>
       <TopBar onPress={() =>
-          navigation.navigate('AnimeCommentsDetailsScreen', {
+          navigation.navigate('CommentsDetailsScreen', {
             slug,
             title,
             commentsCount,
@@ -91,7 +91,7 @@ const AnimeSendButton = ({ slug, title, commentsCount }) => {
       </TopBar>
       <InputButton
         onPress={() =>
-          navigation.navigate('AnimeCommentsDetailsScreen', {
+          navigation.navigate('CommentsDetailsScreen', {
             slug,
             title,
             commentsCount,

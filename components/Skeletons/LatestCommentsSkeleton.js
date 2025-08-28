@@ -32,46 +32,59 @@ const LatestCommentsSkeleton = ({ showIndex = false }) => {
     };
   });
 
-  const renderSkeletonCard = (index) => (
-    <SkeletonCardContainer key={index}>
-      {showIndex && (
-        <SkeletonCommentIndex>
-          <ShimmerGradient style={shimmerStyle} />
-        </SkeletonCommentIndex>
-      )}
-      <SkeletonCard>
-        <SkeletonRow>
-          <SkeletonAvatar>
-            <ShimmerGradient style={shimmerStyle} />
-          </SkeletonAvatar>
-          <View>
-            <SkeletonUsername>
-              <ShimmerGradient style={shimmerStyle} />
-            </SkeletonUsername>
-            <SkeletonTimestamp>
-              <ShimmerGradient style={shimmerStyle} />
-            </SkeletonTimestamp>
-          </View>
-        </SkeletonRow>
+  const renderSkeletonCard = (index) => {
+    // Генеруємо випадкові значення для варіативності
+    const textLines = React.useMemo(() => {
+      const lines = [100, 90, 75, 60, 45];
+      return lines.slice(0, Math.floor(Math.random() * 3) + 2); // 2-4 рядки
+    }, []);
 
-        <SkeletonCommentText>
-          <ShimmerGradient style={shimmerStyle} />
-        </SkeletonCommentText>
-        <SkeletonCommentText style={{ width: '80%' }}>
-          <ShimmerGradient style={shimmerStyle} />
-        </SkeletonCommentText>
+    const showTags = React.useMemo(() => Math.random() > 0.3, []);
 
-        <SkeletonTagsRow>
-          <SkeletonTypeTag>
+    return (
+      <SkeletonCardContainer key={index}>
+        {showIndex && (
+          <SkeletonCommentIndex>
             <ShimmerGradient style={shimmerStyle} />
-          </SkeletonTypeTag>
-          <SkeletonLinkTag>
-            <ShimmerGradient style={shimmerStyle} />
-          </SkeletonLinkTag>
-        </SkeletonTagsRow>
-      </SkeletonCard>
-    </SkeletonCardContainer>
-  );
+          </SkeletonCommentIndex>
+        )}
+        <SkeletonCard>
+          <SkeletonRow>
+            <SkeletonAvatar>
+              <ShimmerGradient style={shimmerStyle} />
+            </SkeletonAvatar>
+            <View>
+              <SkeletonUsername>
+                <ShimmerGradient style={shimmerStyle} />
+              </SkeletonUsername>
+              <SkeletonTimestamp>
+                <ShimmerGradient style={shimmerStyle} />
+              </SkeletonTimestamp>
+            </View>
+          </SkeletonRow>
+
+          {/* Текст коментаря - варіативна кількість рядків */}
+          {textLines.map((width, lineIndex) => (
+            <SkeletonCommentText key={lineIndex} style={{ width: `${width}%` }}>
+              <ShimmerGradient style={shimmerStyle} />
+            </SkeletonCommentText>
+          ))}
+
+          {/* Теги - іноді показуються */}
+          {showTags && (
+            <SkeletonTagsRow>
+              <SkeletonTypeTag>
+                <ShimmerGradient style={shimmerStyle} />
+              </SkeletonTypeTag>
+              <SkeletonLinkTag>
+                <ShimmerGradient style={shimmerStyle} />
+              </SkeletonLinkTag>
+            </SkeletonTagsRow>
+          )}
+        </SkeletonCard>
+      </SkeletonCardContainer>
+    );
+  };
 
   return (
     <Container>
@@ -126,6 +139,7 @@ const SkeletonCard = styled.View`
 const SkeletonRow = styled.View`
   flex-direction: row;
   align-items: center;
+  margin-bottom: 8px;
 `;
 
 const SkeletonAvatar = styled.View`
@@ -159,7 +173,7 @@ const SkeletonCommentText = styled.View`
   height: 14px;
   background-color: ${({ theme }) => theme.colors.inputBackground};
   border-radius: 4px;
-  margin-top: 10px;
+  margin-top: 6px;
   overflow: hidden;
 `;
 
@@ -192,5 +206,6 @@ const ShimmerGradient = styled(Animated.View)`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
+  background-color: ${({ theme }) => theme.colors.border}60;
+  opacity: 0.6;
 `;

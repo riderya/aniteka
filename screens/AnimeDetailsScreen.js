@@ -55,7 +55,7 @@ const AnimeDetailsScreen = ({ route }) => {
         <Divider />
         <AnimeStatusStats anime={anime} />
         <Divider />
-        <AnimeFranchiseList slug={anime.slug} />
+        <AnimeFranchiseList slug={anime.slug} title={anime.title_ua || anime.title_en || anime.title_ja || '?'} />
         <Divider />
         <VideoSlider anime={anime} />
         <Divider />

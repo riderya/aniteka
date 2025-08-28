@@ -16,6 +16,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RulesModal from './RulesModal';
+import { processCommentText } from '../../utils/textUtils';
 
 const getAuthToken = async () => {
   const token = await SecureStore.getItemAsync('hikka_token');
@@ -24,7 +25,7 @@ const getAuthToken = async () => {
 
 const { height: screenHeight } = Dimensions.get('window');
 
-export default function CommentForm({ content_type, slug, onCommentSent, currentUser }) {
+export default function CommentForm({ content_type, slug, onCommentSent, currentUser, parentComment, isReply = false }) {
   const [spoiler, setSpoiler] = useState(false);
   const [comment, setComment] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
@@ -98,7 +99,8 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
     if (isSending) return;
     
     setIsSending(true);
-    let finalComment = comment.trim();
+    // Очищуємо текст перед відправкою
+    let finalComment = processCommentText(comment.trim());
 
     if (spoiler && !finalComment.startsWith(':::spoiler')) {
       finalComment = `:::spoiler\n${finalComment}\n:::`; 
@@ -117,7 +119,7 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
     if (onCommentSent && currentUser) {
       optimisticComment = {
         reference: `temp_${Date.now()}`,
-        text: finalComment,
+        text: finalComment, // Вже очищений текст
         created: new Date().toISOString(),
         user: currentUser,
         likes: 0,
@@ -138,7 +140,7 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
         },
         body: JSON.stringify({
           text: finalComment,
-          parent: null,
+          parent: isReply && parentComment ? parentComment.reference : null,
         }),
       });
 
@@ -233,7 +235,7 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
           <Row theme={theme}>
             <CommentInput
               ref={inputRef}
-              placeholder="Ваш коментар"
+              placeholder={isReply ? "Ваша відповідь..." : "Ваш коментар"}
               placeholderTextColor={theme.colors.gray}
               multiline
               value={comment}

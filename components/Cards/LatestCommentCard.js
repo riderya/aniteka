@@ -5,6 +5,7 @@ import Entypo from '@expo/vector-icons/Entypo';
 import { useNavigation } from '@react-navigation/native';
 import SpoilerText from '../CommentForm/SpoilerText';
 import * as WebBrowser from 'expo-web-browser';
+import { processCommentText } from '../../utils/textUtils';
 
 const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
   const navigation = useNavigation();
@@ -60,22 +61,25 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
   }, [navigation]);
 
   const parseCommentText = useCallback((text) => {
+    // Очищуємо текст перед обробкою
+    const cleanedText = processCommentText(text);
+    
     const regex = /:::spoiler\s*\n([\s\S]*?)\n:::/g;
     let lastIndex = 0;
     const result = [];
     let match;
 
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(cleanedText)) !== null) {
       const index = match.index;
       if (index > lastIndex) {
-        result.push({ type: 'text', content: text.slice(lastIndex, index) });
+        result.push({ type: 'text', content: cleanedText.slice(lastIndex, index) });
       }
       result.push({ type: 'spoiler', content: match[1] });
       lastIndex = regex.lastIndex;
     }
 
-    if (lastIndex < text.length) {
-      result.push({ type: 'text', content: text.slice(lastIndex) });
+    if (lastIndex < cleanedText.length) {
+      result.push({ type: 'text', content: cleanedText.slice(lastIndex) });
     }
 
     return result;

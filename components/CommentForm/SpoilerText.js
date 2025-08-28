@@ -3,10 +3,14 @@ import { Text, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import { useTheme } from '../../context/ThemeContext';
 import Markdown from '../Custom/MarkdownText';
+import { processCommentText } from '../../utils/textUtils';
 
 const SpoilerText = ({ text, maxLines = 3 }) => {
   const { theme } = useTheme();
   const [revealed, setRevealed] = useState(false);
+
+  // Очищуємо текст перед відображенням
+  const cleanedText = processCommentText(text);
 
   const toggleSpoiler = () => {
     setRevealed(prev => !prev);
@@ -28,12 +32,12 @@ const SpoilerText = ({ text, maxLines = 3 }) => {
               },
             }}
           >
-            {text}
+            {cleanedText}
           </Markdown>
         </RevealedContainer>
       ) : (
         <SpoilerContainer>
-          <HiddenText numberOfLines={maxLines}>{text}</HiddenText>
+          <HiddenText numberOfLines={maxLines}>{cleanedText}</HiddenText>
           <SpoilerOverlay>
             <SpoilerMessage>
               <SpoilerMessageLine>Цей текст може містити спойлер.</SpoilerMessageLine>
@@ -56,7 +60,7 @@ const Wrapper = styled(TouchableOpacity)`
 const SpoilerContainer = styled.View`
   position: relative;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 16px;
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.inputBackground};
 `;
@@ -76,7 +80,7 @@ const SpoilerOverlay = styled.View`
   background-color: ${({ theme }) => theme.colors.inputBackground};
   justify-content: center;
   align-items: center;
-  border-radius: 6px;
+  border-radius: 16px;
 `;
 
 const SpoilerMessage = styled.View`
@@ -102,6 +106,6 @@ const SpoilerMessageLineBold = styled(Text)`
 
 const RevealedContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.inputBackground};
-  padding: 8px;
+  padding: 12px;
   border-radius: 16px;
 `;

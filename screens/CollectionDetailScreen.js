@@ -580,7 +580,15 @@ useFocusEffect(
                 </FavouriteText>
               </FavouriteButton>
 
-              <CommentsCountButton>
+              <CommentsCountButton
+                onPress={() => navigation.navigate('CommentsDetailsScreen', {
+                  slug: reference,
+                  title: title,
+                  commentsCount: collection.comments_count,
+                  contentType: 'collection'
+                })}
+                activeOpacity={0.7}
+              >
                 <Ionicons name="chatbox-outline" size={16} color={theme.colors.gray}/>
                 <CommentsCountText 
                   style={{ marginLeft: 8 }}>
@@ -757,7 +765,7 @@ const VoteScoreText = styled.Text`
   font-size: 14px;
 `;
 
-const CommentsCountButton = styled.View`
+const CommentsCountButton = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   border-radius: 16px;

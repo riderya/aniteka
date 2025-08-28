@@ -23,6 +23,7 @@ import { useTheme } from '../context/ThemeContext';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import CommentForm from '../components/CommentForm/CommentForm';
 import CommentCard from '../components/Cards/CommentCard';
+import CommentCardSkeleton from '../components/Skeletons/CommentCardSkeleton';
 import * as SecureStore from 'expo-secure-store';
 
 dayjs.extend(relativeTime);
@@ -106,8 +107,8 @@ const parseTextWithSpoilers = (text) => {
 };
 
 // ---------- Main Component ----------
-const AnimeCommentsDetailsScreen = () => {
-  const { slug, title, commentsCount } = useRoute().params;
+const CommentsDetailsScreen = () => {
+  const { slug, title, commentsCount, contentType = 'anime' } = useRoute().params;
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
@@ -164,7 +165,7 @@ const AnimeCommentsDetailsScreen = () => {
       // Оновлюємо список коментарів, замінюючи оптимістичні коментарі на реальні
       try {
         const res = await axios.get(
-          `https://api.hikka.io/comments/anime/${slug}/list?page=1&size=15`
+          `https://api.hikka.io/comments/${contentType}/${slug}/list?page=1&size=15`
         );
         let newComments = res.data.list || [];
         
@@ -194,7 +195,7 @@ const AnimeCommentsDetailsScreen = () => {
     setIsFetching(true);
     try {
       const res = await axios.get(
-        `https://api.hikka.io/comments/anime/${slug}/list?page=${page}&size=15`
+        `https://api.hikka.io/comments/${contentType}/${slug}/list?page=${page}&size=15`
       );
       let newComments = res.data.list || [];
 
@@ -208,7 +209,10 @@ const AnimeCommentsDetailsScreen = () => {
 
       setHasMore(res.data.pagination.page < res.data.pagination.pages);
     } catch (e) {
-      
+      console.error('Помилка при завантаженні коментарів:', e);
+      if (page === 1) {
+        Alert.alert('Помилка', 'Не вдалося завантажити коментарі. Спробуйте ще раз.');
+      }
     } finally {
       setIsFetching(false);
       setLoading(false);
@@ -218,18 +222,24 @@ const AnimeCommentsDetailsScreen = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
+      // Скидаємо стан перед оновленням
       setPage(1);
       setHasMore(true);
+      setLoading(true);
+      
       const res = await axios.get(
-        `https://api.hikka.io/comments/anime/${slug}/list?page=1&size=15`
+        `https://api.hikka.io/comments/${contentType}/${slug}/list?page=1&size=15`
       );
+      
       let newComments = res.data.list || [];
       setComments(newComments);
       setHasMore(res.data.pagination.page < res.data.pagination.pages);
     } catch (e) {
-      
+      console.error('Помилка при оновленні коментарів:', e);
+      Alert.alert('Помилка', 'Не вдалося оновити коментарі. Спробуйте ще раз.');
     } finally {
       setRefreshing(false);
+      setLoading(false);
     }
   };
 
@@ -238,7 +248,7 @@ const AnimeCommentsDetailsScreen = () => {
   }, [page]);
 
   const handleEndReached = () => {
-    if (hasMore && !loading) {
+    if (hasMore && !loading && !refreshing && !isFetching) {
       setPage((prev) => prev + 1);
     }
   };
@@ -249,10 +259,35 @@ const AnimeCommentsDetailsScreen = () => {
     </CommentsHeader>
   );
 
+  const renderListFooter = () => {
+    if (!hasMore) {
+      return (
+        <View style={{ padding: 20, alignItems: 'center' }}>
+          <CommentCount style={{ fontSize: 14, opacity: 0.7 }}>
+            Всі коментарі завантажено
+          </CommentCount>
+        </View>
+      );
+    }
+    
+    if (isFetching) {
+      return (
+        <View>
+          {[1, 2, 3].map((item) => (
+            <CommentCardSkeleton key={`footer-skeleton-${item}`} />
+          ))}
+        </View>
+      );
+    }
+    
+    return null;
+  };
+
   const renderItem = ({ item, index }) => (
     <CommentCard
       item={item}
       slug={slug}
+      content_type={contentType}
       comment="comment"
       index={index}
       theme={theme}
@@ -270,9 +305,25 @@ const AnimeCommentsDetailsScreen = () => {
 
   if (loading && comments.length === 0) {
     return (
-      <CenterLoader>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </CenterLoader>
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: theme.colors.background }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <Container>
+          <BlurOverlay experimentalBlurMethod="dimezisBlurView"  intensity={100} tint={isDark ? 'dark' : 'light'}>
+            <HeaderTitleBar title={`Коментарі: ${title}`} />
+          </BlurOverlay>
+
+          <FlatList
+            data={[1, 2, 3, 4, 5]} // Show 5 skeleton items
+            keyExtractor={(item) => `skeleton-${item}`}
+            renderItem={() => <CommentCardSkeleton />}
+            contentContainerStyle={{ paddingTop: insets.top + 56 + 20, paddingBottom: insets.bottom + 120 }}
+            style={{ flex: 1 }}
+          />
+        </Container>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -294,15 +345,18 @@ const AnimeCommentsDetailsScreen = () => {
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.3}
           ListHeaderComponent={renderListHeader}
+          ListFooterComponent={renderListFooter}
           contentContainerStyle={{ paddingTop: insets.top + 56 + 20, paddingBottom: insets.bottom + 120 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={theme.colors.text}
-              colors={[theme.colors.text]}
+              tintColor={theme.colors.primary}
+              colors={[theme.colors.primary]}
               progressViewOffset={insets.top + 56}
-              progressBackgroundColor={isDark ? theme.colors.card : undefined}
+              progressBackgroundColor={theme.colors.background}
+              title="Оновлення коментарів..."
+              titleColor={theme.colors.text}
             />
           }
           style={{ flex: 1 }}
@@ -310,7 +364,7 @@ const AnimeCommentsDetailsScreen = () => {
         
         <CommentFormContainer>
           <CommentForm 
-            content_type="anime" 
+            content_type={contentType} 
             slug={slug} 
             onCommentSent={handleCommentSent}
             currentUser={currentUser}
@@ -323,4 +377,4 @@ const AnimeCommentsDetailsScreen = () => {
   );
 };
 
-export default AnimeCommentsDetailsScreen;
+export default CommentsDetailsScreen;

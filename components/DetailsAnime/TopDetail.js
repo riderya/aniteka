@@ -223,7 +223,7 @@ const TopDetail = ({ anime }) => {
 
             <TouchableOpacityStyled
               onPress={() =>
-                navigation.navigate('AnimeCommentsDetailsScreen', {
+                navigation.navigate('CommentsDetailsScreen', {
                   slug: anime.slug,
                   title: anime.title_ua || anime.title_en || anime.title_ja || '?',
                   commentsCount: anime.comments_count,

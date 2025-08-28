@@ -69,6 +69,18 @@ const getStatusColors = (theme) => ({
   dropped: hexToRgba(theme.colors.dropped, 0.8),
 });
 
+// Функція для форматування сезону українською
+const formatSeason = (season) => {
+  switch (season?.toLowerCase()) {
+    case 'winter': return 'зима';
+    case 'spring': return 'весна';
+    case 'summer': return 'літо';
+    case 'fall':
+    case 'autumn': return 'осінь';
+    default: return season;
+  }
+};
+
 // Функція для форматування дії історії
 const formatHistoryAction = (historyData) => {
   if (!historyData) return null;
@@ -336,6 +348,48 @@ const AnimeRowCard = React.memo(({
           )}
         </View>
 
+        {/* Year, Season, and Type Tags */}
+        <View style={styles.tagsContainer}>
+          {anime.year && anime.season && (
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>
+                {formatSeason(anime.season)} {anime.year} г.
+              </Text>
+            </View>
+          )}
+          {(anime.media_type || anime.type) && (
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>
+                {(anime.media_type || anime.type) === 'tv' ? 'Сериал' : 
+                 (anime.media_type || anime.type) === 'movie' ? 'Фільм' :
+                 (anime.media_type || anime.type) === 'ova' ? 'OVA' :
+                 (anime.media_type || anime.type) === 'ona' ? 'ONA' :
+                 (anime.media_type || anime.type) === 'special' ? 'Спешл' :
+                 (anime.media_type || anime.type) === 'music' ? 'Музика' :
+                 (anime.media_type || anime.type) === 'tv_special' ? 'ТВ Спешл' :
+                 (anime.media_type || anime.type) === 'cm' ? 'Реклама' :
+                 (anime.media_type || anime.type) === 'pv' ? 'PV' :
+                 (anime.media_type || anime.type) === 'tv_13' ? 'ТВ 13' :
+                 (anime.media_type || anime.type) === 'tv_24' ? 'ТВ 24' :
+                 (anime.media_type || anime.type) === 'tv_48' ? 'ТВ 48' :
+                 (anime.media_type || anime.type) === 'tv_25' ? 'ТВ 25' :
+                 (anime.media_type || anime.type) === 'tv_50' ? 'ТВ 50' :
+                 (anime.media_type || anime.type) === 'tv_100' ? 'ТВ 100' :
+                 (anime.media_type || anime.type) === 'tv_unknown' ? 'ТВ Невідомо' :
+                 (anime.media_type || anime.type) === 'movie_unknown' ? 'Фільм Невідомо' :
+                 (anime.media_type || anime.type) === 'ova_unknown' ? 'OVA Невідомо' :
+                 (anime.media_type || anime.type) === 'ona_unknown' ? 'ONA Невідомо' :
+                 (anime.media_type || anime.type) === 'special_unknown' ? 'Спешл Невідомо' :
+                 (anime.media_type || anime.type) === 'music_unknown' ? 'Музика Невідомо' :
+                 (anime.media_type || anime.type) === 'tv_special_unknown' ? 'ТВ Спешл Невідомо' :
+                 (anime.media_type || anime.type) === 'cm_unknown' ? 'Реклама Невідомо' :
+                 (anime.media_type || anime.type) === 'pv_unknown' ? 'PV Невідомо' :
+                 (anime.media_type || anime.type)}
+              </Text>
+            </View>
+          )}
+        </View>
+
         {/* Показуємо дію історії, якщо вона є */}
         {historyAction && (
           <Text style={styles.historyActionText}>
@@ -424,6 +478,25 @@ const createStyles = (theme, props) => StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '500',
     marginBottom: 6,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  tag: {
+    backgroundColor: hexToRgba(theme.colors.primary, 0.1),
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: hexToRgba(theme.colors.primary, 0.2),
+  },
+  tagText: {
+    fontSize: 11,
+    color: theme.colors.primary,
+    fontWeight: '500',
   },
   descriptionText: {
     fontSize: props.descriptionFontSize,

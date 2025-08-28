@@ -1,6 +1,7 @@
-import React from 'react';
-import { Text, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { Text, Linking, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { processCommentText } from '../../utils/textUtils';
 
 const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) => {
   const { theme } = useTheme();
@@ -34,16 +35,33 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
   const renderMarkdownText = (text) => {
     if (!text) return null;
 
+    // Очищуємо текст перед обробкою
+    const cleanedText = processCommentText(text);
+
     const parts = [];
     let currentIndex = 0;
-    let textContent = text;
+    let textContent = cleanedText;
+
+    // Обробка спойлерів :::spoiler ... :::
+    const spoilerRegex = /:::spoiler\s*\n?([\s\S]*?)\n?:::/g;
+    let spoilerMatch;
+    const spoilerMatches = [];
+    
+    while ((spoilerMatch = spoilerRegex.exec(cleanedText)) !== null) {
+      spoilerMatches.push({
+        type: 'spoiler',
+        text: spoilerMatch[1].trim(),
+        start: spoilerMatch.index,
+        end: spoilerMatch.index + spoilerMatch[0].length
+      });
+    }
 
     // Обробка посилань [текст](url)
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
     let linkMatch;
     const linkMatches = [];
     
-    while ((linkMatch = linkRegex.exec(text)) !== null) {
+    while ((linkMatch = linkRegex.exec(cleanedText)) !== null) {
       linkMatches.push({
         type: 'link',
         text: linkMatch[1],
@@ -58,7 +76,7 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
     let boldMatch;
     const boldMatches = [];
     
-    while ((boldMatch = boldRegex.exec(text)) !== null) {
+    while ((boldMatch = boldRegex.exec(cleanedText)) !== null) {
       boldMatches.push({
         type: 'bold',
         text: boldMatch[1],
@@ -72,7 +90,7 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
     let italicMatch;
     const italicMatches = [];
     
-    while ((italicMatch = italicRegex.exec(text)) !== null) {
+    while ((italicMatch = italicRegex.exec(cleanedText)) !== null) {
       italicMatches.push({
         type: 'italic',
         text: italicMatch[1],
@@ -86,7 +104,7 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
     let codeMatch;
     const codeMatches = [];
     
-    while ((codeMatch = codeRegex.exec(text)) !== null) {
+    while ((codeMatch = codeRegex.exec(cleanedText)) !== null) {
       codeMatches.push({
         type: 'code',
         text: codeMatch[1],
@@ -96,7 +114,7 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
     }
 
     // Об'єднуємо всі матчі та сортуємо за позицією
-    const allMatches = [...linkMatches, ...boldMatches, ...italicMatches, ...codeMatches]
+    const allMatches = [...spoilerMatches, ...linkMatches, ...boldMatches, ...italicMatches, ...codeMatches]
       .sort((a, b) => a.start - b.start);
 
     // Рендеримо текст частинами
@@ -105,7 +123,7 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
     for (const match of allMatches) {
       // Додаємо текст перед матчем
       if (match.start > lastIndex) {
-        const plainText = text.slice(lastIndex, match.start);
+        const plainText = cleanedText.slice(lastIndex, match.start);
         if (plainText) {
           parts.push(
             <Text key={`text-${lastIndex}`} style={textStyle}>
@@ -117,6 +135,15 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
 
       // Рендеримо матч
       switch (match.type) {
+        case 'spoiler':
+          parts.push(
+            <InlineSpoiler
+              key={`spoiler-${match.start}`}
+              text={match.text}
+              textStyle={textStyle}
+            />
+          );
+          break;
         case 'link':
           parts.push(
             <Text
@@ -164,8 +191,8 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
     }
 
     // Додаємо залишок тексту
-    if (lastIndex < text.length) {
-      const remainingText = text.slice(lastIndex);
+    if (lastIndex < cleanedText.length) {
+      const remainingText = cleanedText.slice(lastIndex);
       if (remainingText) {
         parts.push(
           <Text key={`text-${lastIndex}`} style={textStyle}>
@@ -180,16 +207,12 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
 
   const markdownContent = renderMarkdownText(children);
   
-  // Якщо це масив елементів (є маркдаун), рендеримо їх без обгортки
+  // Якщо це масив елементів (є маркдаун), рендеримо їх у View
   if (Array.isArray(markdownContent)) {
     return (
-      <Text 
-        style={textStyle}
-        numberOfLines={numberOfLines}
-        ellipsizeMode={ellipsizeMode}
-      >
+      <View style={{ flexDirection: 'column' }}>
         {markdownContent}
-      </Text>
+      </View>
     );
   }
   
@@ -202,6 +225,36 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
     >
       {markdownContent}
     </Text>
+  );
+};
+
+// Inline Spoiler Component to avoid circular dependency
+const InlineSpoiler = ({ text, textStyle }) => {
+  const { theme } = useTheme();
+  const [revealed, setRevealed] = useState(false);
+
+  const toggleSpoiler = () => {
+    setRevealed(prev => !prev);
+  };
+
+  return (
+    <TouchableOpacity activeOpacity={0.8} onPress={toggleSpoiler}>
+      {revealed ? (
+        <Text style={[textStyle, { backgroundColor: theme.colors.inputBackground, padding: 4, borderRadius: 4 }]}>
+          {text}
+        </Text>
+      ) : (
+        <Text style={[textStyle, { 
+          backgroundColor: theme.colors.inputBackground, 
+          padding: 4, 
+          borderRadius: 4,
+          color: theme.colors.gray,
+          fontStyle: 'italic'
+        }]}>
+          [спойлер]
+        </Text>
+      )}
+    </TouchableOpacity>
   );
 };
 

@@ -31,13 +31,13 @@ const StyledIcon = styled(FontAwesome6)`
   font-size: 16px;
 `;
 
-const RowLineHeader = ({ title, onPress }) => {
+const RowLineHeader = ({ title, onPress, linkText = "Більше" }) => {
   return (
     <Wrapper>
       <Title>{title}</Title>
       {onPress && (
         <LinkWrapper onPress={onPress}>
-          <LinkText>Більше</LinkText>
+          <LinkText>{linkText}</LinkText>
           <StyledIcon name="arrow-right" />
         </LinkWrapper>
       )}
