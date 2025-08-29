@@ -205,6 +205,7 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
               zIndex: 1000,
             }}
           >
+          
           <RowTop theme={theme}>
             <SpoilerToggleBar onPress={() => {
               dismissKeyboard();
@@ -235,7 +236,7 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
           <Row theme={theme}>
             <CommentInput
               ref={inputRef}
-              placeholder={isReply ? "Ваша відповідь..." : "Ваш коментар"}
+              placeholder={isReply ? `Відповідь на коментар ${parentComment?.author?.username ? `@${parentComment.author.username}` : 'користувача'}...` : "Ваш коментар"}
               placeholderTextColor={theme.colors.gray}
               multiline
               value={comment}

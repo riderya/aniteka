@@ -103,7 +103,8 @@ const AnimeColumnCard = React.memo(({
   marginBottom = 0,
   historyData = null, // Новий опціональний проп для історії
   imageBorderRadius = 24, // Новий проп для border radius картинки
-  titleNumberOfLines = 2 // Новий проп для кількості рядків заголовка
+  titleNumberOfLines = 2, // Новий проп для кількості рядків заголовка
+  starIconSize = 12 // Новий проп для розміру іконки зірки
 }) => {
   const navigation = useNavigation();
   const { theme } = useTheme();
@@ -136,9 +137,10 @@ const AnimeColumnCard = React.memo(({
       marginTop,
       marginBottom,
       imageBorderRadius,
-      titleNumberOfLines
+      titleNumberOfLines,
+      starIconSize
     });
-  }, [theme, cardWidth, imageWidth, imageHeight, titleFontSize, footerFontSize, badgeFontSize, badgePadding, badgeBottom, badgeLeft, badgeRight, marginTop, marginBottom, imageBorderRadius, titleNumberOfLines, orientation, responsiveDims]);
+  }, [theme, cardWidth, imageWidth, imageHeight, titleFontSize, footerFontSize, badgeFontSize, badgePadding, badgeBottom, badgeLeft, badgeRight, marginTop, marginBottom, imageBorderRadius, titleNumberOfLines, starIconSize, orientation, responsiveDims]);
 
   // Форматуємо дію історії
   const historyAction = useMemo(() => formatHistoryAction(historyData), [historyData]);
@@ -234,7 +236,7 @@ const AnimeColumnCard = React.memo(({
             <Text style={styles.textFooter}>
               {anime.score ?? '?'}
             </Text>
-            <FontAwesome name="star" size={12} color={theme.colors.gray} style={styles.starIcon} />
+            <FontAwesome name="star" size={starIconSize} color={theme.colors.gray} style={styles.starIcon} />
           </View>
         </View>
       </View>
@@ -255,6 +257,7 @@ const createStyles = (theme, props) => StyleSheet.create({
     width: props.imageWidth,
     height: props.imageHeight,
     borderRadius: props.imageBorderRadius || 24,
+    backgroundColor: theme.colors.card,
   },
   title: {
     marginTop: 10,
@@ -301,7 +304,7 @@ const createStyles = (theme, props) => StyleSheet.create({
     gap: 2,
   },
   starIcon: {
-    marginLeft: 2,
+    marginLeft: 0,
   },
 });
 

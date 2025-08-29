@@ -67,6 +67,7 @@ const HomeBannerSwiper = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef(null);
   const [animeDetails, setAnimeDetails] = useState({});
+  const [genreWidths, setGenreWidths] = useState({});
   const navigation = useNavigation();
 
   const fetchAnime = async () => {
@@ -121,6 +122,15 @@ const HomeBannerSwiper = () => {
     fetchAnime();
   }, []);
 
+  // Очищаємо збережені ширини при зміні розміру екрану
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', () => {
+      setGenreWidths({});
+    });
+
+    return () => subscription?.remove();
+  }, []);
+
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems.length > 0) {
       setActiveIndex(viewableItems[0].index);
@@ -141,15 +151,78 @@ const HomeBannerSwiper = () => {
     return text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
   }
 
+
+
+  // Функція для перевірки чи поміщаються жанри
+  const getVisibleGenres = (genres, slug) => {
+    if (!genres || genres.length === 0) return [];
+    
+    const firstGenre = genres[0];
+    const secondGenre = genres[1];
+    
+    if (!secondGenre) return [firstGenre];
+    
+    // Використовуємо збережені ширини або розраховуємо приблизно
+    const getGenreWidth = (genre) => {
+      const savedWidth = genreWidths[`${slug}-${genre}`];
+      if (savedWidth) {
+        return savedWidth + 34; // Додаємо padding та border
+      }
+      
+      // Приблизна ширина якщо ще не виміряно
+      const charWidth = 7.5;
+      const textWidth = genre.length * charWidth;
+      const padding = 32;
+      const border = 2;
+      return textWidth + padding + border;
+    };
+    
+    const firstGenreWidth = getGenreWidth(firstGenre);
+    const secondGenreWidth = getGenreWidth(secondGenre);
+    const gap = 5;
+    
+    // Доступна ширина для жанрів (більш консервативний підхід)
+    const ratingWidth = 85; // Трохи більше для безпеки
+    const yearWidth = 65;
+    const rowPadding = 32;
+    const safetyMargin = 10; // Додатковий запас
+    const availableWidth = SLIDE_WIDTH - ratingWidth - yearWidth - rowPadding - gap - safetyMargin;
+    
+    if (firstGenreWidth + secondGenreWidth + gap <= availableWidth) {
+      return [firstGenre, secondGenre];
+    } else {
+      return [firstGenre];
+    }
+  };
+
   const renderItem = ({ item }) => {
     const imageUrl = item.image || '';
     const details = animeDetails[item.slug] || { genres: ['Жанри відсутні'], description: 'Опис відсутній' };
+
+    // Невидимий текст для вимірювання ширини жанрів
+    const renderInvisibleGenres = () => {
+      return details.genres.slice(0, 2).map((genre, idx) => (
+        <InvisibleText
+          key={`invisible-${idx}-${genre}`}
+          onLayout={(event) => {
+            const { width } = event.nativeEvent.layout;
+            setGenreWidths(prev => ({
+              ...prev,
+              [`${item.slug}-${genre}`]: width
+            }));
+          }}
+        >
+          {genre}
+        </InvisibleText>
+      ));
+    };
 
 
   return (
   <Slide key={`slide-${item.slug || item.id || Math.random().toString(36).substr(2, 9)}`}>
     <GradientBlock />
     <BackgroundImage source={{ uri: imageUrl }} />
+    {renderInvisibleGenres()}
     <Content>
       <Info>
         <Title numberOfLines={2}>{item.title_ua || 'Назва відсутня'}</Title>
@@ -166,7 +239,7 @@ const HomeBannerSwiper = () => {
             <InfoText>{item.year || '—'}</InfoText>
           </InfoBlock>
           <GenresRow>
-            {details.genres.slice(0, 2).map((genre, idx) => (
+            {getVisibleGenres(details.genres, item.slug).map((genre, idx) => (
               <InfoBlock key={`genre-${idx}-${genre}`}>
                 <GenreText>{genre}</GenreText>
               </InfoBlock>
@@ -258,7 +331,7 @@ return (
 };
 
 const Container = styled.View`
-height: 95%;
+height: 660px;
 margin-bottom: 20px;
 `;
 
@@ -482,6 +555,13 @@ const Dot = styled.TouchableOpacity.attrs({
   border-radius: 3px;
   background-color: ${({ active, theme }) => active ? theme.colors.primary : '#30303066'};
   margin: 0 6px;
+`;
+
+const InvisibleText = styled.Text`
+  position: absolute;
+  opacity: 0;
+  font-size: 14px;
+  font-weight: 600;
 `;
 
 export default HomeBannerSwiper;

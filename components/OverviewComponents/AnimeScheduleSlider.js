@@ -1,12 +1,18 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import styled from 'styled-components/native';
-import { FlatList, Text, TouchableOpacity  } from 'react-native';
+import { FlatList, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
+import { useTheme } from '../../context/ThemeContext';
 
 const Container = styled.View`
   margin-top: 0px;
+`;
+
+const LoadingContainer = styled.View`
+  padding: 20px;
+  align-items: center;
 `;
 
 const Card = styled.View`
@@ -49,10 +55,12 @@ const Episode = styled.Text`
   margin-top: 6px;
 `;
 
-const AnimeScheduleSlider = React.memo(() => {
+const AnimeScheduleSlider = React.memo(({ onRefresh }) => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
   const [animeList, setAnimeList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const isToday = useCallback((timestamp) => {
     const airingDate = new Date(timestamp * 1000);
@@ -64,33 +72,50 @@ const AnimeScheduleSlider = React.memo(() => {
     );
   }, []);
 
-  useEffect(() => {
-    const fetchSchedule = async () => {
-      try {
-        const response = await axios.post(
-          'https://api.hikka.io/schedule/anime?page=1&size=50',
-          {
-            status: ['ongoing', 'announced'],
-            airing_season: [],
-            only_watch: false,
-          }
-        );
-
-        const todayList = response.data.list.filter(item =>
-          isToday(item.airing_at)
-        );
-
-        // Обмежуємо кількість карток до максимум 8
-        const limitedList = todayList.slice(0, 8);
-
-        setAnimeList(limitedList);
-      } finally {
-        setLoading(false);
+  const fetchSchedule = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
       }
-    };
+      
+      const response = await axios.post(
+        'https://api.hikka.io/schedule/anime?page=1&size=50',
+        {
+          status: ['ongoing', 'announced'],
+          airing_season: [],
+          only_watch: false,
+        }
+      );
 
-    fetchSchedule();
+      const todayList = response.data.list.filter(item =>
+        isToday(item.airing_at)
+      );
+
+      // Обмежуємо кількість карток до максимум 8
+      const limitedList = todayList.slice(0, 8);
+
+      setAnimeList(limitedList);
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [isToday]);
+
+  useEffect(() => {
+    fetchSchedule();
+  }, [fetchSchedule]);
+
+  // Реєструємо функцію оновлення
+  useEffect(() => {
+    if (onRefresh) {
+      const unregister = onRefresh(() => fetchSchedule(true));
+      return unregister;
+    }
+  }, [onRefresh, fetchSchedule]);
 
   const formatTimeLeft = useCallback((time_left) => {
     const totalHours = Math.floor(time_left / 3600);
@@ -139,7 +164,13 @@ const AnimeScheduleSlider = React.memo(() => {
         onPress={() => navigation.navigate('AnimeScheduleScreen')}
       />
       {loading ? (
-        <Text style={{ color: 'gray', marginLeft: 12 }}>Завантаження...</Text>
+        <LoadingContainer>
+          <ActivityIndicator size="small" color={theme.colors.text} />
+        </LoadingContainer>
+      ) : refreshing ? (
+        <LoadingContainer>
+          <ActivityIndicator size="small" color={theme.colors.text} />
+        </LoadingContainer>
       ) : animeList.length === 0 ? (
         <Text style={{ color: 'gray', marginLeft: 12 }}>
           На жаль, сьогодні немає аніме в розкладі 😢
@@ -157,6 +188,7 @@ const AnimeScheduleSlider = React.memo(() => {
           windowSize={8}
           initialNumToRender={3}
           getItemLayout={getItemLayout}
+          refreshing={refreshing}
         />
       )}
     </Container>

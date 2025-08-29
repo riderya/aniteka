@@ -137,9 +137,9 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
         <TagsRow>
           <TypeTag>{commentType[item.content_type]}</TypeTag>
           {preview?.slug && (
-            <TouchableOpacity onPress={() => handleNavigate(item)}>
-              <LinkTag numberOfLines={1}>{preview.title || 'Без назви'}</LinkTag>
-            </TouchableOpacity>
+            <LinkContainer onPress={() => handleNavigate(item)}>
+              <LinkTag numberOfLines={1} ellipsizeMode="tail">{preview.title || 'Без назви'}</LinkTag>
+            </LinkContainer>
           )}
         </TagsRow>
       </CommentCard>
@@ -214,7 +214,8 @@ const TagsRow = styled.View`
   flex-direction: row;
   gap: 12px;
   margin-top: 12px;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
 `;
 
 const LikeScore = styled.Text`
@@ -231,13 +232,18 @@ const RowScore = styled.View`
   right: 0px;
 `;
 
+const LinkContainer = styled.TouchableOpacity`
+  flex: 1;
+  min-width: 0;
+`;
+
 const LinkTag = styled.Text`
   color: ${({ theme }) => theme.colors.primary};
   font-size: 12px;
   padding: 5px 0px;
   font-weight: 500;
-  max-width: 260px;
   text-decoration-line: underline;
+  flex-shrink: 1;
 `;
 
 const TypeTag = styled.Text`
@@ -247,4 +253,5 @@ const TypeTag = styled.Text`
   font-weight: 500;
   padding: 5px 16px;
   border-radius: 999px;
+  flex-shrink: 0;
 `;

@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react'
 import { ActivityIndicator } from 'react-native'
 import styled from 'styled-components/native'
 import Ionicons from 'react-native-vector-icons/Ionicons'
-import axios from 'axios'
-import * as SecureStore from 'expo-secure-store'
 import Toast from 'react-native-toast-message'
 import { useTheme } from '../../context/ThemeContext'
+import { useWatchStatus } from '../../context/WatchStatusContext'
 
 const TouchableOpacityStyled = styled.TouchableOpacity`
   flex-direction: row;
@@ -19,39 +18,51 @@ const TouchableOpacityStyled = styled.TouchableOpacity`
 `
 
 const LikeAnimeButton = ({ slug }) => {
-  const [liked, setLiked] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [authToken, setAuthToken] = useState(null)
+  const [isUpdating, setIsUpdating] = useState(false)
 
   const { theme } = useTheme()
-  const contentType = 'anime'
-  const endpoint = `https://api.hikka.io/favourite/${contentType}/${slug}`
+  const {
+    getAnimeFavourite,
+    fetchAnimeFavourite,
+    updateAnimeFavourite,
+    authToken,
+    isAuthChecked,
+  } = useWatchStatus()
+
+  const liked = getAnimeFavourite(slug)
 
   useEffect(() => {
-    const loadTokenAndCheckStatus = async () => {
-      try {
-        const token = await SecureStore.getItemAsync('hikka_token')
-        if (!token) throw new Error('Auth token not found')
+    // Чекаємо доки перевіриться токен
+    if (!isAuthChecked || !slug) return;
 
-        setAuthToken(token)
-
-        const res = await axios.get(endpoint, {
-          headers: { auth: token },
-          withCredentials: true,
-        })
-
-        if (res?.data?.reference) {
-          setLiked(true)
-        }
-      } catch (err) {
-        setLiked(false)
-      } finally {
-        setLoading(false)
-      }
+    // Якщо користувач не авторизований — фіксуємо стан false і вимикаємо спінер
+    if (!authToken) {
+      setLoading(false);
+      return;
     }
 
-    loadTokenAndCheckStatus()
-  }, [slug])
+    const loadFavourite = async () => {
+      setLoading(true);
+      try {
+        // Спочатку перевіряємо кеш
+        const cachedFavourite = getAnimeFavourite(slug);
+        if (cachedFavourite !== null) {
+          setLoading(false);
+          return;
+        }
+
+        // Якщо немає в кеші, завантажуємо
+        await fetchAnimeFavourite(slug);
+      } catch (error) {
+        console.log('Error loading favourite status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFavourite();
+  }, [authToken, slug, isAuthChecked, getAnimeFavourite, fetchAnimeFavourite]);
 
   const toggleFavourite = async () => {
     if (!authToken) {
@@ -59,40 +70,42 @@ const LikeAnimeButton = ({ slug }) => {
         type: 'info',
         text1: 'Авторизуйтеся, будь ласка',
         text2: 'Щоб додавати аніме у улюблене, потрібно увійти в акаунт.',
-        position: 'top',
+        position: 'bottom',
         visibilityTime: 4000,
         autoHide: true,
       });
       return;
     }
+
+    if (isUpdating) return;
     
+    setIsUpdating(true);
   
     try {
+      const endpoint = `https://api.hikka.io/favourite/anime/${slug}`;
+      
       if (liked) {
-        await axios.delete(endpoint, {
+        await fetch(endpoint, {
+          method: 'DELETE',
           headers: { auth: authToken },
-          withCredentials: true,
         });
-        setLiked(false);
+        updateAnimeFavourite(slug, false);
         Toast.show({
           type: 'error',
           text1: '💔 Видалено з улюблене',
-          position: 'top',
+          position: 'bottom',
         });
       } else {
-        await axios.put(
-          endpoint,
-          {},
-          {
-            headers: { auth: authToken },
-            withCredentials: true,
-          }
-        );
-        setLiked(true);
+        await fetch(endpoint, {
+          method: 'PUT',
+          headers: { auth: authToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        updateAnimeFavourite(slug, true);
         Toast.show({
           type: 'success',
           text1: '❤️ Додано в улюблене',
-          position: 'top',
+          position: 'bottom',
         });
       }
     } catch (error) {
@@ -100,17 +113,16 @@ const LikeAnimeButton = ({ slug }) => {
         type: 'error',
         text1: 'Помилка',
         text2: 'Не вдалося змінити вподобання',
-        position: 'top',
+        position: 'bottom',
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
   
-  
-  
-
   return (
-    <TouchableOpacityStyled onPress={loading ? null : toggleFavourite} liked={liked} disabled={loading}>
-      {loading ? (
+    <TouchableOpacityStyled onPress={loading || isUpdating ? null : toggleFavourite} liked={liked} disabled={loading || isUpdating}>
+      {loading || isUpdating ? (
         <ActivityIndicator size="small" color={theme.colors.textSecondary || '#fff'} />
       ) : (
         <Ionicons

@@ -81,6 +81,19 @@ const formatSeason = (season) => {
   }
 };
 
+// Функція для перекладу статусу аніме
+const translateStatus = (status) => {
+  switch (status) {
+    case 'watching': return 'Дивлюсь';
+    case 'planned': return 'Заплановане';
+    case 'completed': return 'Завершено';
+    case 'on_hold': return 'Відкладено';
+    case 'dropped': return 'Закинуто';
+    case 'favourite': return 'Улюблене';
+    default: return status;
+  }
+};
+
 // Функція для форматування дії історії
 const formatHistoryAction = (historyData) => {
   if (!historyData) return null;
@@ -147,7 +160,8 @@ const AnimeRowCard = React.memo(({
   isLoading = false,
   historyData = null, // Новий опціональний проп для історії
   imageBorderRadius = 24, // Новий проп для border radius картинки
-  titleNumberOfLines = 2 // Новий проп для кількості рядків заголовка
+  titleNumberOfLines = 2, // Новий проп для кількості рядків заголовка
+  starIconSize = 12 // Новий проп для розміру іконки зірки
 }) => {
   const navigation = useNavigation();
   const [isFavourite, setIsFavourite] = useState(false);
@@ -173,8 +187,9 @@ const AnimeRowCard = React.memo(({
     statusFontSize,
     marginBottom,
     imageBorderRadius,
-    titleNumberOfLines
-  }), [theme, imageWidth, imageHeight, titleFontSize, episodesFontSize, scoreFontSize, descriptionFontSize, statusFontSize, marginBottom, imageBorderRadius, titleNumberOfLines]);
+    titleNumberOfLines,
+    starIconSize
+  }), [theme, imageWidth, imageHeight, titleFontSize, episodesFontSize, scoreFontSize, descriptionFontSize, statusFontSize, marginBottom, imageBorderRadius, titleNumberOfLines, starIconSize]);
 
   // Форматуємо дію історії
   const historyAction = useMemo(() => formatHistoryAction(historyData), [historyData]);
@@ -319,7 +334,7 @@ const AnimeRowCard = React.memo(({
         {userStatus && (
           <View style={[styles.statusBadge, { backgroundColor: statusColors[userStatus] || 'rgba(51, 51, 51, 0.7)' }]}>
             <Text style={styles.statusText}>
-              {userStatus}
+              {translateStatus(userStatus)}
             </Text>
           </View>
         )}
@@ -341,7 +356,7 @@ const AnimeRowCard = React.memo(({
             <Text style={styles.scoreText}>
               {anime.score ?? '?'}
             </Text>
-            <FontAwesome name="star" size={12} color={theme.colors.gray} style={styles.starIcon} />
+            <FontAwesome name="star" size={starIconSize} color={theme.colors.gray} style={styles.starIcon} />
           </View>
           {isFavourite && (
             <Octicons name="heart-fill" size={14} color={theme.colors.error} />
@@ -421,6 +436,7 @@ const createStyles = (theme, props) => StyleSheet.create({
     width: props.imageWidth,
     height: props.imageHeight,
     borderRadius: props.imageBorderRadius || 24,
+    backgroundColor: theme.colors.card,
   },
   info: {
     flex: 1,

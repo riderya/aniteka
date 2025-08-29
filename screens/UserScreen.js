@@ -8,6 +8,7 @@ import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import toastConfig from '../components/CustomToast';
 
+
 import UserAvatar from '../components/UserComponents/UserAvatar';
 import FollowStatsBlock from '../components/UserComponents/FollowStatsBlock';
 import UserActivityBlock from '../components/UserComponents/UserActivityBlock';
@@ -30,6 +31,7 @@ const CoverImage = styled.Image`
   width: 100%;
   height: 100%;
   position: absolute;
+  border-radius: 16px 16px 0px 0px;
 `;
 
 const CoverOverlay = styled.View`
@@ -51,17 +53,7 @@ const EditButton = styled.TouchableOpacity`
   justify-content: center;
 `;
 
-const ShopButton = styled.TouchableOpacity`
-  padding: 14px;
-  border-radius: 999px;
-  background-color: ${({ theme, disabled }) => disabled ? theme.colors.border : theme.colors.card};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  width: 50px;
-  height: 50px;
-  align-items: center;
-  justify-content: center;
-  opacity: ${({ disabled }) => disabled ? 0.5 : 1};
-`;
+
 
 const ButtonsContainer = styled.View`
   flex-direction: row;
@@ -514,9 +506,7 @@ const UserScreen = () => {
                  </EditButtonIconWrapper>
                  <EditButtonText>Редагувати профіль</EditButtonText>
                </EditButton>
-               <ShopButton disabled={true} onPress={() => navigation.navigate('Shop')}>
-                 <Ionicons name="storefront" size={20} color={theme.colors.text} />
-               </ShopButton>
+
              </ButtonsContainer>
            </View>
          );
@@ -602,7 +592,6 @@ const UserScreen = () => {
   if (!isAuthenticated) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <Header />
         <LoginComponent onLoginSuccess={loadData} />
       </View>
     );

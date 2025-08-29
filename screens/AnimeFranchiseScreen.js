@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, FlatList, View, RefreshControl } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,9 +22,7 @@ const CountText = styled.Text`
 `;
 
 const CountContainer = styled.View`
-  padding: 12px 16px;
-  border-bottom-width: 1px;
-  border-bottom-color: ${({ theme }) => theme.colors.border};
+  padding: 0px 12px;
   position: relative;
 `;
 
@@ -35,7 +33,7 @@ const CardContainer = styled.View`
 
 const VerticalLine = styled.View`
   position: absolute;
-  left: 37px;
+  left: 49px;
   top: 0;
   height: 20px;
   width: 4px;
@@ -45,7 +43,7 @@ const VerticalLine = styled.View`
 
 const BottomVerticalLine = styled.View`
   position: absolute;
-  left: 37px;
+  left: 49px;
   bottom: 0;
   height: 20px;
   width: 4px;
@@ -100,7 +98,7 @@ const AnimeFranchiseScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { slug, title } = route.params || {};
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const fetchFranchise = async (isRefresh = false) => {
@@ -152,22 +150,23 @@ const AnimeFranchiseScreen = () => {
     </CountContainer>
   );
 
-  const renderAnimeItem = ({ item }) => (
+  const renderAnimeItem = ({ item, index }) => (
     <CardContainer>
-      <VerticalLine />
-      <BottomVerticalLine />
+      {index > 0 && <VerticalLine />}
+      {index < franchise.length - 1 && <BottomVerticalLine />}
       <CardContent>
         <AnimeRowCard 
           anime={item}
-          imageWidth={80}
-          imageHeight={110}
+          imageWidth={100}
+          imageHeight={135}
           titleFontSize={16}
-          episodesFontSize={13}
-          scoreFontSize={13}
+          episodesFontSize={12}
+          scoreFontSize={12}
+          starIconSize={12}
           descriptionFontSize={12}
-          statusFontSize={10}
+          statusFontSize={12}
           marginBottom={0}
-          imageBorderRadius={12}
+          imageBorderRadius={24}
           titleNumberOfLines={2}
         />
       </CardContent>
@@ -195,7 +194,7 @@ const AnimeFranchiseScreen = () => {
     if (index === 0) {
       return renderCountItem();
     }
-    return renderAnimeItem({ item });
+    return renderAnimeItem({ item, index: index - 1 });
   };
 
   const combinedData = [{ type: 'count' }, ...franchise];
@@ -220,13 +219,21 @@ const AnimeFranchiseScreen = () => {
         keyExtractor={(item, index) => index === 0 ? 'count' : item.slug}
         contentContainerStyle={{
           paddingTop: insets.top + 56 + 20,
-          paddingBottom: 20 + insets.bottom,
+          paddingBottom: insets.bottom + 20,
           paddingHorizontal: 12,
         }}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.text]}
+            tintColor={theme.colors.text}
+            progressViewOffset={insets.top + 56}
+            progressBackgroundColor={isDark ? theme.colors.card : undefined}
+          />
+        }
       />
     </Container>
   );

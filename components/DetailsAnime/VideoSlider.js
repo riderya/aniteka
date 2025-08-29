@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FlatList, Linking, Alert, Image, View } from 'react-native';
 import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
@@ -93,7 +93,7 @@ const getYouTubeVideoId = (url) => {
   return match ? match[1] : null;
 };
 
-const VideoSlider = ({ anime }) => {
+const VideoSlider = ({ anime, onVisibilityChange }) => {
   const navigation = useNavigation();
   const videos = anime?.videos || [];
 
@@ -129,7 +129,13 @@ const VideoSlider = ({ anime }) => {
     }
   };
 
-  if (filteredVideos.length === 0) return null;
+  useEffect(() => {
+    onVisibilityChange?.(filteredVideos.length > 0);
+  }, [filteredVideos.length, onVisibilityChange]);
+
+  if (filteredVideos.length === 0) {
+    return null;
+  }
 
   return (
     <Container>

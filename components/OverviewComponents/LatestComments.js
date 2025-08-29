@@ -1,42 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
 import { useNavigation } from '@react-navigation/native';
 import LatestCommentCard from '../Cards/LatestCommentCard';
 import LatestCommentsSkeleton from '../Skeletons/LatestCommentsSkeleton';
+import { useTheme } from '../../context/ThemeContext';
 
-const LatestComments = React.memo(() => {
+const LatestComments = React.memo(({ onRefresh }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
+  const { theme } = useTheme();
+
+  const fetchComments = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
+      const response = await axios.get('https://api.hikka.io/comments/list');
+      // Фільтруємо коментарі, виключаючи manga, novel та edit, і обмежуємо до 5
+      const filteredComments = response.data.list.filter(comment => 
+        comment.content_type !== 'manga' && comment.content_type !== 'novel' && comment.content_type !== 'edit'
+      ).slice(0, 5);
+      setComments(filteredComments);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchComments = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get('https://api.hikka.io/comments/list');
-        // Фільтруємо коментарі, виключаючи manga, novel та edit, і обмежуємо до 5
-        const filteredComments = response.data.list.filter(comment => 
-          comment.content_type !== 'manga' && comment.content_type !== 'novel' && comment.content_type !== 'edit'
-        ).slice(0, 5);
-        setComments(filteredComments);
-      } catch (error) {
-
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchComments();
-  }, []);
+  }, [fetchComments]);
+
+  // Реєструємо функцію оновлення
+  useEffect(() => {
+    if (onRefresh) {
+      const unregister = onRefresh(() => fetchComments(true));
+      return unregister;
+    }
+  }, [onRefresh, fetchComments]);
 
   return (
     <Container>
       <RowLineHeader title="Коментарі" onPress={() => navigation.navigate('AnimeAllLatestCommentsScreen')} />
       {loading ? (
         <LatestCommentsSkeleton showIndex={false} />
+      ) : refreshing ? (
+        <LoadingContainer>
+          <ActivityIndicator size="small" color={theme.colors.text} />
+        </LoadingContainer>
       ) : (
         <Column>
           {comments.map((item, index) => (
@@ -61,4 +82,9 @@ const Container = styled.View`
 
 const Column = styled.View`
   flex-direction: column;
+`;
+
+const LoadingContainer = styled.View`
+  padding: 20px;
+  align-items: center;
 `;

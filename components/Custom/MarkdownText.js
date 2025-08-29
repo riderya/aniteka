@@ -3,7 +3,12 @@ import { Text, Linking, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { processCommentText } from '../../utils/textUtils';
 
-const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) => {
+const MarkdownText = ({ 
+  children, 
+  style = {}, 
+  numberOfLines, // @deprecated - Use maxHeight on container instead for better markdown support
+  ellipsizeMode 
+}) => {
   const { theme } = useTheme();
   const textStyle = {
     color: style.body?.color || theme.colors.text,
@@ -209,6 +214,19 @@ const MarkdownText = ({ children, style = {}, numberOfLines, ellipsizeMode }) =>
   
   // Якщо це масив елементів (є маркдаун), рендеримо їх у View
   if (Array.isArray(markdownContent)) {
+    // Якщо потрібно обрізати текст, рендеримо простий текст без маркдауну
+    if (numberOfLines !== undefined) {
+      return (
+        <Text 
+          style={textStyle}
+          numberOfLines={numberOfLines}
+          ellipsizeMode={ellipsizeMode}
+        >
+          {children}
+        </Text>
+      );
+    }
+    
     return (
       <View style={{ flexDirection: 'column' }}>
         {markdownContent}

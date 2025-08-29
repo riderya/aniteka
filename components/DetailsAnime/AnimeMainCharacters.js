@@ -8,7 +8,7 @@ import CharacterColumnCard from '../Cards/CharacterColumnCard';
 
 const Container = styled.View``;
 
-const AnimeMainCharacters = ({ anime }) => {
+const AnimeMainCharacters = ({ anime, onVisibilityChange }) => {
   const navigation = useNavigation();
   const slug = anime.slug;
   const title = anime.title_ua || anime.title_en || anime.title_ja || 'Аніме';
@@ -23,16 +23,26 @@ const AnimeMainCharacters = ({ anime }) => {
         const response = await axios.get(`https://api.hikka.io/anime/${slug}/characters`);
         const mainCharacters = response.data.list.filter(item => item.main);
         setCharacters(mainCharacters);
+        
+        // Повідомляємо батьківський компонент про видимість
+        if (onVisibilityChange) {
+          onVisibilityChange(mainCharacters.length > 0);
+        }
       } catch (e) {
         setError(true);
         console.error('Помилка при завантаженні персонажів:', e);
+        
+        // Повідомляємо батьківський компонент про видимість при помилці
+        if (onVisibilityChange) {
+          onVisibilityChange(false);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchCharacters();
-  }, [slug]);
+  }, [slug, onVisibilityChange]);
 
   if (loading) {
     return (
@@ -42,15 +52,9 @@ const AnimeMainCharacters = ({ anime }) => {
     );
   }
 
+  // Якщо немає персонажів або є помилка - не показуємо нічого
   if (error || characters.length === 0) {
-    return (
-      <Container>
-        <RowLineHeader
-          title="Головні персонажі"
-          onPress={() => navigation.navigate('AnimeCharactersScreen', { slug, title })}
-        />
-      </Container>
-    );
+    return null;
   }
 
   return (
@@ -63,10 +67,19 @@ const AnimeMainCharacters = ({ anime }) => {
         data={characters}
         keyExtractor={(_, index) => index.toString()}
         horizontal
-        contentContainerStyle={{ paddingHorizontal: 15 }}
+        contentContainerStyle={{ paddingHorizontal: 12 }}
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => (
-          <CharacterColumnCard character={item.character} />
+          <CharacterColumnCard 
+          character={item.character} 
+          nameFontSize="14px"
+          fontSize="14px"
+          cardMarginRight="12px"
+          borderRadius={24}
+          cardWidth="100px"
+          width="100px"
+          height="130px"
+          />
         )}
       />
     </Container>

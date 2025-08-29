@@ -1,7 +1,7 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Platform, RefreshControl, ScrollView } from 'react-native';
+import { Platform, RefreshControl, ScrollView, Alert } from 'react-native';
 import Header from '../components/Header/Header';
 import OverviewButtons from '../components/OverviewComponents/OverviewButtons';
 import ArticlesSlider from '../components/OverviewComponents/ArticlesSlider';
@@ -26,10 +26,40 @@ const OverviewScreen = React.memo(() => {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
+  const refreshFunctionsRef = useRef([]);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    
+    try {
+      // Викликаємо всі функції оновлення паралельно
+      const refreshPromises = refreshFunctionsRef.current.map(refreshFn => 
+        refreshFn ? refreshFn().catch(error => {
+          console.error('Error during refresh:', error);
+          return Promise.resolve(); // Продовжуємо навіть якщо одна функція не вдалася
+        }) : Promise.resolve()
+      );
+      await Promise.all(refreshPromises);
+    } catch (error) {
+      console.error('Error during refresh:', error);
+      Alert.alert(
+        'Помилка оновлення',
+        'Не вдалося оновити деякі дані. Спробуйте ще раз.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  const addRefreshFunction = useCallback((refreshFn) => {
+    refreshFunctionsRef.current.push(refreshFn);
+    return () => {
+      const index = refreshFunctionsRef.current.indexOf(refreshFn);
+      if (index > -1) {
+        refreshFunctionsRef.current.splice(index, 1);
+      }
+    };
   }, []);
 
   return (
@@ -55,18 +85,18 @@ const OverviewScreen = React.memo(() => {
         >
           <OverviewButtons />
           <Divider />
-          <CollectionSlider />
+          <CollectionSlider onRefresh={addRefreshFunction} />
           <Divider />
-          <ArticlesSlider />
+          <ArticlesSlider onRefresh={addRefreshFunction} />
           <Divider />
           <SocialLinks 
             telegramUrl="https://t.me/YummyAnimeList"
             // discordUrl="https://discord.gg/5truHDdzEq"
           />
           <Divider />
-          <AnimeScheduleSlider />
+          <AnimeScheduleSlider onRefresh={addRefreshFunction} />
           <Divider />
-          <LatestComments />
+          <LatestComments onRefresh={addRefreshFunction} />
         </ScrollView>
       </Container>
     </>

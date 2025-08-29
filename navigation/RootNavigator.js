@@ -24,8 +24,7 @@ import ArticleDetailScreen from '../screens/ArticleDetailScreen';
 import CollectionDetailScreen from '../screens/CollectionDetailScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 
-import UserInventoryScreen from '../components/Shop/UserInventoryScreen';
-import ShopScreen from '../components/Shop/ShopScreen';
+
 import CommentRepliesScreen from '../screens/CommentRepliesScreen';
 import AnimeFranchiseScreen from '../screens/AnimeFranchiseScreen';
 
@@ -75,8 +74,7 @@ export default function RootNavigator() {
              <RootStack.Screen name="CollectionDetailScreen" component={CollectionDetailScreen} />
        <RootStack.Screen name="UserProfileScreen" component={UserProfileScreen} />
 
-       <RootStack.Screen name="Inventory" component={UserInventoryScreen} />
-       <RootStack.Screen name="Shop" component={ShopScreen} />
+
        <RootStack.Screen name="CommentRepliesScreen" component={CommentRepliesScreen} />
        <RootStack.Screen name="AnimeFranchise" component={AnimeFranchiseScreen} />
 

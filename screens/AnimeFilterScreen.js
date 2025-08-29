@@ -121,16 +121,27 @@ export default function AnimeFilterScreen() {
     fetchGenres();
   }, []);
 
-  // Автоматичне застосування фільтра, якщо передано початковий жанр
+  // Обробка initialFilters з route.params
   useEffect(() => {
-    if (route.params?.initialGenre && tokenReady && authToken && !loadingGenres) {
-      // Невелика затримка, щоб жанри встигли завантажитися
-      const timer = setTimeout(() => {
-        applyFilters();
-      }, 500);
-      return () => clearTimeout(timer);
+    if (route.params?.initialFilters) {
+      const initialFilters = route.params.initialFilters;
+      setFilters(prev => ({
+        ...prev,
+        selectedGenres: initialFilters.genres || prev.selectedGenres,
+        selectedMediaTypes: initialFilters.media_type || prev.selectedMediaTypes,
+        selectedStatuses: initialFilters.status || prev.selectedStatuses,
+        selectedSeasons: initialFilters.airing_season || prev.selectedSeasons,
+        selectedRatings: initialFilters.rating || prev.selectedRatings,
+        yearFrom: initialFilters.years?.[0] || prev.yearFrom,
+        yearTo: initialFilters.years?.[1] || prev.yearTo,
+        selectedSort: initialFilters.sort?.[0] || prev.selectedSort,
+      }));
     }
-  }, [route.params?.initialGenre, tokenReady, authToken, applyFilters, loadingGenres]);
+  }, [route.params?.initialFilters]);
+
+
+
+  // Видалено автоматичне застосування фільтра при передачі жанру
 
   const toggleOption = (key) => (slug) => {
     setFilters((prev) => {

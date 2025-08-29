@@ -1,6 +1,6 @@
 // TopDetail.js
 import { TouchableOpacity } from 'react-native';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Alert, View, StyleSheet, Modal, Text } from 'react-native';
 import ImageViewing from 'react-native-image-viewing';
 import styled from 'styled-components/native';
@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
+import { useWatchStatus } from '../../context/WatchStatusContext';
 import AnilistBanner from '../BackgroundImg/AnilistBanner';
 import KitsuBanner from '../BackgroundImg/KitsuBanner';
 import TMDBBanner from '../BackgroundImg/TMDBBanner';
@@ -30,6 +31,7 @@ const TopDetail = ({ anime }) => {
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
   const { top: safeAreaTop } = useSafeAreaInsets();
+  const { fetchAnimeStatus, fetchAnimeFavourite, authToken, isAuthChecked } = useWatchStatus();
   const fallbackImage = require('../../assets/image/image404.png');
   const [isInfoModalVisible, setInfoModalVisible] = useState(false);
   const [isStudiosModalVisible, setStudiosModalVisible] = useState(false);
@@ -43,6 +45,25 @@ const TopDetail = ({ anime }) => {
   const [galleryImages, setGalleryImages] = useState([]);
   const [bannerUrls, setBannerUrls] = useState([]);
   const previousImagesRef = useRef([]);
+
+  // Паралельне завантаження статусу та вподобаного при монтуванні
+  useEffect(() => {
+    if (!isAuthChecked || !authToken || !anime?.slug) return;
+
+    // Завантажуємо статус та вподобане паралельно для швидшого відображення
+    const loadUserData = async () => {
+      try {
+        await Promise.all([
+          fetchAnimeStatus(anime.slug),
+          fetchAnimeFavourite(anime.slug)
+        ]);
+      } catch (error) {
+        console.log('Error preloading user data:', error);
+      }
+    };
+
+    loadUserData();
+  }, [anime?.slug, authToken, isAuthChecked, fetchAnimeStatus, fetchAnimeFavourite]);
 
   const copyToClipboard = async (text) => {
     await Clipboard.setStringAsync(text);
@@ -61,6 +82,14 @@ const TopDetail = ({ anime }) => {
   const description = anime.synopsis_ua || anime.synopsis_en || 'Опис відсутній.';
   // Приблизна оцінка: 5 рядків * ~40 символів на рядок = ~200 символів
   const shouldShowToggle = description.length > 200 && !expanded;
+
+  // Функція для створення скороченого тексту
+  const getTruncatedText = (text, maxLength = 200) => {
+    if (text.length <= maxLength) return text;
+    
+    const truncated = text.substring(0, maxLength);
+    return truncated + '...';
+  };
 
   const media_Type = {
     tv: 'ТБ-серіал',
@@ -94,11 +123,6 @@ const TopDetail = ({ anime }) => {
     summer: 'Літо',
     fall: 'Осінь',
   };
-
-
-
-
-  
 
   // Оновлюємо галерею зображень при зміні bannerUrls та студій
   React.useEffect(() => {
@@ -259,7 +283,7 @@ const TopDetail = ({ anime }) => {
             </InfoRow>
             <InfoRow>
               <InfoBold>Серій:</InfoBold>
-              <InfoText>{anime.episodes_released}/{anime.episodes_total}</InfoText>
+              <InfoText>{anime.episodes_released || '?'}/{anime.episodes_total || '?'}</InfoText>
             </InfoRow>
             <InfoRow>
               <InfoBold>Тривалість епізоду:</InfoBold>
@@ -332,22 +356,26 @@ const TopDetail = ({ anime }) => {
         <DescriptionContainer>
           <DescriptionTitle>Опис</DescriptionTitle>
           <DescriptionWrapper>
-            <Markdown
-              style={{
-                body: {
-                  color: theme.colors.text,
-                  fontSize: 16,
-                  lineHeight: 22,
-                },
-                link: {
-                  color: theme.colors.primary,
-                },
-              }}
-              numberOfLines={expanded ? undefined : maxLines}
-              ellipsizeMode="tail"
-            >
-              {anime.synopsis_ua || anime.synopsis_en || 'Опис відсутній.'}
-            </Markdown>
+            <View style={{ 
+              maxHeight: expanded ? undefined : maxLines * 22, // maxLines * lineHeight
+              overflow: 'hidden',
+              position: 'relative'
+            }}>
+              <Markdown
+                style={{
+                  body: {
+                    color: theme.colors.text,
+                    fontSize: 16,
+                    lineHeight: 22,
+                  },
+                  link: {
+                    color: theme.colors.primary,
+                  },
+                }}
+              >
+                {description}
+              </Markdown>
+            </View>
           </DescriptionWrapper>
 
           {(shouldShowToggle || expanded) && (
@@ -362,23 +390,35 @@ const TopDetail = ({ anime }) => {
       <AnimatedModal visible={isInfoModalVisible} onClose={() => setInfoModalVisible(false)} title="Інформація про аніме">
         <SheetColumn>
           <SheetLabel>Назва 🇺🇦</SheetLabel>
-          <TouchableOpacity onPress={() => copyToClipboard(anime.title_ua ?? 'Немає')}>
-            <SheetText>{anime.title_ua ?? 'Немає'} <StyledIcon name="copy" /></SheetText>
-          </TouchableOpacity>
+          {anime.title_ua ? (
+            <TouchableOpacity onPress={() => copyToClipboard(anime.title_ua)}>
+              <SheetText>{anime.title_ua} <StyledIcon name="copy" /></SheetText>
+            </TouchableOpacity>
+          ) : (
+            <SheetText>Немає</SheetText>
+          )}
         </SheetColumn>
 
         <SheetColumn>
           <SheetLabel>Англійська назва 🇬🇧</SheetLabel>
-          <TouchableOpacity onPress={() => copyToClipboard(anime.title_en ?? 'Немає')}>
-            <SheetText>{anime.title_en ?? 'Немає'} <StyledIcon name="copy" /></SheetText>
-          </TouchableOpacity>
+          {anime.title_en ? (
+            <TouchableOpacity onPress={() => copyToClipboard(anime.title_en)}>
+              <SheetText>{anime.title_en} <StyledIcon name="copy" /></SheetText>
+            </TouchableOpacity>
+          ) : (
+            <SheetText>Немає</SheetText>
+          )}
         </SheetColumn>
 
         <SheetColumn>
           <SheetLabel>Оригінальна 🇯🇵</SheetLabel>
-          <TouchableOpacity onPress={() => copyToClipboard(anime.title_ja ?? 'Немає')}>
-            <SheetText>{anime.title_ja ?? 'Немає'} <StyledIcon name="copy" /></SheetText>
-          </TouchableOpacity>
+          {anime.title_ja ? (
+            <TouchableOpacity onPress={() => copyToClipboard(anime.title_ja)}>
+              <SheetText>{anime.title_ja} <StyledIcon name="copy" /></SheetText>
+            </TouchableOpacity>
+          ) : (
+            <SheetText>Немає</SheetText>
+          )}
         </SheetColumn>
 
         <SheetColumn>
@@ -664,8 +704,10 @@ const DescriptionWrapper = styled.View``;
 
 const ToggleButton = styled.TouchableOpacity`
   align-items: center;
-  width: 100%;
-  margin-top: 8px;
+  margin-top: 12px;
+  background-color: ${({ theme }) => theme.colors.border};
+  border-radius: 999px;
+  padding: 12px;
 `;
 
 const ToggleText = styled.Text`

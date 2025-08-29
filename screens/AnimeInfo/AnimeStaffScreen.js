@@ -151,15 +151,15 @@ const AnimeStaffScreen = () => {
   return (
     <Container>
       <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
-        <HeaderTitleBar title={`Всі автори: ${title}`} />
+        <HeaderTitleBar title={title ? `Всі автори: ${title}` : 'Всі автори'} />
       </BlurOverlay>
 
       <FlatList
         data={staff}
         keyExtractor={(item, index) => `staff-${item.person.slug}-${index}`}
         contentContainerStyle={{
-          paddingTop: headerHeight,
-          paddingBottom: 20 + insets.bottom,
+          paddingTop: insets.top + 56 + 20,
+          paddingBottom: insets.bottom + 20,
         }}
         renderItem={({ item }) => (
           <StaffCardRow
@@ -170,6 +170,11 @@ const AnimeStaffScreen = () => {
                 slug: item.person.slug,
               })
             }
+            imageBorderRadius={24}
+            imageWidth={90}
+            imageHeight={120}
+            nameFontSize={16}
+            roleFontSize={13}
           />
         )}
         onEndReached={handleLoadMore}
@@ -180,8 +185,8 @@ const AnimeStaffScreen = () => {
         windowSize={10}
         initialNumToRender={10}
         getItemLayout={(data, index) => ({
-          length: 80, // Приблизна висота StaffCardRow
-          offset: 80 * index,
+          length: 140,
+          offset: 140 * index,
           index,
         })}
       />

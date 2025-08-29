@@ -121,6 +121,7 @@ const CommentsDetailsScreen = () => {
   const [expandedComments, setExpandedComments] = useState({});
   const [isFetching, setIsFetching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Ключ для примусового оновлення CommentCard
 
   // Поточний користувач (reference) з SecureStore
   const [currentUserRef, setCurrentUserRef] = useState(null);
@@ -183,6 +184,8 @@ const CommentsDetailsScreen = () => {
         });
         
         setHasMore(res.data.pagination.page < res.data.pagination.pages);
+        // Збільшуємо ключ для примусового оновлення CommentCard
+        setRefreshKey(prev => prev + 1);
       } catch (e) {
         console.error('Помилка при оновленні коментарів:', e);
       }
@@ -234,6 +237,8 @@ const CommentsDetailsScreen = () => {
       let newComments = res.data.list || [];
       setComments(newComments);
       setHasMore(res.data.pagination.page < res.data.pagination.pages);
+      // Збільшуємо ключ для примусового оновлення CommentCard
+      setRefreshKey(prev => prev + 1);
     } catch (e) {
       console.error('Помилка при оновленні коментарів:', e);
       Alert.alert('Помилка', 'Не вдалося оновити коментарі. Спробуйте ще раз.');
@@ -300,6 +305,7 @@ const CommentsDetailsScreen = () => {
       onDelete={handleDeleteComment}
       currentUserRef={currentUserRef}
       navigation={navigation}
+      refreshKey={refreshKey} // Передаємо ключ для примусового оновлення
     />
   );
 

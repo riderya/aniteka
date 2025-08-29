@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
 import Markdown from '../Custom/MarkdownText';
-import { View, Modal, TouchableOpacity, Pressable, Alert, Text } from 'react-native';
+import { View, Modal, TouchableOpacity, Pressable, Alert, Text, FlatList } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,20 +11,22 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import { processCommentText } from '../../utils/textUtils';
-
+import CommentForm from '../CommentForm/CommentForm';
 
 
 dayjs.extend(isToday);
 dayjs.extend(isYesterday);
 
-const CommentCardWrapper = styled.View`margin: 12px;`;
+const CommentCardWrapper = styled.View`
+  margin: 12px;
+`;
 const RowInfo = styled.View`flex-direction: row;`;
 const Avatar = styled.Image`
   width: 50px; height: 50px; border-radius: 999px; margin-right: 12px;
   background-color: ${({ theme }) => theme.colors.card};
 `;
 const CommentBody = styled.View`flex: 1;`;
-const RowInfoTitle = styled.View`flex-direction: row; gap: 12px;`;
+const RowInfoTitle = styled.View`flex-direction: row; gap: 12px; margin-bottom: 4px;`;
 const Username = styled.Text`
   font-weight: bold; color: ${({ theme }) => theme.colors.text}; font-size: 14px;
 `;
@@ -111,6 +113,89 @@ const ModalButtonText = styled.Text`
   color: ${({ theme }) => theme.colors.gray}; font-size: 16px; font-weight: 500;
 `;
 
+const ReplyContainer = styled.View`
+  margin-left: 62px;
+  margin-top: 8px;
+  border-left-width: 2px;
+  border-left-color: ${({ theme }) => theme.colors.border};
+  padding-left: 12px;
+`;
+
+const ReplyItem = styled.View`
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background-color: ${({ theme }) => theme.colors.card};
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const ReplyHeader = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 4px;
+`;
+
+const ReplyAvatar = styled.Image`
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  margin-right: 8px;
+  background-color: ${({ theme }) => theme.colors.card};
+`;
+
+const ReplyUsername = styled.Text`
+  font-weight: bold;
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 12px;
+`;
+
+const ReplyDate = styled.Text`
+  font-size: 10px;
+  color: ${({ theme }) => theme.colors.gray};
+  margin-left: 8px;
+`;
+
+const ReplyActions = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+`;
+
+const ReplyVoteContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+`;
+
+const ReplyVoteText = styled.Text`
+  font-size: 11px;
+  color: ${({ theme }) => theme.colors.gray};
+`;
+
+const ShowRepliesButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
+  border-radius: 12px;
+  align-self: flex-start;
+`;
+
+const ShowRepliesText = styled.Text`
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 4px;
+`;
+
+const ReplyFormContainer = styled.View`
+  margin-top: 8px;
+  margin-left: 62px;
+  padding-left: 12px;
+`;
+
 
 // === Основний CommentCard ===
 const CommentCard = ({
@@ -119,9 +204,13 @@ const CommentCard = ({
   theme,
   comment,
   onDelete,
+  onReply,
   navigation,
   content_type = 'anime',
   slug,
+  hideRepliesIndicator = false, // Новий параметр для приховування індикатора відповідей
+  parentComment = null, // Батьківський коментар для відображення імені користувача
+  refreshKey = 0, // Ключ для примусового оновлення
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [voteScore, setVoteScore] = useState(item.vote_score);
@@ -129,6 +218,10 @@ const CommentCard = ({
   const [currentUserRef, setCurrentUserRef] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [repliesCount, setRepliesCount] = useState(0);
+  const [replies, setReplies] = useState([]);
+  const [showReplies, setShowReplies] = useState(false);
+  const [loadingReplies, setLoadingReplies] = useState(false);
+  const [showReplyForm, setShowReplyForm] = useState(false);
 
   const commentSlug = item.slug || item.reference;
   const fullText = item.text || '';
@@ -201,7 +294,34 @@ const CommentCard = ({
       if (!commentSlug) return;
       try {
         const res = await axios.get(`https://api.hikka.io/comments/thread/${commentSlug}`);
-        setRepliesCount(res.data.replies?.length || 0);
+        const directReplies = res.data.replies || [];
+        
+        // Рекурсивно підраховуємо всі відповіді
+        const countAllReplies = async (replies, level = 0) => {
+          if (!replies || replies.length === 0 || level > 5) return 0; // Обмежуємо глибину до 5 рівнів
+          
+          let totalCount = replies.length;
+          
+          for (const reply of replies) {
+            if (level < 5) {
+              try {
+                const nestedRes = await axios.get(`https://api.hikka.io/comments/thread/${reply.reference}`);
+                const nestedReplies = nestedRes.data.replies || [];
+                if (nestedReplies.length > 0) {
+                  totalCount += await countAllReplies(nestedReplies, level + 1);
+                }
+              } catch (e) {
+                // Якщо немає відповідей або помилка, продовжуємо
+                console.log(`Немає відповідей для коментаря ${reply.reference}`);
+              }
+            }
+          }
+          
+          return totalCount;
+        };
+        
+        const totalReplies = await countAllReplies(directReplies);
+        setRepliesCount(totalReplies);
       } catch (e) {
         // Якщо немає відповідей або API не підтримує відповіді, встановлюємо 0
         if (e.response?.status === 404 || e.response?.status === 400) {
@@ -216,7 +336,7 @@ const CommentCard = ({
     fetchVote();
     fetchRepliesCount();
 
-  }, [fullText, commentSlug, comment]);
+  }, [fullText, commentSlug, comment, refreshKey]);
 
   const handleVote = async (score) => {
     // Не дозволяємо голосувати за оптимістичні коментарі
@@ -352,12 +472,28 @@ const CommentCard = ({
     }
   };
 
-    const renderMarkdownWithSpoilers = () => {
-      // Очищуємо текст перед відображенням
-      const cleanedFullText = processCommentText(fullText);
-      
-      return (
-        <>
+      const renderMarkdownWithSpoilers = () => {
+    // Очищуємо текст перед відображенням
+    const cleanedFullText = processCommentText(fullText);
+    
+    // Додаємо ім'я користувача, на якого відповідаємо (якщо це відповідь)
+    let displayText = cleanedFullText;
+    
+    // Перевіряємо, чи є інформація про батьківський коментар
+    if (item.parentInfo && item.parentInfo.username) {
+      const parentUsername = item.parentInfo.username;
+      if (!cleanedFullText.startsWith(`@${parentUsername}`)) {
+        displayText = `@${parentUsername} ${cleanedFullText}`;
+      }
+    }
+    
+    return (
+      <>
+        <View style={{ 
+          maxHeight: isExpanded ? undefined : maxLines * 18, // maxLines * lineHeight
+          overflow: 'hidden',
+          position: 'relative'
+        }}>
           <Markdown
             style={{
               body: {
@@ -370,23 +506,23 @@ const CommentCard = ({
                 marginVertical: 0,
               },
             }}
-            numberOfLines={isExpanded ? undefined : maxLines}
-            ellipsizeMode="tail"
             hideSpoilers={!isExpanded}
           >
-            {isExpanded ? cleanedFullText : getTruncatedText(cleanedFullText)}
+            {displayText}
           </Markdown>
 
-          {(shouldShowToggle || isExpanded) && (
-            <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
-              <ShowText style={{ marginTop: 4 }}>
-                {isExpanded ? 'Згорнути' : 'Показати більше...'}
-              </ShowText>
-            </TouchableOpacity>
-          )}
-        </>
-      );
-    };
+        </View>
+
+        {(shouldShowToggle || isExpanded) && (
+          <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
+            <ShowText style={{ marginTop: 8 }}>
+              {isExpanded ? 'Згорнути' : 'Показати більше...'}
+            </ShowText>
+          </TouchableOpacity>
+        )}
+      </>
+    );
+  };
 
   return (
     <>
@@ -395,7 +531,9 @@ const CommentCard = ({
         activeOpacity={item.is_optimistic ? 1 : 0.9}
         disabled={item.is_optimistic}
       >
-        <CommentCardWrapper style={{ opacity: item.is_optimistic ? 0.8 : 1 }}>
+        <CommentCardWrapper 
+          style={{ opacity: item.is_optimistic ? 0.8 : 1 }}
+        >
                       <RowInfo>
               <TouchableOpacity onPress={handleUserPress} activeOpacity={0.7}>
                 <Avatar
@@ -421,12 +559,14 @@ const CommentCard = ({
                   <TouchableOpacity
                     onPress={(e) => {
                       e.stopPropagation();
-                      if (navigation) {
-                        navigation.replace('CommentRepliesScreen', {
+                      if (onReply) {
+                        onReply(item);
+                      } else if (navigation) {
+                        navigation.navigate('CommentRepliesScreen', {
                           parentComment: item,
                           contentType: content_type,
                           slug: slug,
-                          title: 'Відповіді на коментар'
+                          title: 'Відповіді'
                         });
                       }
                     }}
@@ -476,18 +616,18 @@ const CommentCard = ({
             </RowInfo>
             
             {/* Індикатор відповідей */}
-            {repliesCount > 0 && (
+            {repliesCount > 0 && !hideRepliesIndicator && (
               <ReplyIndicatorContainer>
                 <ReplyLine />
                 <ReplyIndicatorButton
                   onPress={(e) => {
                     e.stopPropagation();
                     if (navigation) {
-                      navigation.replace('CommentRepliesScreen', {
+                      navigation.navigate('CommentRepliesScreen', {
                         parentComment: item,
                         contentType: content_type,
                         slug: slug,
-                        title: 'Відповіді на коментар'
+                        title: 'Відповіді'
                       });
                     }
                   }}

@@ -23,13 +23,13 @@ const Info = styled.View`
 
 const Name = styled.Text`
   color: ${({ theme }) => theme.colors.text};
-  font-size: 16px;
+  font-size: ${({ fontSize }) => fontSize || '16px'};
   font-weight: bold;
 `;
 
 const Role = styled.Text`
   color: ${({ theme }) => theme.colors.gray};
-  font-size: 14px;
+  font-size: ${({ fontSize }) => fontSize || '14px'};
   margin-top: 4px;
 `;
 
@@ -39,7 +39,9 @@ const StaffCardRow = ({
   onPress, 
   imageBorderRadius = 16,
   imageWidth = 90,
-  imageHeight = 120
+  imageHeight = 120,
+  nameFontSize = '16px',
+  roleFontSize = '14px'
 }) => {
   return (
     <TouchableOpacity onPress={onPress}>
@@ -53,10 +55,10 @@ const StaffCardRow = ({
           imageHeight={imageHeight}
         />
         <Info>
-          <Name numberOfLines={1}>
+          <Name fontSize={nameFontSize} numberOfLines={1}>
             {person.name_ua || person.name_en}
           </Name>
-          <Role numberOfLines={2}>
+          <Role fontSize={roleFontSize} numberOfLines={2}>
             {roles.map((r) => r.name_ua || r.name_en).join(', ')}
           </Role>
         </Info>

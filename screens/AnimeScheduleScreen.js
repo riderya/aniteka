@@ -221,7 +221,6 @@ const AnimeScheduleScreen = () => {
       data.push({ type: 'animeGrid', id: `anime-${index}`, data: group.data });
     });
     
-    console.log('flatListData length:', data.length);
     return data;
   }, [groupedData, todayDateString]);
 

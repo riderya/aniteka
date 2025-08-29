@@ -70,7 +70,7 @@ const AnimeCharactersScreen = () => {
   
   const CHARACTERS_PER_PAGE = 20;
 
-  const headerHeight = insets.top + 60;
+  const headerHeight = insets.top + 56 + 20;
 
   const handleShare = useCallback(async () => {
     try {
@@ -179,7 +179,14 @@ const AnimeCharactersScreen = () => {
           paddingBottom: 20 + insets.bottom,
         }}
         renderItem={({ item }) => (
-          <CharacterCardItem character={item.character} />
+          <CharacterCardItem 
+          character={item.character}
+          imageWidth={90}
+          imageHeight={120}
+          nameFontSize={16}
+          altNameFontSize={13}
+          imageBorderRadius={24}
+          />
         )}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}

@@ -4,7 +4,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { getUserActiveItems, getShopItems } from '../../utils/supabase';
+import MarkdownText from '../Custom/MarkdownText';
 
 const AvatarWrapper = styled.View`
   position: relative;
@@ -106,10 +106,10 @@ const EmailText = styled.Text`
   color: ${({ theme }) => theme.colors.gray};
 `;
 
-const Description = styled.Text`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.gray};
+const DescriptionContainer = styled.View`
   margin-bottom: 10px;
+  padding-horizontal: 20px;
+  align-items: center;
 `;
 
 const ActivityInfoContainer = styled.TouchableOpacity`
@@ -211,38 +211,8 @@ export default function UserAvatar({ userData, showEmailButton = true, showUserB
 
   // Завантаження активного оверлею
   useEffect(() => {
-    const loadActiveOverlay = async () => {
-      if (currentUser?.reference) {
-        try {
-          const activeItems = await getUserActiveItems(currentUser.reference);
-          
-                     if (activeItems && activeItems.avatar_overlay_id) {
-             
-             const overlayItems = await getShopItems(null, 'avatar_overlay');
-             
-             const activeOverlayItem = overlayItems.find(item => item.id === activeItems.avatar_overlay_id);
-             
-             if (activeOverlayItem) {
-       
-               setActiveOverlay(activeOverlayItem);
-             } else {
-               
-               setActiveOverlay(null);
-             }
-           } else {
-             
-             setActiveOverlay(null);
-           }
-        } catch (error) {
-          
-          setActiveOverlay(null);
-        }
-      } else {
-        setActiveOverlay(null);
-      }
-    };
-
-    loadActiveOverlay();
+    // Поки магазин не реалізований, оверлей не завантажується
+    setActiveOverlay(null);
   }, [currentUser?.reference]);
 
   // Auto-hide tooltip after 3 seconds
@@ -338,7 +308,23 @@ export default function UserAvatar({ userData, showEmailButton = true, showUserB
         </ActivityInfoContainer>
 
         {userData.description ? (
-          <Description>{userData.description}</Description>
+          <DescriptionContainer>
+            <MarkdownText
+              style={{
+                body: {
+                  color: theme.colors.gray,
+                  fontSize: 14,
+                  lineHeight: 20,
+                  textAlign: 'center',
+                },
+                link: {
+                  color: theme.colors.primary,
+                },
+              }}
+            >
+              {userData.description}
+            </MarkdownText>
+          </DescriptionContainer>
         ) : null}
 
         {showEmailButton && (

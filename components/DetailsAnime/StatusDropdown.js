@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../../context/ThemeContext';
 import { useWatchStatus } from '../../context/WatchStatusContext';
 import Toast from 'react-native-toast-message';
@@ -34,11 +33,13 @@ const StatusDropdown = ({ slug, episodes_total }) => {
     episodes,
     setEpisodes,
     updateAnimeStatus,
+    getAnimeStatus,
+    fetchAnimeStatus,
+    authToken,
+    isAuthChecked,
   } = useWatchStatus();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [authToken, setAuthToken] = useState(null);
-  const [tokenChecked, setTokenChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -57,15 +58,8 @@ const StatusDropdown = ({ slug, episodes_total }) => {
     Переглянуто: theme.colors.completed,
     Відкладено: theme.colors.on_hold,
     Закинуто: theme.colors.dropped,
-    'Не дивлюсь': theme.colors.borderInput,
+    'Не дивлюсь': theme.colors.border,
   };
-
-  useEffect(() => {
-    SecureStore.getItemAsync('hikka_token').then((token) => {
-      setAuthToken(token);
-      setTokenChecked(true);
-    });
-  }, []);
 
   useEffect(() => {
     // При зміні аніме скидаємо епізоди та статус, показуємо спінер до завершення перевірки токена/фетчу
@@ -76,7 +70,7 @@ const StatusDropdown = ({ slug, episodes_total }) => {
 
   useEffect(() => {
     // Чекаємо доки перевіриться токен. Поки не перевірено — лишаємо спінер.
-    if (!tokenChecked || !slug) return;
+    if (!isAuthChecked || !slug) return;
 
     // Якщо користувач не авторизований — фіксуємо стан "Не дивлюсь" і вимикаємо спінер
     if (!authToken) {
@@ -86,28 +80,26 @@ const StatusDropdown = ({ slug, episodes_total }) => {
       return;
     }
 
-    const fetchStatus = async () => {
+    const loadStatus = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`https://api.hikka.io/watch/${slug}`, {
-          headers: { auth: authToken },
-        });
-
-        if (res.status === 404) {
-          setSelectedStatus('Не дивлюсь');
-          updateAnimeStatus(slug, null);
+        // Спочатку перевіряємо кеш
+        const cachedStatus = getAnimeStatus(slug);
+        if (cachedStatus !== null) {
+          const uiStatus = Object.keys(statusApiMapping).find(
+            (k) => statusApiMapping[k] === cachedStatus,
+          ) || 'Не дивлюсь';
+          setSelectedStatus(uiStatus);
+          setIsLoading(false);
           return;
         }
 
-        const data = await res.json();
-        const uiStatus =
-          Object.keys(statusApiMapping).find(
-            (k) => statusApiMapping[k] === data.status,
-          ) || 'Не дивлюсь';
-
+        // Якщо немає в кеші, завантажуємо
+        const apiStatus = await fetchAnimeStatus(slug);
+        const uiStatus = Object.keys(statusApiMapping).find(
+          (k) => statusApiMapping[k] === apiStatus,
+        ) || 'Не дивлюсь';
         setSelectedStatus(uiStatus);
-        // Зберігаємо статус у глобальному стані
-        updateAnimeStatus(slug, data.status);
       } catch {
         setSelectedStatus('Не дивлюсь');
         updateAnimeStatus(slug, null);
@@ -116,8 +108,8 @@ const StatusDropdown = ({ slug, episodes_total }) => {
       }
     };
 
-    fetchStatus();
-  }, [authToken, slug, tokenChecked]);
+    loadStatus();
+  }, [authToken, slug, isAuthChecked, getAnimeStatus, fetchAnimeStatus, updateAnimeStatus]);
 
   const showLoginToast = () => {
     Toast.show({
@@ -239,7 +231,7 @@ const StatusDropdown = ({ slug, episodes_total }) => {
         borderColor={isLoading ? statusBorderColors['Не дивлюсь'] : statusBorderColors[selectedStatus]}
       >
         {isLoading ? (
-          <ActivityIndicator size="small" color={statusColors['Не дивлюсь']} />
+          <ActivityIndicator style={{ paddingHorizontal: 42 }} size="small" color={statusColors['Не дивлюсь']} />
         ) : (
           <>
             <Ionicons

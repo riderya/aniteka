@@ -11,8 +11,8 @@ export const cleanText = (text) => {
   if (!text || typeof text !== 'string') return text;
   
   return text
-    // Замінюємо множинні переноси рядків на одинарні
-    .replace(/\n{3,}/g, '\n\n')
+    // Замінюємо множинні переноси рядків на максимум один
+    .replace(/\n{2,}/g, '\n')
     // Видаляємо пробіли на початку та в кінці рядків
     .split('\n')
     .map(line => line.trim())

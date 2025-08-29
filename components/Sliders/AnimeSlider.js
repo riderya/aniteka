@@ -11,17 +11,17 @@ import axios from 'axios';
 import styled from 'styled-components/native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
+import RowLineHeader from '../DetailsAnime/RowLineHeader';
 import * as SecureStore from 'expo-secure-store';
 import { useOrientation } from '../../hooks';
 import { getResponsiveDimensions } from '../../utils/orientationUtils';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refreshTrigger }) => {
+const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refreshTrigger, onPress }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef(null);
   const navigation = useNavigation();
   const orientation = useOrientation();
@@ -56,22 +56,14 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
     }
   }, [api, requestBody, refreshTrigger]);
 
-  const scrollToIndex = (index) => {
-    if (flatListRef.current && index >= 0 && index < data.length) {
-      flatListRef.current.scrollToIndex({ index, animated: true });
-      setCurrentIndex(index);
-    }
-  };
-
   if (loading) {
     return (
       <Container>
-        <HeaderLine>
-          <Column>
-            <TitleLine orientation={orientation}>{titleLineText}</TitleLine>
-            <Description orientation={orientation}>{descriptionText}</Description>
-          </Column>
-        </HeaderLine>
+        <RowLineHeader
+          title={titleLineText}
+          description={descriptionText}
+          onPress={onPress}
+        />
 
         <SkeletonList
           horizontal
@@ -88,29 +80,11 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
 
   return (
     <Container>
-      <HeaderLine>
-        <Column>
-          <TitleLine>{titleLineText}</TitleLine>
-          <Description>{descriptionText}</Description>
-        </Column>
-
-        <ButtonRow>
-          <ArrowButton
-            onPress={() => scrollToIndex(currentIndex - 1)}
-            disabled={currentIndex === 0}
-            disabledOpacity={0.3}
-          >
-            <StyledIcon name="left" disabled={currentIndex === 0} />
-          </ArrowButton>
-          <ArrowButton
-            onPress={() => scrollToIndex(currentIndex + 1)}
-            disabled={currentIndex === data.length - 1}
-            disabledOpacity={0.3}
-          >
-            <StyledIcon name="right" disabled={currentIndex === data.length - 1} />
-          </ArrowButton>
-        </ButtonRow>
-      </HeaderLine>
+      <RowLineHeader
+        title={titleLineText}
+        description={descriptionText}
+        onPress={onPress}
+      />
 
       <StyledFlatList
         ref={flatListRef}
@@ -146,49 +120,9 @@ const StyledFlatList = styled.FlatList.attrs(() => ({
   },
 }))``;
 
-const HeaderLine = styled.View`
-  width: 100%;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 0px 12px;
-  margin-bottom: 8px;
-`;
 
-const Column = styled.View`
-  flex-direction: column;
-  width: 80%;
-`;
 
-const TitleLine = styled.Text`
-  font-size: ${({ orientation }) => orientation === 'landscape' ? 20 : 24}px;
-  font-weight: 900;
-  margin-bottom: 4px;
-  color: ${({ theme }) => theme.colors.text};
-`;
 
-const Description = styled.Text`
-  font-size: ${({ orientation }) => orientation === 'landscape' ? 12 : 14}px;
-  font-weight: 400;
-  color: ${({ theme }) => theme.colors.gray};
-  margin-bottom: 8px;
-`;
-
-const ButtonRow = styled.View`
-  flex-direction: row;
-  gap: 8px;
-`;
-
-const ArrowButton = styled.TouchableOpacity`
-  opacity: ${({ disabled, disabledOpacity }) => (disabled ? disabledOpacity || 0.5 : 1)};
-`;
-
-const StyledIcon = styled(AntDesign)`
-  color: ${({ theme, disabled }) =>
-    disabled ? theme.colors.disabled : theme.colors.primary};
-  font-weight: 600;
-  font-size: 24px;
-`;
 
 const SkeletonList = styled(FlatList)`
   padding-left: 10px;

@@ -24,7 +24,7 @@ const StaffName = styled.Text`
 
 const RoleText = styled.Text`
   font-size: 12px;
-  margin-top: 4px;
+  margin-top: 8px;
   color: ${({ theme }) => theme.colors.gray};
 `;
 

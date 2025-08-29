@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components/native';
 import { Text } from 'react-native';
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { useWatchStatus } from '../../context/WatchStatusContext';
 import Animated, { 
   useSharedValue, 
@@ -13,9 +11,15 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const EpisodesCounter = ({ slug, episodes_total }) => {
-  const { status, episodes, setEpisodes } = useWatchStatus();
+  const { 
+    status, 
+    episodes, 
+    setEpisodes,
+    authToken,
+    isAuthChecked,
+    fetchAnimeStatus
+  } = useWatchStatus();
 
-  const [auth, setAuth] = useState(null);
   const [duration, setDuration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingUpdate, setLoadingUpdate] = useState(false);
@@ -34,40 +38,7 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
   }, [slug]);
 
   useEffect(() => {
-    const loadAuthToken = async () => {
-      const token = await SecureStore.getItemAsync('hikka_token');
-      setAuth(token);
-    };
-    loadAuthToken();
-  }, []);
-
-  const fetchWatch = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`https://api.hikka.io/watch/${slug}`, {
-        headers: { auth },
-      });
-
-      if (res.data.episodes !== null && res.data.episodes !== undefined) {
-        setEpisodes(res.data.episodes);
-      } else {
-        setEpisodes(null);
-      }
-      setDuration(res.data.duration);
-    } catch (error) {
-      if (error.response && error.response.status === 404) {
-        // Не скидаємо episodes (бо може це не існує в базі)
-        setDuration(null);
-      } else {
-        console.error('Episodes fetch error:', error);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!auth) return;
+    if (!isAuthChecked || !authToken) return;
 
     if (!allowedStatuses.includes(status)) {
       // Не виконуємо запит і не обнуляємо episodes, просто ховаємо компонент
@@ -75,8 +46,34 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
       return;
     }
 
+    const fetchWatch = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`https://api.hikka.io/watch/${slug}`, {
+          headers: { auth: authToken },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.episodes !== null && data.episodes !== undefined) {
+            setEpisodes(data.episodes);
+          } else {
+            setEpisodes(null);
+          }
+          setDuration(data.duration);
+        } else if (res.status === 404) {
+          // Не скидаємо episodes (бо може це не існує в базі)
+          setDuration(null);
+        }
+      } catch (error) {
+        console.error('Episodes fetch error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchWatch();
-  }, [auth, status, slug]);
+  }, [authToken, status, slug, isAuthChecked]);
 
   const statusApiMapping = {
     Дивлюсь: 'watching',
@@ -90,21 +87,26 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
   const updateEpisodes = async (newEpisodes) => {
     setLoadingUpdate(true);
     try {
-      await axios.put(
-        `https://api.hikka.io/watch/${slug}`,
-        {
+      const res = await fetch(`https://api.hikka.io/watch/${slug}`, {
+        method: 'PUT',
+        headers: { 
+          auth: authToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           episodes: newEpisodes,
           rewatches: 0,
           score: 0,
           status: statusApiMapping[status],
           note: null,
-        },
-        {
-          headers: { auth },
-        }
-      );
-      setEpisodes(newEpisodes);
-      await fetchWatch();
+        }),
+      });
+
+      if (res.ok) {
+        setEpisodes(newEpisodes);
+        // Оновлюємо кеш статусу
+        await fetchAnimeStatus(slug);
+      }
     } catch (error) {
       console.error('Episodes update error:', error);
     } finally {
@@ -125,7 +127,7 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
     updateEpisodes(newCount);
   };
 
-  if (!auth) return null;
+  if (!authToken) return null;
 
   if (!allowedStatuses.includes(status)) {
     return null;

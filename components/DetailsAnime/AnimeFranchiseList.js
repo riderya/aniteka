@@ -19,7 +19,7 @@ const CardWrapper = styled.View`
   margin-right: ${({ isLast }) => (isLast ? '0px' : '12px')};
 `
 
-const FranchiseList = ({ slug, title }) => {
+const FranchiseList = ({ slug, title, onVisibilityChange }) => {
   const [franchise, setFranchise] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -51,6 +51,14 @@ const FranchiseList = ({ slug, title }) => {
     fetchFranchise()
   }, [slug])
 
+  // Відстежуємо зміни видимості та повідомляємо батьківський компонент
+  useEffect(() => {
+    if (onVisibilityChange) {
+      const isVisible = !loading && !error && franchise.length > 0;
+      onVisibilityChange(isVisible);
+    }
+  }, [loading, error, franchise.length, onVisibilityChange]);
+
   if (loading) {
     return (
       <Container>
@@ -66,7 +74,7 @@ const FranchiseList = ({ slug, title }) => {
       <RowLineHeader 
         title="Пов'язане" 
         onPress={() => navigation.navigate('AnimeFranchise', { slug, title })}
-        linkText="Всі"
+        linkText="Більше"
       />
 
       <StyledFlatList
@@ -79,11 +87,13 @@ const FranchiseList = ({ slug, title }) => {
             <AnimeColumnCard
               anime={item}
               onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
-              cardWidth={95}
-              imageWidth={95}
+              cardWidth={100}
+              imageWidth={100}
               imageHeight={130}
               titleFontSize={14}
-              footerFontSize={12}
+              badgeFontSize = {11}
+              footerFontSize={11}
+              starIconSize={11}
               imageBorderRadius={24}
               titleNumberOfLines={2}
             />

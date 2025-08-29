@@ -31,9 +31,10 @@ const CharacterColumnCard = React.memo(({
   borderRadius = 24,
   fontSize = '14px',
   cardWidth = '90px',
-  cardMarginRight = '15px',
+  cardMarginRight = '0px',
   marginTop = '10px',
   onPress,
+  nameFontSize = '14px',
 }) => {
   const navigation = useNavigation();
 
@@ -62,7 +63,11 @@ const CharacterColumnCard = React.memo(({
           }
           resizeMode="cover"
         />
-        <CharacterName fontSize={fontSize} marginTop={marginTop} numberOfLines={1}>
+        <CharacterName 
+          fontSize={nameFontSize} 
+          marginTop={marginTop} 
+          numberOfLines={1}
+        >
           {character.name_ua || character.name_en}
         </CharacterName>
       </Card>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FlatList, Linking, Alert, View } from 'react-native';
 import styled from 'styled-components/native';
 import RowLineHeader from './RowLineHeader';
@@ -99,7 +99,7 @@ const openLink = async (url) => {
   }
 };
 
-const MusicSlider = ({ anime }) => {
+const MusicSlider = ({ anime, onVisibilityChange }) => {
   const { theme } = useTheme();
   const ost = Array.isArray(anime?.ost) ? anime.ost : [];
 
@@ -110,7 +110,13 @@ const MusicSlider = ({ anime }) => {
     }))
     .filter((x) => x.displayType);
 
-  if (data.length === 0) return null;
+  useEffect(() => {
+    onVisibilityChange?.(data.length > 0);
+  }, [data.length, onVisibilityChange]);
+
+  if (data.length === 0) {
+    return null;
+  }
 
   return (
     <Container>

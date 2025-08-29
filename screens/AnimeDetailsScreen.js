@@ -15,12 +15,20 @@ import AnimeFranchiseList from '../components/DetailsAnime/AnimeFranchiseList';
 import AnimeStaffSlider from '../components/DetailsAnime/AnimeStaffSlider';
 import AnimeRecommendationsSlider from '../components/DetailsAnime/AnimeRecommendationsSlider';
 import AnimeSendButton from '../components/DetailsAnime/AnimeSendButton';
+import { useWatchStatus } from '../context/WatchStatusContext';
 
 const AnimeDetailsScreen = ({ route }) => {
   const { slug } = route.params;
   const [anime, setAnime] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showFranchiseDivider, setShowFranchiseDivider] = useState(false);
+  const [showRecommendationsDivider, setShowRecommendationsDivider] = useState(false);
+  const [showCharactersDivider, setShowCharactersDivider] = useState(false);
+  const [showVideoDivider, setShowVideoDivider] = useState(false);
+  const [showMusicDivider, setShowMusicDivider] = useState(false);
+  const [showStaffDivider, setShowStaffDivider] = useState(false);
   const { theme, isDark } = useTheme();
+  const { authToken, isAuthChecked, fetchAnimeStatus, fetchAnimeFavourite } = useWatchStatus();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -28,12 +36,48 @@ const AnimeDetailsScreen = ({ route }) => {
       try {
         const response = await axios.get(`https://api.hikka.io/anime/${slug}`);
         setAnime(response.data);
+        
+        // Попереднє завантаження даних користувача після отримання аніме
+        if (isAuthChecked && authToken) {
+          // Завантажуємо паралельно для швидшого відображення
+          Promise.allSettled([
+            fetchAnimeStatus(slug),
+            fetchAnimeFavourite(slug)
+          ]).catch(error => {
+            console.log('Error preloading user data:', error);
+          });
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchAnimeDetails();
-  }, [slug]);
+  }, [slug, authToken, isAuthChecked, fetchAnimeStatus, fetchAnimeFavourite]);
+
+  // Функції для відстеження видимості компонентів
+  const handleFranchiseVisibility = (isVisible) => {
+    setShowFranchiseDivider(isVisible);
+  };
+
+  const handleRecommendationsVisibility = (isVisible) => {
+    setShowRecommendationsDivider(isVisible);
+  };
+
+  const handleCharactersVisibility = (isVisible) => {
+    setShowCharactersDivider(isVisible);
+  };
+
+  const handleVideoVisibility = (isVisible) => {
+    setShowVideoDivider(isVisible);
+  };
+
+  const handleMusicVisibility = (isVisible) => {
+    setShowMusicDivider(isVisible);
+  };
+
+  const handleStaffVisibility = (isVisible) => {
+    setShowStaffDivider(isVisible);
+  };
 
   if (loading) {
     return (
@@ -49,22 +93,49 @@ const AnimeDetailsScreen = ({ route }) => {
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         <TopDetail anime={anime} />
         <Divider />
-        <AnimeMainCharacters anime={anime}/>
+        <AnimeMainCharacters 
+          anime={anime}
+          onVisibilityChange={handleCharactersVisibility}
+        />
+        {showCharactersDivider && <Divider />}
+        <AnimeRatingStats 
+          stats={anime.stats} 
+          score={anime.score} 
+          slug={anime.slug}
+        />
         <Divider />
-        <AnimeRatingStats stats={anime.stats} score={anime.score} slug={anime.slug} />
+        <AnimeStatusStats 
+          anime={anime}
+        />
         <Divider />
-        <AnimeStatusStats anime={anime} />
-        <Divider />
-        <AnimeFranchiseList slug={anime.slug} title={anime.title_ua || anime.title_en || anime.title_ja || '?'} />
-        <Divider />
-        <VideoSlider anime={anime} />
-        <Divider />
-        <MusicSlider anime={anime} />
-        <Divider />
-        <AnimeStaffSlider slug={anime.slug} title={anime.title_ua || anime.title_en || anime.title_ja || '?'} />
-        <Divider />
-        <RecommendationsSection slug={anime.slug} />
-        <AnimeSendButton slug={anime.slug} title={anime.title_ua || anime.title_en || anime.title_ja || '?'} commentsCount={anime.comments_count} />
+        <AnimeFranchiseList 
+          slug={anime.slug} 
+          title={anime.title_ua || anime.title_en || anime.title_ja || '?'} 
+          onVisibilityChange={handleFranchiseVisibility}
+        />
+        {showFranchiseDivider && <Divider />}
+        <VideoSlider 
+          slug={anime.slug} 
+          onVisibilityChange={handleVideoVisibility}
+        />
+        {showVideoDivider && <Divider />}
+        <MusicSlider 
+          slug={anime.slug} 
+          onVisibilityChange={handleMusicVisibility}
+        />
+        {showMusicDivider && <Divider />}
+        <AnimeStaffSlider 
+          slug={anime.slug} 
+          title={anime.title_ua || anime.title_en || anime.title_ja || '?'}
+          onVisibilityChange={handleStaffVisibility}
+        />
+        {showStaffDivider && <Divider />}
+        <AnimeRecommendationsSlider 
+          slug={anime.slug} 
+          onVisibilityChange={handleRecommendationsVisibility}
+        />
+        {showRecommendationsDivider && <Divider />}
+        <AnimeSendButton slug={anime.slug} />
       </ScrollView>
     </ScreenWrapper>
   );
@@ -90,32 +161,3 @@ const Divider = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
   margin: 25px 12px;
 `;
-
-const RecommendationsSection = ({ slug }) => {
-  const [hasRecommendations, setHasRecommendations] = useState(false);
-
-  useEffect(() => {
-    const checkRecommendations = async () => {
-      try {
-        const response = await fetch(`https://api.hikka.io/anime/${slug}/recommendations?page=1&size=1`);
-        const data = await response.json();
-        setHasRecommendations(data.list && data.list.length > 0);
-      } catch (error) {
-        setHasRecommendations(false);
-      }
-    };
-    
-    checkRecommendations();
-  }, [slug]);
-
-  if (!hasRecommendations) {
-    return null;
-  }
-
-  return (
-    <>
-      <AnimeRecommendationsSlider slug={slug} />
-      <Divider />
-    </>
-  );
-};

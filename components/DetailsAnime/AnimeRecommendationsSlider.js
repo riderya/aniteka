@@ -9,7 +9,7 @@ const Spacer = styled.View`
   width: 12px;
 `;
 
-const AnimeRecommendationsSlider = ({ slug }) => {
+const AnimeRecommendationsSlider = ({ slug, onVisibilityChange }) => {
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -65,6 +65,14 @@ const AnimeRecommendationsSlider = ({ slug }) => {
     loadRecommendations(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
+
+  // Відстежуємо зміни видимості та повідомляємо батьківський компонент
+  useEffect(() => {
+    if (onVisibilityChange) {
+      const isVisible = !loading && recommendations.length > 0;
+      onVisibilityChange(isVisible);
+    }
+  }, [loading, recommendations.length, onVisibilityChange]);
 
   if (loading) {
     return (

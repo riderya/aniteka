@@ -51,7 +51,7 @@ const BackButton = ({ top, left, right, bottom }) => {
       bottom={bottom}
       safeAreaTop={safeAreaTop}
     >
-      <StyledIcon name="arrow-back" />
+      <StyledIcon name="chevron-back" />
     </BackButtonWrapper>
   );
 };
