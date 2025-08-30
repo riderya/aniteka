@@ -15,6 +15,7 @@ import { BlurView } from 'expo-blur';
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import MarkdownText from '../components/Custom/MarkdownText';
+import ArticleVoting from '../components/ArticleVoting/ArticleVoting';
 
 const CATEGORY_TRANSLATIONS = {
   news: 'Новини',
@@ -225,63 +226,45 @@ const RenderChildren = React.memo(({ children, theme, customStyle = {} }) => {
     }
   }), [theme.colors.text, customStyle.color, customStyle.fontSize]);
 
-  // Мемоізуємо стилі для посилань
-  const linkStyle = useMemo(() => ({
-    body: {
-      color: theme.colors.primary,
-      fontSize: customStyle.fontSize || 16,
-      fontWeight: 'normal',
-    },
-    link: {
-      color: theme.colors.primary,
-      textDecorationLine: 'underline',
-    }
-  }), [theme.colors.primary, customStyle.fontSize]);
-
-  const renderChild = useCallback((child, index) => {
-    if (!child) return null;
+  // Створюємо комбінований текст з маркдауном для всіх елементів
+  const combinedText = useMemo(() => {
+    if (!children || !Array.isArray(children)) return '';
     
-    if (typeof child.text === 'string') {
-      const cleanText = child.text
-        .replace(/\s+/g, ' ')
-        .replace(/^\s+|\s+$/g, '');
-
-      const finalStyle = {
-        ...textStyle,
-        body: {
-          ...textStyle.body,
-          fontWeight: child.bold ? 'bold' : 'normal',
+    return children.map(child => {
+      if (!child) return '';
+      
+      if (typeof child.text === 'string') {
+        // Зберігаємо оригінальний текст без очищення пробілів
+        const originalText = child.text;
+        
+        // Додаємо маркдаун для жирного тексту
+        if (child.bold) {
+          return `**${originalText}**`;
         }
-      };
+        return originalText;
+      }
 
-      return (
-        <MarkdownText key={index} style={finalStyle}>
-          {cleanText}
-        </MarkdownText>
-      );
-    }
-
-    if (child.type === 'a') {
-      const finalLinkStyle = {
-        ...linkStyle,
-        body: {
-          ...linkStyle.body,
-          fontWeight: child.bold ? 'bold' : 'normal',
+      if (child.type === 'a') {
+        const linkText = child.children?.[0]?.text || '';
+        const url = child.url || '#';
+        
+        // Додаємо маркдаун для посилань
+        if (child.bold) {
+          return `**[${linkText}](${url})**`;
         }
-      };
+        return `[${linkText}](${url})`;
+      }
 
-      return (
-        <MarkdownText key={index} style={finalLinkStyle}>
-          {child.children?.[0]?.text || ''}
-        </MarkdownText>
-      );
-    }
+      return '';
+    }).join('');
+  }, [children]);
 
-    return null;
-  }, [textStyle, linkStyle]);
-
-  if (!children || !Array.isArray(children)) return null;
-  return children.map(renderChild);
+  // Використовуємо один MarkdownText компонент для всього тексту
+  return (
+    <MarkdownText style={textStyle}>
+      {combinedText}
+    </MarkdownText>
+  );
 });
 
 // Мемоізований компонент для рендерингу блоків
@@ -492,6 +475,8 @@ const ArticleDetailScreen = () => {
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentVote, setCurrentVote] = useState(0);
+  const [articleVoteScore, setArticleVoteScore] = useState(0);
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const flatListRef = useRef(null);
@@ -534,9 +519,11 @@ const ArticleDetailScreen = () => {
     setLoading(true);
     setError(null);
     
-    axios.get(`https://api.hikka.io/articles/${debouncedSlug}`)
+    const articleUrl = `https://api.hikka.io/articles/${debouncedSlug}`;
+    axios.get(articleUrl)
       .then(res => {
         setArticle(res.data);
+        setArticleVoteScore(res.data.vote_score || 0);
         // Збираємо зображення одразу після отримання даних
         if (res.data?.document) {
           const images = collectImages(res.data.document);
@@ -602,8 +589,20 @@ const ArticleDetailScreen = () => {
           navigation={navigation} 
           categoryTranslations={CATEGORY_TRANSLATIONS}
         />
+        <TopBlock>
         <Title>{article.title}</Title>
         <TagsList tags={article.tags} theme={theme} />
+        <ArticleVoting 
+          articleSlug={article.slug || ''} 
+          title={article.title}
+          initialScore={articleVoteScore}
+          commentsCount={article.comments_count || 0}
+          navigation={navigation}
+          onVoteChange={(score) => {
+            setCurrentVote(score);
+          }}
+        />
+        </TopBlock>
       </>
     );
   }, [article, theme, navigation]);
@@ -724,7 +723,15 @@ const AuthorContainer = styled.Pressable`
   border-radius: 16px;
   background-color: ${({ theme }) => theme.colors.card};
   border: 1px;
-  border-color: ${({ theme }) => theme.colors.card};
+  border-color: ${({ theme }) => theme.colors.border};
+`;
+
+const TopBlock = styled.View`
+  background-color: ${({ theme }) => theme.colors.card};
+  border-radius: 16px;
+  padding: 12px;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
 `;
 
 const Avatar = styled.Image`

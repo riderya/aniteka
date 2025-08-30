@@ -1,18 +1,20 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { FlatList, Dimensions, View, ActivityIndicator } from 'react-native';
+import { FlatList, Dimensions, View } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 import axios from 'axios';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
 import ArticleCard from '../Cards/ArticleCard';
+import { ArticleCardSkeleton } from '../Skeletons';
 import { useNavigation } from '@react-navigation/native';
 
 const Container = styled.View`
   margin-top: 0px;
 `;
 
-const LoadingContainer = styled.View`
-  padding: 20px;
-  align-items: center;
+const SkeletonContainer = styled.View`
+  paddingHorizontal: 12px;
+  flex-direction: row;
+  gap: 12px;
 `;
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -80,9 +82,11 @@ const ArticlesSlider = React.memo(({ slug, title, onRefresh }) => {
           title="Статті"
           onPress={() => navigation.navigate('AnimeAllArticlesScreen', { slug, title })}
         />
-        <LoadingContainer>
-          <ActivityIndicator size="small" color={theme.colors.text} />
-        </LoadingContainer>
+        <SkeletonContainer>
+          <ArticleCardSkeleton cardWidth={CARD_WIDTH} />
+          <ArticleCardSkeleton cardWidth={CARD_WIDTH} />
+          <ArticleCardSkeleton cardWidth={CARD_WIDTH} />
+        </SkeletonContainer>
       </Container>
     );
   }

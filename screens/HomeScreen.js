@@ -10,18 +10,9 @@ import { useTheme } from '../context/ThemeContext';
 import { useOrientation, useDimensions } from '../hooks';
 import { getResponsiveDimensions } from '../utils/orientationUtils';
 
-const { height: screenHeight } = Dimensions.get('window');
-
 const Container = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
-`;
-
-const BannerWrapper = styled.View`
-  height: ${({ orientation, dimensions }) => 
-    orientation === 'landscape' 
-      ? Math.min(dimensions.height * 0.6, 400) 
-      : dimensions.height * 0.8}px;
 `;
 
 // Функція для визначення поточного сезону
@@ -165,15 +156,16 @@ export default function HomeScreen() {
   const renderItem = ({ item }) => {
     if (item.type === 'banner') {
       return (
-        <BannerWrapper orientation={orientation} dimensions={dimensions}>
           <HomeBannerSwiper key={`banner-${refreshKey}`} />
-        </BannerWrapper>
       );
     } else if (item.type === 'slider') {
       return (
         <View style={{ 
-          marginTop: item.id === 'popular' ? (orientation === 'landscape' ? -60 : -150) : 0, 
-          paddingVertical: orientation === 'landscape' ? 16 : 24
+          transform: [{ translateY: -120 }],
+          zIndex: 1,
+          position: 'relative',
+          flexDirection: 'column',
+          marginBottom: 60
         }}>
           <AnimeSlider key={item.key} {...item.sliderProps} />
         </View>
@@ -205,7 +197,7 @@ export default function HomeScreen() {
             />
           }
           contentContainerStyle={{
-            paddingBottom: insets.bottom + 110
+            paddingBottom: insets.bottom
           }}
           removeClippedSubviews={true}
           maxToRenderPerBatch={3}

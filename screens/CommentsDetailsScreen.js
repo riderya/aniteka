@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   View,
   KeyboardAvoidingView,
@@ -23,7 +22,8 @@ import { useTheme } from '../context/ThemeContext';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import CommentForm from '../components/CommentForm/CommentForm';
 import CommentCard from '../components/Cards/CommentCard';
-import CommentCardSkeleton from '../components/Skeletons/CommentCardSkeleton';
+import { CommentCardSkeleton } from '../components/Skeletons';
+
 import * as SecureStore from 'expo-secure-store';
 
 dayjs.extend(relativeTime);
@@ -32,13 +32,6 @@ dayjs.extend(isToday);
 dayjs.extend(isYesterday);
 
 // ---------- Styled Components ----------
-const CenterLoader = styled.View`
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  background-color: ${({ theme }) => theme.colors.background};
-`;
-
 const Container = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
@@ -113,6 +106,8 @@ const CommentsDetailsScreen = () => {
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
 
+
+
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -150,6 +145,21 @@ const CommentsDetailsScreen = () => {
 
   const headerHeight = insets.top + 60;
   const shouldTruncate = (text) => text.length > 300;
+
+  // Функція для створення заголовка залежно від типу контенту
+  const getHeaderTitle = () => {
+    const contentTitle = title || 'Без назви';
+    switch (contentType) {
+      case 'anime':
+        return `Коментарі до аніме: ${contentTitle}`;
+      case 'article':
+        return `Коментарі до статті: ${contentTitle}`;
+      case 'collection':
+        return `Коментарі до колекції: ${contentTitle}`;
+      default:
+        return `Коментарі: ${contentTitle}`;
+    }
+  };
 
   const handleDeleteComment = (deletedRef) => {
     setComments((prev) => prev.filter((c) => c.reference !== deletedRef));
@@ -277,10 +287,8 @@ const CommentsDetailsScreen = () => {
     
     if (isFetching) {
       return (
-        <View>
-          {[1, 2, 3].map((item) => (
-            <CommentCardSkeleton key={`footer-skeleton-${item}`} />
-          ))}
+        <View style={{ padding: 20 }}>
+          <CommentCardSkeleton />
         </View>
       );
     }
@@ -318,16 +326,15 @@ const CommentsDetailsScreen = () => {
       >
         <Container>
           <BlurOverlay experimentalBlurMethod="dimezisBlurView"  intensity={100} tint={isDark ? 'dark' : 'light'}>
-            <HeaderTitleBar title={`Коментарі: ${title}`} />
+            <HeaderTitleBar title={getHeaderTitle()} />
           </BlurOverlay>
 
-          <FlatList
-            data={[1, 2, 3, 4, 5]} // Show 5 skeleton items
-            keyExtractor={(item) => `skeleton-${item}`}
-            renderItem={() => <CommentCardSkeleton />}
-            contentContainerStyle={{ paddingTop: insets.top + 56 + 20, paddingBottom: insets.bottom + 120 }}
-            style={{ flex: 1 }}
-          />
+          <View style={{ flex: 1, paddingTop: insets.top + 56 + 20 }}>
+            <CommentsHeader>
+              <CommentCount>{commentsCount} Всього</CommentCount>
+            </CommentsHeader>
+            <CommentCardSkeleton />
+          </View>
         </Container>
       </KeyboardAvoidingView>
     );
@@ -341,7 +348,7 @@ const CommentsDetailsScreen = () => {
     >
       <Container>
         <BlurOverlay experimentalBlurMethod="dimezisBlurView"  intensity={100} tint={isDark ? 'dark' : 'light'}>
-          <HeaderTitleBar title={`Коментарі: ${title}`} />
+          <HeaderTitleBar title={getHeaderTitle()} />
         </BlurOverlay>
 
         <FlatList

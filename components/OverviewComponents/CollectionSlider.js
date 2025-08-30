@@ -1,20 +1,20 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { FlatList, View, ActivityIndicator } from 'react-native';
+import { FlatList, View } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
 import CollectionCard from '../Cards/CollectionCard';
+import { CollectionCardSkeleton } from '../Skeletons';
 
 const Container = styled.View`
   width: 100%;
 
 `;
 
-const LoadingContainer = styled.View`
-  padding: 20px;
-  align-items: center;
+const SkeletonContainer = styled.View`
+  padding-horizontal: 12px;
 `;
 
 const CollectionSlider = React.memo(({ onRefresh }) => {
@@ -85,9 +85,27 @@ const CollectionSlider = React.memo(({ onRefresh }) => {
           title="Колекції"
           onPress={() => navigation.navigate('AnimeCollectionsScreen')}
         />
-        <LoadingContainer>
-          <ActivityIndicator size="small" color={theme.colors.text} />
-        </LoadingContainer>
+        <SkeletonContainer>
+          <FlatList
+            data={[1, 2, 3, 4, 5]} // 5 скелетонів для показу
+            keyExtractor={(item, index) => `skeleton-${index}`}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            decelerationRate="fast"
+            contentContainerStyle={{ paddingHorizontal: 0 }}
+            ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+            renderItem={({ item }) => <CollectionCardSkeleton compact />}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={5}
+            windowSize={10}
+            initialNumToRender={3}
+            getItemLayout={(data, index) => ({
+              length: 200,
+              offset: 200 * index + 12 * index,
+              index,
+            })}
+          />
+        </SkeletonContainer>
       </Container>
     );
   }
@@ -115,6 +133,15 @@ const CollectionSlider = React.memo(({ onRefresh }) => {
         initialNumToRender={3}
         getItemLayout={getItemLayout}
         refreshing={refreshing}
+        ListFooterComponent={refreshing ? (
+          <View style={{ flexDirection: 'row', marginLeft: 12 }}>
+            {[1, 2, 3].map((item, index) => (
+              <View key={`refreshing-${index}`} style={{ marginRight: 12 }}>
+                <CollectionCardSkeleton compact />
+              </View>
+            ))}
+          </View>
+        ) : null}
       />
     </Container>
   );

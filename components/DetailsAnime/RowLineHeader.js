@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 const Wrapper = styled.View`
   flex-direction: row;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: ${({ marginBottom }) => marginBottom}px;
   justify-content: space-between;
   padding: 0px 12px;
 `;
@@ -50,9 +50,9 @@ const StyledIcon = styled(Ionicons)`
   font-size: 20px;
 `;
 
-const RowLineHeader = ({ title, description, onPress, linkText = "Більше", rightContent }) => {
+const RowLineHeader = ({ title, description, onPress, linkText = "Більше", rightContent, marginBottom = 20 }) => {
   return (
-    <Wrapper>
+    <Wrapper marginBottom={marginBottom}>
       <LeftContent>
         <Title hasDescription={!!description}>{title}</Title>
         {description && <Description>{description}</Description>}

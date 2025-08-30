@@ -256,7 +256,7 @@ const HomeBannerSwiper = () => {
             <StyledPlay name="play" />
             <ButtonText>Дивитись</ButtonText>
           </WatchButton>
-          <DetailButton onPress={() => {}}>
+          <DetailButton onPress={() => navigation.push('AnimeDetails', { slug: item.slug })}>
             <StyledInfo name="info" />
             <ButtonText style={{color: '#fff'}}>Детальніше</ButtonText>
           </DetailButton>
@@ -393,7 +393,6 @@ const EpisodeBlock = styled.View`
 width: 100%;
 `;
 
-
 const EpisodeText = styled.Text`
   font-size: 14px;
   padding: 4px 12px;
@@ -403,7 +402,6 @@ const EpisodeText = styled.Text`
   color: ${({ theme }) => theme.colors.background};
   margin-bottom: 8px;
 `;
-
 
 const Row = styled.View`
   flex-direction: row;
@@ -461,7 +459,6 @@ const GenreText = styled.Text`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-weight: 600;
 `;
-
 
 const Description = styled.Text`
   font-size: 14px;
@@ -545,7 +542,6 @@ const Pagination = styled.View`
   left: 0;
   right: 0;
 `;
-
 
 const Dot = styled.TouchableOpacity.attrs({
   activeOpacity: 1,

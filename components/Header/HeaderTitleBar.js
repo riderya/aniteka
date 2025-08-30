@@ -10,6 +10,8 @@ const HeaderTitleBar = ({ title, showBack = true, onBack, rightButton, onShare }
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
 
+
+
   const handleBack = () => {
     if (onBack) {
       onBack();

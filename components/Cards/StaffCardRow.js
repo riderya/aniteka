@@ -13,7 +13,7 @@ const Image = styled.Image`
   width: ${({ imageWidth }) => imageWidth || 90}px;
   height: ${({ imageHeight }) => imageHeight || 120}px;
   border-radius: ${({ imageBorderRadius }) => imageBorderRadius || 16}px;
-  background-color: ${({ theme }) => theme.colors.card};
+  background-color: ${({ theme }) => theme.colors.border};
 `;
 
 const Info = styled.View`

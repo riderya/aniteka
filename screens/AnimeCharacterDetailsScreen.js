@@ -6,12 +6,16 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
+import { useWatchStatus } from '../context/WatchStatusContext';
+import Toast from 'react-native-toast-message';
 import { BlurView } from 'expo-blur';
 import Entypo from '@expo/vector-icons/Entypo';
 import Markdown from '../components/Custom/MarkdownText';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Ionicons } from '@expo/vector-icons';
 import avatarFallback from '../assets/image/image404.png';
 import BackButton from '../components/DetailsAnime/BackButton';
+import LikeCharacterButton from '../components/DetailsAnime/LikeCharacterButton';
 
 const Container = styled.View`
   flex: 1;
@@ -76,6 +80,30 @@ const TitleLine = styled.Text`
   font-size: 22px;
   font-weight: bold;
   margin-bottom: 5px;
+`;
+
+const TitleRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+`;
+
+const TitleLineWithLike = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 22px;
+  font-weight: bold;
+  flex: 1;
+`;
+
+const LikeButtonInline = styled.TouchableOpacity`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
 `;
 
 const TitleLineSlider = styled.Text`
@@ -213,6 +241,7 @@ const AnimeCharacterDetailsScreen = () => {
   const [mangaList, setMangaList] = useState([]);
   const [novelList, setNovelList] = useState([]);
   const [voicesList, setVoicesList] = useState([]);
+  const [isUpdatingLike, setIsUpdatingLike] = useState(false);
 
   useEffect(() => {
     const fetchCharacter = async () => {
@@ -268,7 +297,73 @@ const AnimeCharacterDetailsScreen = () => {
     fetchCharacterNovel();
     fetchCharacterVoices();
   }, [slug]);
+
+  // Логіка для кнопки лайка
+  const {
+    authToken,
+    isAuthChecked,
+    getCharacterFavourite,
+    fetchCharacterFavourite,
+    updateCharacterFavourite,
+  } = useWatchStatus();
+
+  const liked = getCharacterFavourite(slug);
+
+  const toggleFavourite = async () => {
+    if (!authToken) {
+      Toast.show({
+        type: 'info',
+        text1: 'Авторизуйтеся, будь ласка',
+        text2: 'Щоб додавати персонажів у улюблене, потрібно увійти в акаунт.',
+        position: 'bottom',
+        visibilityTime: 4000,
+        autoHide: true,
+      });
+      return;
+    }
+
+    if (isUpdatingLike) return;
+    
+    setIsUpdatingLike(true);
   
+    try {
+      const endpoint = `https://api.hikka.io/favourite/character/${slug}`;
+      
+      if (liked === true) {
+        await fetch(endpoint, {
+          method: 'DELETE',
+          headers: { auth: authToken },
+        });
+        updateCharacterFavourite(slug, false);
+        Toast.show({
+          type: 'success',
+          text1: '💔 Видалено з улюблене',
+          position: 'bottom',
+        });
+      } else {
+        await fetch(endpoint, {
+          method: 'PUT',
+          headers: { auth: authToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        updateCharacterFavourite(slug, true);
+        Toast.show({
+          type: 'success',
+          text1: '❤️ Додано в улюблене',
+          position: 'bottom',
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Не вдалося змінити вподобання',
+        position: 'bottom',
+      });
+    } finally {
+      setIsUpdatingLike(false);
+    }
+  };
 
   if (loading || !character) {
     return (
@@ -284,6 +379,7 @@ const AnimeCharacterDetailsScreen = () => {
   return (
     <Container>
         <BackButton top={12}/>
+        <LikeCharacterButton slug={slug} top={12}/>
 
       <Content contentContainerStyle={{
         paddingBottom: insets.bottom + 20,
@@ -306,10 +402,27 @@ const AnimeCharacterDetailsScreen = () => {
           {character.synonyms?.length > 0 && (
             <SubName>Синоніми: {character.synonyms.join(', ')}</SubName>
           )}
+              <LikeButtonInline 
+      onPress={isUpdatingLike ? null : toggleFavourite}
+      liked={liked}
+      disabled={isUpdatingLike}
+    >
+      {isUpdatingLike ? (
+        <ActivityIndicator size="small" color={theme.colors.textSecondary || '#fff'} />
+      ) : (
+        <Ionicons
+          name={liked === true ? 'heart' : 'heart-outline'}
+          size={24}
+          color={liked === true ? theme.colors.favourite : theme.colors.gray}
+        />
+      )}
+    </LikeButtonInline>
         </BlockBorder>
 
         <BlockBorder>
-  <TitleLine>Опис</TitleLine>
+  <TitleRow>
+    <TitleLineWithLike>Опис</TitleLineWithLike>
+  </TitleRow>
 
   {parsedDescription.length === 0 ? (
     <Markdown

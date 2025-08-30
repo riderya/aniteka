@@ -85,8 +85,8 @@ const formatSeason = (season) => {
 const translateStatus = (status) => {
   switch (status) {
     case 'watching': return 'Дивлюсь';
-    case 'planned': return 'Заплановане';
-    case 'completed': return 'Завершено';
+    case 'planned': return 'Заплановано';
+    case 'completed': return 'Переглянуто';
     case 'on_hold': return 'Відкладено';
     case 'dropped': return 'Закинуто';
     case 'favourite': return 'Улюблене';
@@ -436,7 +436,7 @@ const createStyles = (theme, props) => StyleSheet.create({
     width: props.imageWidth,
     height: props.imageHeight,
     borderRadius: props.imageBorderRadius || 24,
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.border,
   },
   info: {
     flex: 1,

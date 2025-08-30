@@ -1,18 +1,20 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import styled from 'styled-components/native';
-import { FlatList, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { FlatList, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
+import { AnimeScheduleCardSkeleton } from '../Skeletons';
 import { useTheme } from '../../context/ThemeContext';
 
 const Container = styled.View`
   margin-top: 0px;
 `;
 
-const LoadingContainer = styled.View`
-  padding: 20px;
-  align-items: center;
+const SkeletonContainer = styled.View`
+  paddingLeft: 12px;
+  flex-direction: row;
+  gap: 12px;
 `;
 
 const Card = styled.View`
@@ -164,13 +166,19 @@ const AnimeScheduleSlider = React.memo(({ onRefresh }) => {
         onPress={() => navigation.navigate('AnimeScheduleScreen')}
       />
       {loading ? (
-        <LoadingContainer>
-          <ActivityIndicator size="small" color={theme.colors.text} />
-        </LoadingContainer>
+        <SkeletonContainer>
+          <AnimeScheduleCardSkeleton />
+          <AnimeScheduleCardSkeleton />
+          <AnimeScheduleCardSkeleton />
+          <AnimeScheduleCardSkeleton />
+        </SkeletonContainer>
       ) : refreshing ? (
-        <LoadingContainer>
-          <ActivityIndicator size="small" color={theme.colors.text} />
-        </LoadingContainer>
+        <SkeletonContainer>
+          <AnimeScheduleCardSkeleton />
+          <AnimeScheduleCardSkeleton />
+          <AnimeScheduleCardSkeleton />
+          <AnimeScheduleCardSkeleton />
+        </SkeletonContainer>
       ) : animeList.length === 0 ? (
         <Text style={{ color: 'gray', marginLeft: 12 }}>
           На жаль, сьогодні немає аніме в розкладі 😢

@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import styled from 'styled-components/native';
-import AntDesign from '@expo/vector-icons/AntDesign';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
 import * as SecureStore from 'expo-secure-store';
@@ -63,6 +62,7 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
           title={titleLineText}
           description={descriptionText}
           onPress={onPress}
+          marginBottom={5}
         />
 
         <SkeletonList
@@ -84,6 +84,7 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
         title={titleLineText}
         description={descriptionText}
         onPress={onPress}
+        marginBottom={5}
       />
 
       <StyledFlatList
@@ -119,10 +120,6 @@ const StyledFlatList = styled.FlatList.attrs(() => ({
     paddingHorizontal: 12,
   },
 }))``;
-
-
-
-
 
 const SkeletonList = styled(FlatList)`
   padding-left: 10px;

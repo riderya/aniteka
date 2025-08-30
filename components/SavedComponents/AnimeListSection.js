@@ -53,7 +53,18 @@ const AnimeListSection = ({ animeList, sortOptions, toggleSort, showRandomAnime,
       <AnimeList
         data={animeList}
         keyExtractor={(item) => item.slug}
-        renderItem={({ item }) => <AnimeRowCard anime={item} navigation={navigation} />}
+        renderItem={({ item }) => 
+        <AnimeRowCard 
+        anime={item} 
+        navigation={navigation} 
+        imageWidth={90}
+        imageHeight={120}
+        titleFontSize={16}
+        episodesFontSize={15}
+        scoreFontSize={15} 
+        descriptionFontSize={13}
+        statusFontSize={11}
+        />}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={renderHeader}
         refreshControl={

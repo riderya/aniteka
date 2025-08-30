@@ -34,6 +34,8 @@ export default function NotificationsScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
 
   const canLoadMore = page < pages && !isLoading && !isLoadingMore;
   const keyExtractor = useCallback(
@@ -45,6 +47,12 @@ export default function NotificationsScreen({ navigation }) {
   const loadPage = useCallback(
     async (targetPage = 1, replace = false) => {
       if (!token) return;
+      
+      // Показываем лоадер только если загрузка занимает больше 300мс
+      const loaderTimeout = setTimeout(() => {
+        if (targetPage === 1) setShowLoader(true);
+      }, 300);
+      
       if (targetPage === 1) setIsLoading(true);
       else setIsLoadingMore(true);
 
@@ -61,9 +69,19 @@ export default function NotificationsScreen({ navigation }) {
         setPages(totalPages);
         setPage(targetPage);
         setList((prev) => (replace || targetPage === 1 ? newList : [...prev, ...newList]));
+        
+        if (targetPage === 1) {
+          setIsInitialLoadComplete(true);
+        }
       } catch (e) {
+        console.error('Error loading notifications:', e);
+        if (targetPage === 1) {
+          setIsInitialLoadComplete(true);
+        }
         Alert.alert('Помилка', 'Не вдалося завантажити сповіщення');
       } finally {
+        clearTimeout(loaderTimeout);
+        setShowLoader(false);
         setIsLoading(false);
         setIsLoadingMore(false);
       }
@@ -72,10 +90,14 @@ export default function NotificationsScreen({ navigation }) {
   );
 
   const refresh = useCallback(async () => {
+    if (isRefreshing) return; // Prevent multiple refresh calls
     setIsRefreshing(true);
-    await Promise.all([loadUnseenCount(), loadPage(1, true)]);
-    setIsRefreshing(false);
-  }, [loadPage, loadUnseenCount]);
+    try {
+      await Promise.all([loadUnseenCount(), loadPage(1, true)]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadPage, loadUnseenCount, isRefreshing]);
 
   const loadMore = useCallback(() => {
     if (!canLoadMore || loadMoreLockRef.current) return;
@@ -154,9 +176,21 @@ export default function NotificationsScreen({ navigation }) {
   );
 
   useEffect(() => {
-    if (!token) return;
-    loadPage(1, true);
-  }, [token, loadPage]);
+    if (!token) {
+      setIsInitialLoadComplete(false);
+      setShowLoader(false);
+      setList([]);
+      setPage(1);
+      setPages(1);
+      return;
+    }
+    
+    // Prevent multiple rapid calls during auth process
+    if (!isInitialLoadComplete) {
+      // Загружаем сразу без задержки для быстрого отклика
+      loadPage(1, true);
+    }
+  }, [token, loadPage, isInitialLoadComplete]);
 
   const EmptyState = useMemo(() => (
     <EmptyContainer>
@@ -165,6 +199,9 @@ export default function NotificationsScreen({ navigation }) {
       <EmptySubtitle>Тут зʼявляться оновлення від користувачів та контенту.</EmptySubtitle>
     </EmptyContainer>
   ), [theme.colors.textSecondary]);
+
+  // Показуємо EmptyState тільки якщо завантаження завершено і список порожній
+  const shouldShowEmptyState = isInitialLoadComplete && list.length === 0 && !showLoader;
 
   // Показуємо лоадер під час перевірки авторизації
   if (authLoading) {
@@ -192,10 +229,10 @@ export default function NotificationsScreen({ navigation }) {
   }
 
   return (
-    <ScreenContainer style={{ paddingBottom: insets.bottom }}>
+    <ScreenContainer >
       <HeaderTitleBar title="Сповіщення" />
       <ContentContainer>
-        {isLoading && page === 1 ? (
+        {showLoader && list.length === 0 ? (
           <LoaderContainer>
             <ActivityIndicator size="large" color={theme.colors.primary} />
           </LoaderContainer>
@@ -207,7 +244,7 @@ export default function NotificationsScreen({ navigation }) {
               <NotificationRow item={item} onPress={onItemPress} />
             )}
             ItemSeparatorComponent={() => <Separator />}
-            ListEmptyComponent={EmptyState}
+            ListEmptyComponent={shouldShowEmptyState ? EmptyState : null}
             refreshControl={
               <RefreshControl
                 refreshing={isRefreshing}
@@ -232,7 +269,10 @@ export default function NotificationsScreen({ navigation }) {
                 </FooterLoader>
               ) : null
             }
-            contentContainerStyle={{ paddingTop: insets.top + 56, paddingBottom: 24 }}
+            contentContainerStyle={{
+              paddingTop: insets.top + 56,
+              paddingBottom: 20 + insets.bottom,
+            }}
           />
         )}
       </ContentContainer>
@@ -282,8 +322,14 @@ function renderNotificationTitle(item) {
     case 'comment_vote':
       return `Нова оцінка${extra}`;
     case 'oauth_login':
-    case 'thirdparty_login':
+    case 'thirdparty_login': {
+      const appName = item?.data?.client?.name || item?.data?.client_name || '';
+      // Если это наше приложение, показываем просто "Авторизація"
+      if (appName.toLowerCase().includes('yummyanimelist')) {
+        return 'Авторизація';
+      }
       return 'Стороння авторизація';
+    }
     case 'schedule_anime': {
       const d = getScheduleAnimeData(item);
       const { title_ua, title_en, title_ja, season } = d || {};
@@ -322,8 +368,13 @@ function renderNotificationSubtitle(item) {
     case 'comment_vote':
       return `Користувач ${username} оцінив Ваш коментар`;
     case 'oauth_login':
-    case 'thirdparty_login':
+    case 'thirdparty_login': {
+      // Если это наше приложение, показываем более подходящий текст
+      if (appName.toLowerCase().includes('yummyanimelist') || appName.toLowerCase().includes('ями аниме лист')) {
+        return 'Ви успішно увійшли в систему';
+      }
       return `Ви авторизувались через застосунок ${appName}`;
+    }
     case 'schedule_anime': {
       const ep = getEpisodeNumber(item);
       return `Вийшов ${ep ? ep + ' епізод' : 'новий епізод'} аніме`;
@@ -362,11 +413,18 @@ function renderNotificationSubtitleWithBold(item) {
         <NormalText key="3"> оцінив Ваш коментар</NormalText>
       ];
     case 'oauth_login':
-    case 'thirdparty_login':
+    case 'thirdparty_login': {
+      // Если это наше приложение, показываем более подходящий текст
+      if (appName.toLowerCase().includes('yummyanimelist') || appName.toLowerCase().includes('ями аниме лист')) {
+        return [
+          <NormalText key="1">Ви успішно увійшли в систему</NormalText>
+        ];
+      }
       return [
         <NormalText key="1">Ви авторизувались через застосунок </NormalText>,
         <BoldText key="2">{appName}</BoldText>
       ];
+    }
     case 'schedule_anime': {
       const ep = getEpisodeNumber(item);
       if (ep) {
@@ -492,8 +550,6 @@ const ContentContainer = styled.View`
   flex: 1;
 `;
 
-
-
 const LoaderContainer = styled.View`
   flex: 1;
   align-items: center;
@@ -501,7 +557,7 @@ const LoaderContainer = styled.View`
 `;
 
 const NotificationItem = styled(TouchableOpacity)`
-  padding: 12px 16px;
+  padding: 12px;
   flex-direction: row;
   align-items: center;
 `;

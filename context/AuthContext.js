@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { saveUserToSupabaseWithFallback, getUserFromSupabase, updateLastLogin, testSupabaseConnection, getUserCoins } from '../utils/supabase';
+import { saveUserToSupabaseWithFallback, getUserFromSupabase, updateLastLogin, updateHikkaUpdatedAt, testSupabaseConnection, getUserCoins } from '../utils/supabase';
 
 const AuthContext = createContext();
 
@@ -79,6 +79,11 @@ export function AuthProvider({ children }) {
             } else {
               // console.log('Існуючий користувач оновлений в Supabase');
             }
+            
+            // Оновлюємо час оновлення в Hikka, якщо він є в даних
+            if (data.updated_at) {
+              await updateHikkaUpdatedAt(data.reference, data.updated_at);
+            }
           } else {
             console.error('Помилка збереження в Supabase:', saved.error);
           }
@@ -93,6 +98,11 @@ export function AuthProvider({ children }) {
 
   const login = async (newToken) => {
     try {
+      // Prevent multiple login calls
+      if (isAuthenticated && token === newToken) {
+        return;
+      }
+      
       await SecureStore.setItemAsync(TOKEN_KEY, newToken);
       setToken(newToken);
       setIsAuthenticated(true);

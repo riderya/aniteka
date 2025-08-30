@@ -38,7 +38,7 @@ export const NotificationsProvider = ({ children }) => {
       }
     } catch (e) {
       // Silent error handling
-      
+      console.log('Error loading unseen count:', e.message);
     }
   }, [token, isAuthenticated]);
 
@@ -49,11 +49,18 @@ export const NotificationsProvider = ({ children }) => {
   // Load unseen count when user authenticates or token changes
   useEffect(() => {
     if (isAuthenticated && token) {
-      loadUnseenCount();
+      // Add a small delay to prevent multiple rapid calls during auth process
+      const timeoutId = setTimeout(() => {
+        loadUnseenCount();
+      }, 50);
       
       // Set up periodic refresh every 30 seconds
       const interval = setInterval(loadUnseenCount, 30000);
-      return () => clearInterval(interval);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        clearInterval(interval);
+      };
     } else {
       setUnseenCount(0);
     }

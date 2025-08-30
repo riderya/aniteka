@@ -23,6 +23,7 @@ import AnimeAllArticlesScreen from '../screens/AnimeAllArticlesScreen';
 import ArticleDetailScreen from '../screens/ArticleDetailScreen';
 import CollectionDetailScreen from '../screens/CollectionDetailScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
+import WebViewScreen from '../screens/WebViewScreen';
 
 
 import CommentRepliesScreen from '../screens/CommentRepliesScreen';
@@ -73,6 +74,7 @@ export default function RootNavigator() {
       <RootStack.Screen name="ArticleDetailScreen" component={ArticleDetailScreen} />
              <RootStack.Screen name="CollectionDetailScreen" component={CollectionDetailScreen} />
        <RootStack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+      <RootStack.Screen name="WebView" component={WebViewScreen} />
 
 
        <RootStack.Screen name="CommentRepliesScreen" component={CommentRepliesScreen} />

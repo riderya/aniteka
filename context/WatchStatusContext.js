@@ -11,6 +11,7 @@ export const WatchStatusProvider = ({ children }) => {
   // Глобальний стан для статусів всіх аніме
   const [animeStatuses, setAnimeStatuses] = useState({});
   const [favourites, setFavourites] = useState({});
+  const [characterFavourites, setCharacterFavourites] = useState({});
   
   // Кеш для токена та стану авторизації
   const [authToken, setAuthToken] = useState(null);
@@ -22,6 +23,7 @@ export const WatchStatusProvider = ({ children }) => {
   // Кеш для збереження результатів запитів
   const statusCache = useRef(new Map());
   const favouriteCache = useRef(new Map());
+  const characterFavouriteCache = useRef(new Map());
 
   // Ініціалізація токена при завантаженні
   React.useEffect(() => {
@@ -128,6 +130,58 @@ export const WatchStatusProvider = ({ children }) => {
     }
   }, [authToken]);
 
+  // Функція для отримання вподобаного персонажа з кешу або API
+  const fetchCharacterFavourite = useCallback(async (slug) => {
+    if (!authToken || !slug) return false;
+    
+    // Перевіряємо кеш
+    if (characterFavouriteCache.current.has(slug)) {
+      return characterFavouriteCache.current.get(slug);
+    }
+    
+    // Перевіряємо активні запити
+    const requestKey = `character_favourite_${slug}`;
+    if (activeRequests.current.has(requestKey)) {
+      return activeRequests.current.get(requestKey);
+    }
+    
+    // Створюємо новий запит
+    const requestPromise = fetch(`https://api.hikka.io/favourite/character/${slug}`, {
+      headers: { auth: authToken },
+    }).then(async (res) => {
+      if (res.ok) {
+        const data = await res.json();
+        return !!data.reference;
+      }
+      // Якщо endpoint не існує, повертаємо false
+      if (res.status === 404) {
+        return false;
+      }
+      return false;
+    }).catch((error) => {
+      console.log('Error fetching character favourite:', error);
+      return false;
+    });
+    
+    // Зберігаємо активний запит
+    activeRequests.current.set(requestKey, requestPromise);
+    
+    try {
+      const result = await requestPromise;
+      // Зберігаємо в кеш
+      characterFavouriteCache.current.set(slug, result);
+      // Оновлюємо глобальний стан
+      setCharacterFavourites(prev => ({
+        ...prev,
+        [slug]: result
+      }));
+      return result;
+    } finally {
+      // Видаляємо з активних запитів
+      activeRequests.current.delete(requestKey);
+    }
+  }, [authToken]);
+
   // Функція для оновлення статусу конкретного аніме
   const updateAnimeStatus = useCallback((slug, newStatus) => {
     setAnimeStatuses(prev => ({
@@ -148,6 +202,16 @@ export const WatchStatusProvider = ({ children }) => {
     favouriteCache.current.set(slug, isFavourite);
   }, []);
 
+  // Функція для оновлення вподобаного конкретного персонажа
+  const updateCharacterFavourite = useCallback((slug, isFavourite) => {
+    setCharacterFavourites(prev => ({
+      ...prev,
+      [slug]: isFavourite
+    }));
+    // Оновлюємо кеш
+    characterFavouriteCache.current.set(slug, isFavourite);
+  }, []);
+
   // Функція для отримання статусу конкретного аніме
   const getAnimeStatus = useCallback((slug) => {
     return animeStatuses[slug] || null;
@@ -155,13 +219,27 @@ export const WatchStatusProvider = ({ children }) => {
 
   // Функція для отримання вподобаного конкретного аніме
   const getAnimeFavourite = useCallback((slug) => {
-    return favourites[slug] || false;
+    // Якщо немає в стані, повертаємо null для позначення "не перевірено"
+    if (!(slug in favourites)) {
+      return null;
+    }
+    return favourites[slug];
   }, [favourites]);
+
+  // Функція для отримання вподобаного конкретного персонажа
+  const getCharacterFavourite = useCallback((slug) => {
+    // Якщо немає в стані, повертаємо null для позначення "не перевірено"
+    if (!(slug in characterFavourites)) {
+      return null;
+    }
+    return characterFavourites[slug];
+  }, [characterFavourites]);
 
   // Функція для очищення кешу
   const clearCache = useCallback(() => {
     statusCache.current.clear();
     favouriteCache.current.clear();
+    characterFavouriteCache.current.clear();
     activeRequests.current.clear();
   }, []);
 
@@ -176,14 +254,18 @@ export const WatchStatusProvider = ({ children }) => {
         setEpisodes,
         animeStatuses,
         favourites,
+        characterFavourites,
         authToken,
         isAuthChecked,
         updateAnimeStatus,
         updateAnimeFavourite,
+        updateCharacterFavourite,
         getAnimeStatus,
         getAnimeFavourite,
+        getCharacterFavourite,
         fetchAnimeStatus,
         fetchAnimeFavourite,
+        fetchCharacterFavourite,
         clearCache
       }}
     >

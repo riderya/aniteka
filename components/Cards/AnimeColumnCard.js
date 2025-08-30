@@ -257,7 +257,7 @@ const createStyles = (theme, props) => StyleSheet.create({
     width: props.imageWidth,
     height: props.imageHeight,
     borderRadius: props.imageBorderRadius || 24,
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.border,
   },
   title: {
     marginTop: 10,

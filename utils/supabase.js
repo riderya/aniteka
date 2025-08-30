@@ -66,7 +66,9 @@ export const saveUserToSupabaseWithFallback = async (userData) => {
           coins: 100,
           last_login: currentTime,
           created_at: currentTime,
-          updated_at: currentTime
+          updated_at: currentTime,
+          hikka_created_at: userData.created || currentTime,
+          hikka_updated_at: userData.updated || currentTime
         })
         .select()
         .single();
@@ -82,7 +84,9 @@ export const saveUserToSupabaseWithFallback = async (userData) => {
             coins: 100,
             last_login: currentTime,
             created_at: currentTime,
-            updated_at: currentTime
+            updated_at: currentTime,
+            hikka_created_at: userData.created_at || currentTime,
+            hikka_updated_at: userData.updated_at || currentTime
           })
           .select()
           .single();
@@ -104,7 +108,8 @@ export const saveUserToSupabaseWithFallback = async (userData) => {
           username: userData.username,
           email: userData.email,
           last_login: currentTime,
-          updated_at: currentTime
+          updated_at: currentTime,
+          hikka_updated_at: userData.updated_at || currentTime
         })
         .eq('hikka_id', userData.reference)
         .select()
@@ -118,7 +123,8 @@ export const saveUserToSupabaseWithFallback = async (userData) => {
             username: userData.username,
             email: userData.email,
             last_login: currentTime,
-            updated_at: currentTime
+            updated_at: currentTime,
+            hikka_updated_at: userData.updated_at || currentTime
           })
           .eq('hikka_id', userData.reference)
           .select()

@@ -59,10 +59,11 @@ const Wrapper = styled(TouchableOpacity)`
 
 const SpoilerContainer = styled.View`
   position: relative;
-  padding: 8px;
+  padding: 12px;
   border-radius: 16px;
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.inputBackground};
+  width: 100%;
 `;
 
 const HiddenText = styled(Text)`
@@ -108,4 +109,5 @@ const RevealedContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.inputBackground};
   padding: 12px;
   border-radius: 16px;
+  width: 100%;
 `;

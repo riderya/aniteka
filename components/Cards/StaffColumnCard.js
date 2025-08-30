@@ -13,6 +13,7 @@ const StaffImage = styled.Image`
   width: ${({ imageWidth }) => typeof imageWidth === 'string' ? imageWidth : `${imageWidth}px`};
   height: ${({ imageHeight }) => typeof imageHeight === 'string' ? imageHeight : `${imageHeight}px`};
   border-radius: ${({ borderRadius }) => borderRadius || 24}px;
+  background-color: ${({ theme }) => theme.colors.border};
 `;
 
 const StaffName = styled.Text`

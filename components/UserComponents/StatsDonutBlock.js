@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import styled from 'styled-components/native';
-import Svg, { Circle } from 'react-native-svg';
-import { TouchableOpacity } from 'react-native';
+import Svg, { Circle, G } from 'react-native-svg';
+import { TouchableOpacity, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -57,68 +57,73 @@ const LegendText = styled.Text`
 
 const DonutWrapper = styled.View`
   align-items: center;
+  width: 120px;
+  height: 120px;
 `;
 
-
-
-/* ====== компонент Donut ====== */
-const Donut = ({ segments, radius = 55, stroke = 25, rotation = 0, isDark = false }) => {
-  const CIRCUMFERENCE = 2 * Math.PI * radius;
-  const adjustedRadius = radius - stroke / 2; // Коригуємо радіус для правильного відображення
-
-  let acc = 0;
+/* ====== ProgressRing компонент ====== */
+const ProgressRing = ({ data, size = 100, strokeWidth = 25, rotation = 0, isDark = false }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const center = size / 2;
   
-  // Перевіряємо чи всі значення дорівнюють 0
-  const allZero = segments.every(segment => segment.value === 0);
-  
-  // Колір фонового кола залежно від теми
+  // Фоновий колір кільця
   const backgroundColor = isDark ? '#374151' : '#e5e7eb';
   
+  let currentAngle = rotation;
+  
   return (
-    <Svg 
-      width={radius * 2} 
-      height={radius * 2} 
-      viewBox={`0 0 ${radius * 2} ${radius * 2}`}
-      style={{ transform: [{ rotate: `${rotation}deg` }] }}
-    >
-      {/* Фоновий круг - завжди видимий */}
+    <Svg width={size} height={size}>
+      {/* Фонове кільце */}
       <Circle
-        cx={radius}
-        cy={radius}
-        r={adjustedRadius}
+        cx={center}
+        cy={center}
+        r={radius}
         stroke={backgroundColor}
-        strokeWidth={stroke}
+        strokeWidth={strokeWidth}
         fill="transparent"
         opacity={0.3}
       />
       
       {/* Сегменти даних */}
-      {segments.map(({ value, color }, idx) => {
-        // Якщо всі значення 0, показуємо порожній круг
-        if (allZero) {
-          return null;
-        }
+      {data.map((segment, index) => {
+        const percentage = segment.percentage;
+        const angle = (percentage / 100) * 360;
+        const startAngle = currentAngle;
+        const endAngle = currentAngle + angle;
         
-        // Мінімальна товщина для сегментів (хоча б 1% від кола для кращої видимості)
-        const minValue = Math.max(value, 1);
-        const dash = (minValue / 100) * CIRCUMFERENCE;
-        const dashArray = `${dash} ${CIRCUMFERENCE - dash}`;
-        const circle = (
-          <Circle
-            key={idx}
-            cx={radius}
-            cy={radius}
-            r={adjustedRadius}
-            stroke={color}
-            strokeWidth={stroke}
-            strokeDasharray={dashArray}
-            strokeDashoffset={-acc}
-            strokeLinecap="butt"
-            fill="transparent"
-          />
-        );
-        acc += dash;
-        return circle;
+        // Обчислюємо координати для дуги
+        const startX = center + radius * Math.cos((startAngle - 90) * Math.PI / 180);
+        const startY = center + radius * Math.sin((startAngle - 90) * Math.PI / 180);
+        const endX = center + radius * Math.cos((endAngle - 90) * Math.PI / 180);
+        const endY = center + radius * Math.sin((endAngle - 90) * Math.PI / 180);
+        
+        // Визначаємо чи потрібна велика дуга
+        const largeArcFlag = angle > 180 ? 1 : 0;
+        
+        // Створюємо path для дуги
+        const pathData = [
+          `M ${startX} ${startY}`,
+          `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`
+        ].join(' ');
+        
+        currentAngle += angle;
+        
+                 return (
+           <Circle
+             key={index}
+             cx={center}
+             cy={center}
+             r={radius}
+             stroke={segment.color}
+             strokeWidth={strokeWidth}
+             fill="transparent"
+             strokeDasharray={`${(percentage / 100) * circumference} ${circumference}`}
+             strokeDashoffset={-((currentAngle - angle - rotation) / 360) * circumference}
+             strokeLinecap="butt"
+             transform={`rotate(${rotation}, ${center}, ${center})`}
+           />
+         );
       })}
     </Svg>
   );
@@ -167,8 +172,6 @@ const StatsDonutBlock = ({ stats }) => {
   // підготуємо дані
   const { watching, planned, completed, on_hold, dropped } = stats;
 
-  const total = watching + planned + completed + on_hold + dropped || 1; // щоб не ділити на 0
-
   const data = useMemo(
     () => [
       { label: 'Дивлюсь',     value: watching,  color: palette.watching },
@@ -180,13 +183,27 @@ const StatsDonutBlock = ({ stats }) => {
     [watching, planned, completed, on_hold, dropped]
   );
 
-  // масив секторів у відсотках
-  const segments = data.map((d) => ({
-    color: d.color,
-    value: (d.value / total) * 100,
-  }));
-
-
+  // фільтруємо тільки категорії зі значеннями більше 0
+  const filteredData = data.filter(d => d.value > 0);
+  
+  // обчислюємо загальну суму та відсотки
+  const total = filteredData.reduce((sum, d) => sum + d.value, 0) || 1;
+  
+  // підготовка даних для ProgressRing
+  const ringData = useMemo(() => {
+    return filteredData.map((item) => {
+      const percentage = (item.value / total) * 100;
+      // Мінімальна ширина 2% для малих значень
+      const minWidth = 2;
+      const adjustedPercentage = percentage < minWidth && percentage > 0 ? minWidth : percentage;
+      
+      return {
+        color: item.color,
+        percentage: adjustedPercentage,
+        originalValue: item.value,
+      };
+    });
+  }, [filteredData, total]);
 
   const onGestureEvent = (event) => {
     const { translationX, translationY } = event.nativeEvent;
@@ -200,8 +217,6 @@ const StatsDonutBlock = ({ stats }) => {
     }
   };
 
-
-
   return (
     <Card>
         <RowLineHeader title='Статистика'/>
@@ -209,7 +224,7 @@ const StatsDonutBlock = ({ stats }) => {
       <LegendRow>
         {/* Легенда */}
         <LegendList>
-          {data.map((d) => (
+          {filteredData.map((d) => (
             <LegendItem key={d.label}>
               <ColorDot color={d.color} />
               <LegendText>
@@ -220,14 +235,20 @@ const StatsDonutBlock = ({ stats }) => {
           ))}
         </LegendList>
 
-        {/* Donut */}
+        {/* ProgressRing */}
         <DonutWrapper>
           <PanGestureHandler
             onGestureEvent={onGestureEvent}
             onHandlerStateChange={onHandlerStateChange}
           >
             <TouchableOpacity activeOpacity={1}>
-              <Donut segments={segments} rotation={rotation} isDark={isDark} />
+              <ProgressRing 
+                data={ringData} 
+                size={115} 
+                strokeWidth={25} 
+                rotation={rotation} 
+                isDark={isDark} 
+              />
             </TouchableOpacity>
           </PanGestureHandler>
         </DonutWrapper>

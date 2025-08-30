@@ -17,6 +17,8 @@ export const lightThemeColors = {
   transparentBackground: '#ffffffF2',
   transparentBackground70: 'rgba(255, 255, 255, 0.7)',
   disabled: '#f0f0f0',
+  skeletonBackground: '#e0e0e0',
+  skeletonShimmer: '#f5f5f5',
 
   watching: '#43a047',
   planned: '#9575cd',
@@ -44,7 +46,9 @@ export const darkThemeColors = {
   transparent: '#000000F2',       // Темний фон для ImageViewing
   transparentBackground: '#000000FC',       // Темний фон для ImageViewing
   transparentBackground70: 'rgba(5, 5, 5, 0.7)',
-  disabled: '#2E2E2E',  
+  disabled: '#2E2E2E',
+  skeletonBackground: '#2A2A2A',
+  skeletonShimmer: '#3A3A3A',
   
   watching: '#43a047',
   planned: '#9575cd',

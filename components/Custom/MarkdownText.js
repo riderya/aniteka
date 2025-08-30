@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Text, Linking, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import { processCommentText } from '../../utils/textUtils';
 
@@ -10,6 +11,7 @@ const MarkdownText = ({
   ellipsizeMode 
 }) => {
   const { theme } = useTheme();
+  const navigation = useNavigation();
   const textStyle = {
     color: style.body?.color || theme.colors.text,
     fontSize: style.body?.fontSize || 16,
@@ -40,8 +42,8 @@ const MarkdownText = ({
   const renderMarkdownText = (text) => {
     if (!text) return null;
 
-    // Очищуємо текст перед обробкою
-    const cleanedText = processCommentText(text);
+    // Використовуємо оригінальний текст без очищення
+    const cleanedText = text;
 
     const parts = [];
     let currentIndex = 0;
@@ -55,7 +57,7 @@ const MarkdownText = ({
     while ((spoilerMatch = spoilerRegex.exec(cleanedText)) !== null) {
       spoilerMatches.push({
         type: 'spoiler',
-        text: spoilerMatch[1].trim(),
+        text: spoilerMatch[1],
         start: spoilerMatch.index,
         end: spoilerMatch.index + spoilerMatch[0].length
       });
@@ -138,23 +140,36 @@ const MarkdownText = ({
         }
       }
 
-      // Рендеримо матч
-      switch (match.type) {
-        case 'spoiler':
-          parts.push(
-            <InlineSpoiler
-              key={`spoiler-${match.start}`}
-              text={match.text}
-              textStyle={textStyle}
-            />
-          );
-          break;
+             // Рендеримо матч
+       switch (match.type) {
+         case 'spoiler':
+           parts.push(
+             <Text key={`newline-before-${match.start}`} style={textStyle}>
+               {'\n\n'}
+             </Text>
+           );
+                       parts.push(
+              <InlineSpoiler
+                key={`spoiler-${match.start}`}
+                text={match.text}
+                textStyle={textStyle}
+              />
+            );
+            parts.push(
+              <Text key={`newline-after-${match.start}`} style={textStyle}>
+                {'\n'}
+              </Text>
+            );
+            break;
         case 'link':
           parts.push(
             <Text
               key={`link-${match.start}`}
               style={[textStyle, linkStyle]}
-              onPress={() => Linking.openURL(match.url)}
+              onPress={() => navigation.navigate('WebView', { 
+                url: match.url, 
+                title: match.text 
+              })}
             >
               {match.text}
             </Text>
@@ -212,7 +227,7 @@ const MarkdownText = ({
 
   const markdownContent = renderMarkdownText(children);
   
-  // Якщо це масив елементів (є маркдаун), рендеримо їх у View
+  // Якщо це масив елементів (є маркдаун), рендеримо їх у одному Text компоненті
   if (Array.isArray(markdownContent)) {
     // Якщо потрібно обрізати текст, рендеримо простий текст без маркдауну
     if (numberOfLines !== undefined) {
@@ -228,9 +243,9 @@ const MarkdownText = ({
     }
     
     return (
-      <View style={{ flexDirection: 'column' }}>
+      <Text style={textStyle}>
         {markdownContent}
-      </View>
+      </Text>
     );
   }
   
@@ -256,21 +271,44 @@ const InlineSpoiler = ({ text, textStyle }) => {
   };
 
   return (
-    <TouchableOpacity activeOpacity={0.8} onPress={toggleSpoiler}>
+    <TouchableOpacity 
+      activeOpacity={0.8} 
+      onPress={toggleSpoiler}
+      style={{ width: '100%', marginVertical: 8 }}
+    >
       {revealed ? (
-        <Text style={[textStyle, { backgroundColor: theme.colors.inputBackground, padding: 4, borderRadius: 4 }]}>
-          {text}
-        </Text>
-      ) : (
-        <Text style={[textStyle, { 
+        <View style={{ 
           backgroundColor: theme.colors.inputBackground, 
-          padding: 4, 
-          borderRadius: 4,
-          color: theme.colors.gray,
-          fontStyle: 'italic'
-        }]}>
-          [спойлер]
-        </Text>
+          padding: 10, 
+          borderRadius: 12,
+          width: '100%',
+          borderWidth: 1,
+          borderColor: theme.colors.border
+        }}>
+          <Text style={textStyle}>
+            {text}
+          </Text>
+        </View>
+      ) : (
+        <View style={{ 
+          backgroundColor: theme.colors.inputBackground, 
+          padding: 10, 
+          borderRadius: 12,
+          width: '100%',
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderStyle: 'dashed'
+        }}>
+          <Text style={[textStyle, { 
+            color: theme.colors.gray,
+            fontStyle: 'italic',
+            fontSize: 14,
+            fontWeight: '500'
+          }]}>
+            👁️ Натисніть, щоб показати спойлер
+          </Text>
+        </View>
       )}
     </TouchableOpacity>
   );

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   View,
   KeyboardAvoidingView,
@@ -23,7 +22,8 @@ import { useTheme } from '../context/ThemeContext';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import CommentForm from '../components/CommentForm/CommentForm';
 import CommentCard from '../components/Cards/CommentCard';
-import CommentCardSkeleton from '../components/Skeletons/CommentCardSkeleton';
+import { CommentCardSkeleton } from '../components/Skeletons';
+
 import MarkdownText from '../components/Custom/MarkdownText';
 import * as SecureStore from 'expo-secure-store';
 
@@ -33,13 +33,6 @@ dayjs.extend(isToday);
 dayjs.extend(isYesterday);
 
 // ---------- Styled Components ----------
-const CenterLoader = styled.View`
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  background-color: ${({ theme }) => theme.colors.background};
-`;
-
 const Container = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
@@ -498,25 +491,10 @@ const CommentRepliesScreen = () => {
             <HeaderTitleBar title={getHeaderTitle()} />
           </BlurOverlay>
 
-          <FlatList
-            data={[1, 2, 3, 4, 5]} // Show 5 skeleton items
-            keyExtractor={(item) => `skeleton-${item}`}
-            renderItem={() => <CommentCardSkeleton />}
-            contentContainerStyle={{ paddingTop: insets.top + 56 + 20, paddingBottom: insets.bottom + 160 }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={theme.colors.primary}
-                colors={[theme.colors.primary]}
-                progressViewOffset={insets.top + 56}
-                progressBackgroundColor={theme.colors.background}
-                title="Оновлення відповідей..."
-                titleColor={theme.colors.text}
-              />
-            }
-            style={{ flex: 1 }}
-          />
+          <View style={{ flex: 1, paddingTop: insets.top + 56 + 20 }}>
+            {/* Скелетон з оригінальним коментарем та відповідями */}
+            <CommentCardSkeleton showOriginalComment={true} />
+          </View>
         </Container>
       </KeyboardAvoidingView>
     );

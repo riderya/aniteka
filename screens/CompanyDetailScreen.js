@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import AnimeColumnCard from '../components/Cards/AnimeColumnCard';
+import OptimizedImage from '../components/Custom/OptimizedImage';
 
 const screenWidth = Dimensions.get('window').width;
 const cardMinWidth = 110;
@@ -29,8 +30,6 @@ const CompanyDetailScreen = () => {
 
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
-
-  const HEADER_HEIGHT = 60 + insets.top;
 
   // Розрахунок кількості колонок по ширині екрану
   const numColumns = Math.floor(
@@ -151,15 +150,23 @@ const CompanyDetailScreen = () => {
         onEndReachedThreshold={0.5}
         ListHeaderComponent={
           <>
-            <CompanyLogo source={{ uri: company.image }} />
+            <CompanyLogoContainer>
+              <OptimizedImage
+                source={{ uri: company.image }}
+                width={100}
+                height={100}
+                borderRadius={12}
+                resizeMode="cover"
+              />
+            </CompanyLogoContainer>
             <CompanyName>{company.name}</CompanyName>
             <SectionTitle>Аніме від цієї студії:</SectionTitle>
           </>
         }
         contentContainerStyle={{
-          paddingHorizontal: cardSpacing,
-          paddingTop: HEADER_HEIGHT,
-          paddingBottom: 12 + insets.bottom,
+          paddingTop: insets.top + 56 + 20,
+          paddingBottom: 20 + insets.bottom,
+          paddingHorizontal: 12,
         }}
         ListFooterComponent={
           loadingMore ? (
@@ -200,10 +207,7 @@ const CenteredContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const CompanyLogo = styled.Image`
-  width: 100px;
-  height: 100px;
-  border-radius: 12px;
+const CompanyLogoContainer = styled.View`
   align-self: center;
   margin-bottom: 12px;
 `;

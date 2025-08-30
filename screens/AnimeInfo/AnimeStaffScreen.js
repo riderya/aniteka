@@ -173,8 +173,8 @@ const AnimeStaffScreen = () => {
             imageBorderRadius={24}
             imageWidth={90}
             imageHeight={120}
-            nameFontSize={16}
-            roleFontSize={13}
+            nameFontSize="16px"
+            roleFontSize="13px"
           />
         )}
         onEndReached={handleLoadMore}

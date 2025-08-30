@@ -10,7 +10,8 @@ const TouchableOpacityStyled = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   border-width: 1px;
-  border-color: ${({ theme, liked }) => (liked ? theme.colors.favourite : theme.colors.border)};
+  border-color: ${({ theme, liked }) => (liked === true ? theme.colors.favourite : theme.colors.border)};
+  background-color: ${({ theme, liked }) => (liked === true ? `${theme.colors.favourite}20` : 'transparent')};
   height: 45px;
   padding: 0px 16px;
   border-radius: 999px;
@@ -84,7 +85,7 @@ const LikeAnimeButton = ({ slug }) => {
     try {
       const endpoint = `https://api.hikka.io/favourite/anime/${slug}`;
       
-      if (liked) {
+      if (liked === true) {
         await fetch(endpoint, {
           method: 'DELETE',
           headers: { auth: authToken },
@@ -126,9 +127,9 @@ const LikeAnimeButton = ({ slug }) => {
         <ActivityIndicator size="small" color={theme.colors.textSecondary || '#fff'} />
       ) : (
         <Ionicons
-          name={liked ? 'heart' : 'heart-outline'}
+          name={liked === true ? 'heart' : 'heart-outline'}
           size={20}
-          color={liked ? theme.colors.favourite : theme.colors.gray}
+          color={liked === true ? theme.colors.favourite : theme.colors.gray}
         />
       )}
     </TouchableOpacityStyled>

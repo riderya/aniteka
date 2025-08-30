@@ -58,7 +58,7 @@ const StatusDropdown = ({ slug, episodes_total }) => {
     Переглянуто: theme.colors.completed,
     Відкладено: theme.colors.on_hold,
     Закинуто: theme.colors.dropped,
-    'Не дивлюсь': theme.colors.border,
+    'Не дивлюсь': theme.colors.gray,
   };
 
   useEffect(() => {
@@ -229,6 +229,7 @@ const StatusDropdown = ({ slug, episodes_total }) => {
         onPress={onOpenModal}
         disabled={isLoading || isUpdating}
         borderColor={isLoading ? statusBorderColors['Не дивлюсь'] : statusBorderColors[selectedStatus]}
+        theme={theme}
       >
         {isLoading ? (
           <ActivityIndicator style={{ paddingHorizontal: 42 }} size="small" color={statusColors['Не дивлюсь']} />
@@ -284,6 +285,10 @@ const Button = styled.TouchableOpacity`
   border-width: 1px;
   border-radius: 999px;
   border-color: ${({ borderColor }) => borderColor};
+  background-color: ${({ borderColor, theme }) => {
+    if (borderColor === theme.colors.border) return 'transparent';
+    return `${borderColor}20`;
+  }};
 `;
 const ButtonText = styled.Text`
   margin-left: 4px;

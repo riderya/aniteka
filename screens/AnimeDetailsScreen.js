@@ -6,6 +6,7 @@ import styled from 'styled-components/native';
 import axios from 'axios';
 import TopDetail from '../components/DetailsAnime/TopDetail';
 import BackButton from '../components/DetailsAnime/BackButton';
+import LikeAnimeButtonAbsolute from '../components/DetailsAnime/LikeAnimeButtonAbsolute';
 import AnimeMainCharacters from '../components/DetailsAnime/AnimeMainCharacters';
 import VideoSlider from '../components/DetailsAnime/VideoSlider';
 import MusicSlider from '../components/DetailsAnime/MusicSlider';
@@ -90,6 +91,7 @@ const AnimeDetailsScreen = ({ route }) => {
   return (
     <ScreenWrapper>
         <BackButton top={12} />
+        <LikeAnimeButtonAbsolute slug={slug} top={12} />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         <TopDetail anime={anime} />
         <Divider />
@@ -135,7 +137,11 @@ const AnimeDetailsScreen = ({ route }) => {
           onVisibilityChange={handleRecommendationsVisibility}
         />
         {showRecommendationsDivider && <Divider />}
-        <AnimeSendButton slug={anime.slug} />
+        <AnimeSendButton 
+          slug={anime.slug} 
+          title={anime.title_ua || anime.title_en || anime.title_ja || '?'}
+          commentsCount={anime.comments_count}
+        />
       </ScrollView>
     </ScreenWrapper>
   );

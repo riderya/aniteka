@@ -27,7 +27,7 @@ export default function LoginComponent({ onLoginSuccess }) {
     const subscription = Linking.addEventListener('url', (event) => {
       const { queryParams } = Linking.parse(event.url);
       
-      if (queryParams?.reference) {
+      if (queryParams?.reference && !loading) {
         handleTokenExchange(queryParams.reference);
       }
     });
@@ -35,9 +35,11 @@ export default function LoginComponent({ onLoginSuccess }) {
     return () => {
       subscription?.remove();
     };
-  }, []);
+  }, [loading]);
 
   const handleLogin = async () => {
+    if (loading) return; // Prevent multiple login attempts
+    
     const scope = HIKKA_SCOPES.join(',');
     const authUrl = `https://hikka.io/oauth?reference=${CLIENT_ID}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
@@ -86,6 +88,7 @@ export default function LoginComponent({ onLoginSuccess }) {
   };
 
   const handleTokenExchange = async (requestReference) => {
+    if (loading) return; // Prevent multiple token exchange attempts
     setLoading(true);
 
     try {

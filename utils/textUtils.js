@@ -29,13 +29,13 @@ export const cleanText = (text) => {
 export const processCommentText = (text) => {
   if (!text || typeof text !== 'string') return text;
   
-  // Спочатку очищуємо текст
-  let cleanedText = cleanText(text);
+  // Зберігаємо оригінальний текст без очищення пробілів
+  let processedText = text;
   
   // Обробляємо спойлери окремо, щоб зберегти їх структуру
   const spoilerRegex = /:::spoiler\s*\n?([\s\S]*?)\n?:::/g;
   
-  return cleanedText.replace(spoilerRegex, (match, spoilerContent) => {
+  return processedText.replace(spoilerRegex, (match, spoilerContent) => {
     // Очищуємо вміст спойлера, але зберігаємо структуру
     const cleanedSpoilerContent = cleanText(spoilerContent);
     return `:::spoiler\n${cleanedSpoilerContent}\n:::`;
