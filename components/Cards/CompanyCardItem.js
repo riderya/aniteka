@@ -1,19 +1,19 @@
-// components/Cards/StaffItemCard.js
 import React from 'react';
 import styled from 'styled-components/native';
-import { TouchableOpacity } from 'react-native';
 import avatarFallback from '../../assets/image/image404.png';
+import { TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 const Card = styled.View`
   flex-direction: row;
-  margin-bottom: 20px;
+  margin: 6px 0px;
 `;
 
-const Image = styled.Image`
+const CompanyImage = styled.Image`
   width: ${({ imageWidth }) => imageWidth || 90}px;
   height: ${({ imageHeight }) => imageHeight || 120}px;
   border-radius: ${({ imageBorderRadius }) => imageBorderRadius || 16}px;
-  background-color: ${({ theme }) => theme.colors.border};
+  background-color: ${({ theme }) => theme.colors.card};
 `;
 
 const Info = styled.View`
@@ -27,44 +27,48 @@ const Name = styled.Text`
   font-weight: bold;
 `;
 
-const Role = styled.Text`
+const AltName = styled.Text`
   color: ${({ theme }) => theme.colors.gray};
   font-size: ${({ fontSize }) => fontSize || '14px'};
   margin-top: 4px;
 `;
 
-const StaffCardRow = ({ 
-  person, 
-  roles, 
-  onPress, 
+const CompanyCardItem = ({ 
+  company, 
   imageBorderRadius = 16,
   imageWidth = 90,
   imageHeight = 120,
   nameFontSize = '16px',
-  roleFontSize = '14px'
+  altNameFontSize = '14px'
 }) => {
+  const navigation = useNavigation();
+
   return (
-    <TouchableOpacity onPress={onPress}>
+    <TouchableOpacity
+      onPress={() =>
+        navigation.navigate('CompanyDetailScreen', {
+          slug: company.slug,
+        })
+      }
+    >
       <Card>
-        <Image
-          source={
-            person?.image?.trim() ? { uri: person.image } : avatarFallback
-          }
+        <CompanyImage
+          source={company.image ? { uri: company.image } : avatarFallback}
           imageBorderRadius={imageBorderRadius}
           imageWidth={imageWidth}
           imageHeight={imageHeight}
         />
         <Info>
-          <Name fontSize={nameFontSize} numberOfLines={1}>
-            {person.name_ua || person.name_en}
+          <Name fontSize={nameFontSize} numberOfLines={2}>
+            {company.name}
           </Name>
-          <Role fontSize={roleFontSize} numberOfLines={2}>
-            {roles.map((r) => r.name_ua || r.name_en).join(', ')}
-          </Role>
+          <AltName fontSize={altNameFontSize} numberOfLines={1}>
+            {company.name || '?'}
+          </AltName>
         </Info>
       </Card>
     </TouchableOpacity>
   );
 };
 
-export default StaffCardRow;
+export default CompanyCardItem;

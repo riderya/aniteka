@@ -88,6 +88,11 @@ const ProgressRing = ({ data, size = 100, strokeWidth = 25, rotation = 0, isDark
       {/* Сегменти даних */}
       {data.map((segment, index) => {
         const percentage = segment.percentage;
+        // Пропускаємо сегменти з нульовими значеннями
+        if (segment.originalValue === 0) {
+          return null;
+        }
+        
         const angle = (percentage / 100) * 360;
         const startAngle = currentAngle;
         const endAngle = currentAngle + angle;
@@ -109,21 +114,21 @@ const ProgressRing = ({ data, size = 100, strokeWidth = 25, rotation = 0, isDark
         
         currentAngle += angle;
         
-                 return (
-           <Circle
-             key={index}
-             cx={center}
-             cy={center}
-             r={radius}
-             stroke={segment.color}
-             strokeWidth={strokeWidth}
-             fill="transparent"
-             strokeDasharray={`${(percentage / 100) * circumference} ${circumference}`}
-             strokeDashoffset={-((currentAngle - angle - rotation) / 360) * circumference}
-             strokeLinecap="butt"
-             transform={`rotate(${rotation}, ${center}, ${center})`}
-           />
-         );
+        return (
+          <Circle
+            key={index}
+            cx={center}
+            cy={center}
+            r={radius}
+            stroke={segment.color}
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={`${(percentage / 100) * circumference} ${circumference}`}
+            strokeDashoffset={-((currentAngle - angle - rotation) / 360) * circumference}
+            strokeLinecap="butt"
+            transform={`rotate(${rotation}, ${center}, ${center})`}
+          />
+        );
       })}
     </Svg>
   );
@@ -183,8 +188,8 @@ const StatsDonutBlock = ({ stats }) => {
     [watching, planned, completed, on_hold, dropped]
   );
 
-  // фільтруємо тільки категорії зі значеннями більше 0
-  const filteredData = data.filter(d => d.value > 0);
+  // показуємо всі категорії, навіть з нульовими значеннями
+  const filteredData = data;
   
   // обчислюємо загальну суму та відсотки
   const total = filteredData.reduce((sum, d) => sum + d.value, 0) || 1;
@@ -193,7 +198,7 @@ const StatsDonutBlock = ({ stats }) => {
   const ringData = useMemo(() => {
     return filteredData.map((item) => {
       const percentage = (item.value / total) * 100;
-      // Мінімальна ширина 2% для малих значень
+      // Мінімальна ширина 2% для малих значень, але не для нульових
       const minWidth = 2;
       const adjustedPercentage = percentage < minWidth && percentage > 0 ? minWidth : percentage;
       

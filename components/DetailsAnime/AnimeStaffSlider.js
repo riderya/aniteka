@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList } from 'react-native';
+import { FlatList } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import RowLineHeader from './RowLineHeader';
 import StaffColumnCard from '../Cards/StaffColumnCard';
+import { StaffColumnCardSkeleton } from '../Skeletons';
 
 const Container = styled.View``;
+
+const SkeletonContainer = styled.View`
+  padding-horizontal: 12px;
+  padding-bottom: 50px;
+`;
 
 const StaffName = styled.Text`
   font-size: 14px;
@@ -51,7 +57,27 @@ const AnimeStaffSlider = ({ slug, title, onVisibilityChange }) => {
   if (loading) {
     return (
       <Container>
-        <ActivityIndicator size="large" color="#ff6f61" />
+        <RowLineHeader
+          title="Автори"
+          onPress={() => {}}
+        />
+        <SkeletonContainer>
+          <FlatList
+            data={[1, 2, 3, 4, 5]} // Показуємо 5 скелетонів
+            keyExtractor={(_, index) => index.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            renderItem={() => (
+              <StaffColumnCardSkeleton 
+                cardWidth="100px"
+                imageWidth="100px"
+                imageHeight="130px"
+                borderRadius={24}
+                marginRight="12px"
+              />
+            )}
+          />
+        </SkeletonContainer>
       </Container>
     );
   }

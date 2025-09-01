@@ -359,7 +359,7 @@ const CommentsDetailsScreen = () => {
           onEndReachedThreshold={0.3}
           ListHeaderComponent={renderListHeader}
           ListFooterComponent={renderListFooter}
-          contentContainerStyle={{ paddingTop: insets.top + 56 + 20, paddingBottom: insets.bottom + 120 }}
+          contentContainerStyle={{ paddingTop: insets.top + 56 + 20, paddingBottom: insets.bottom + 120, paddingHorizontal: 12 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

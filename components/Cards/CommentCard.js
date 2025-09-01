@@ -10,7 +10,6 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
-import { processCommentText } from '../../utils/textUtils';
 import CommentForm from '../CommentForm/CommentForm';
 
 
@@ -18,7 +17,7 @@ dayjs.extend(isToday);
 dayjs.extend(isYesterday);
 
 const CommentCardWrapper = styled.View`
-  margin: 12px;
+  margin: 12px 0px;
 `;
 const RowInfo = styled.View`flex-direction: row;`;
 const Avatar = styled.Image`
@@ -226,47 +225,18 @@ const CommentCard = ({
   const commentSlug = item.slug || item.reference;
   const fullText = item.text || '';
 
-  const maxLines = 5;
-  const shouldShowToggle = fullText.length > 200 && !isExpanded; // 5 рядків * ~40 символів
-
   // Функція для перевірки наявності спойлерів у тексті
   const hasSpoilers = (text) => {
     const spoilerRegex = /:::spoiler\s*\n?([\s\S]*?)\n?:::/g;
     return spoilerRegex.test(text);
   };
 
-  // Функція для створення скороченого тексту з обробкою спойлерів
-  const getTruncatedText = (text, maxLength = 200) => {
-    // Спочатку очищуємо текст
-    const cleanedText = processCommentText(text);
-    
-    if (cleanedText.length <= maxLength) return cleanedText;
-    
-    const truncated = cleanedText.substring(0, maxLength);
-    const spoilerRegex = /:::spoiler\s*\n?([\s\S]*?)\n?:::/g;
-    
-    // Перевіряємо, чи є спойлери в повному тексті
-    const hasSpoilersInFull = hasSpoilers(cleanedText);
-    
-    // Замінюємо спойлери на [спойлер] в скороченому тексті
-    let processedText = truncated.replace(spoilerRegex, '[спойлер]');
-    
-    // Якщо в повному тексті є спойлери, але в скороченому їх немає (обрізалися),
-    // або якщо скорочений текст закінчується на частині спойлера
-    if (hasSpoilersInFull && !processedText.includes('[спойлер]')) {
-      // Перевіряємо, чи скорочений текст закінчується на частині спойлера
-      const lastSpoilerStart = cleanedText.lastIndexOf(':::spoiler', maxLength);
-      if (lastSpoilerStart !== -1 && lastSpoilerStart < maxLength) {
-        // Обрізаємо до початку спойлера і додаємо [спойлер]
-        processedText = truncated.substring(0, lastSpoilerStart) + '[спойлер]';
-      } else {
-        // Якщо спойлер повністю за межами скороченого тексту, додаємо [спойлер] в кінець
-        processedText += ' [спойлер]';
-      }
-    }
-    
-    return processedText + '...';
-  };
+  const maxLines = 5;
+  const shouldShowToggle = React.useMemo(() => {
+    return (fullText.length > 200 || hasSpoilers(fullText)) && !isExpanded;
+  }, [fullText, isExpanded]); // 5 рядків * ~40 символів або є спойлери
+
+
 
   useEffect(() => {
     (async () => {
@@ -448,9 +418,9 @@ const CommentCard = ({
   };
 
   const handleCopy = () => {
-    // Очищуємо текст перед копіюванням
-    const cleanedText = processCommentText(item.text || '');
-    Clipboard.setString(cleanedText);
+    // Використовуємо оригінальний текст для копіювання
+    const originalText = item.text || '';
+    Clipboard.setString(originalText);
     Toast.show({
       type: 'success',
       text1: 'Скопійовано',
@@ -473,17 +443,14 @@ const CommentCard = ({
   };
 
       const renderMarkdownWithSpoilers = () => {
-    // Очищуємо текст перед відображенням
-    const cleanedFullText = processCommentText(fullText);
+    // Використовуємо оригінальний текст без додаткової обробки
+    let displayText = fullText;
     
     // Додаємо ім'я користувача, на якого відповідаємо (якщо це відповідь)
-    let displayText = cleanedFullText;
-    
-    // Перевіряємо, чи є інформація про батьківський коментар
     if (item.parentInfo && item.parentInfo.username) {
       const parentUsername = item.parentInfo.username;
-      if (!cleanedFullText.startsWith(`@${parentUsername}`)) {
-        displayText = `@${parentUsername} ${cleanedFullText}`;
+      if (!fullText.startsWith(`@${parentUsername}`)) {
+        displayText = `@${parentUsername} ${fullText}`;
       }
     }
     
@@ -491,8 +458,9 @@ const CommentCard = ({
       <>
         <View style={{ 
           maxHeight: isExpanded ? undefined : maxLines * 18, // maxLines * lineHeight
-          overflow: 'hidden',
-          position: 'relative'
+          overflow: isExpanded ? 'visible' : 'hidden',
+          position: 'relative',
+          zIndex: 1,
         }}>
           <Markdown
             style={{
@@ -506,11 +474,9 @@ const CommentCard = ({
                 marginVertical: 0,
               },
             }}
-            hideSpoilers={!isExpanded}
           >
             {displayText}
           </Markdown>
-
         </View>
 
         {(shouldShowToggle || isExpanded) && (

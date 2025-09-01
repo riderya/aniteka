@@ -11,7 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import AnimeColumnCard from '../components/Cards/AnimeColumnCard';
-import OptimizedImage from '../components/Custom/OptimizedImage';
+import { Image } from 'react-native';
+import itemPlaceholder from '../assets/image/item-placeholder.jpg';
 
 const screenWidth = Dimensions.get('window').width;
 const cardMinWidth = 110;
@@ -127,7 +128,13 @@ const CompanyDetailScreen = () => {
           onPress={() => navigation.navigate('AnimeDetails', { slug: item.anime.slug })}
           cardWidth={cardWidth}
           imageWidth={cardWidth}
-          imageHeight={165}
+          imageHeight={155}
+          titleFontSize={14}
+          footerFontSize={12}
+          badgeFontSize={13}
+          badgeBottom={5}
+          badgeLeft={5}
+          badgeRight={5}
         />
       </CardWrapper>
     );
@@ -150,15 +157,17 @@ const CompanyDetailScreen = () => {
         onEndReachedThreshold={0.5}
         ListHeaderComponent={
           <>
-            <CompanyLogoContainer>
-              <OptimizedImage
-                source={{ uri: company.image }}
-                width={100}
-                height={100}
-                borderRadius={12}
-                resizeMode="cover"
-              />
-            </CompanyLogoContainer>
+                         <CompanyLogoContainer>
+               <Image
+                 source={company.image ? { uri: company.image } : itemPlaceholder}
+                 style={{
+                   width: 100,
+                   height: 100,
+                   borderRadius: 12,
+                 }}
+                 resizeMode="cover"
+               />
+             </CompanyLogoContainer>
             <CompanyName>{company.name}</CompanyName>
             <SectionTitle>Аніме від цієї студії:</SectionTitle>
           </>
@@ -173,9 +182,9 @@ const CompanyDetailScreen = () => {
             <ActivityIndicator size="large" color={theme.colors.primary} />
           ) : null
         }
-        initialNumToRender={15}
+        initialNumToRender={20}
         maxToRenderPerBatch={10}
-        windowSize={5}
+        windowSize={10}
       />
     </Container>
   );

@@ -3,6 +3,7 @@ import { TouchableOpacity, Image, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useWatchStatus } from '../../context/WatchStatusContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import { useOrientation } from '../../hooks';
@@ -109,9 +110,19 @@ const AnimeColumnCard = React.memo(({
   const navigation = useNavigation();
   const { theme } = useTheme();
   const [userStatus, setUserStatus] = useState(null);
-  const { getAnimeStatus } = useWatchStatus();
+  const { getAnimeStatus, getAnimeFavourite, fetchAnimeFavourite } = useWatchStatus();
   const orientation = useOrientation();
   const responsiveDims = getResponsiveDimensions();
+  
+  // Отримуємо статус улюбленого аніме
+  const isLiked = getAnimeFavourite(anime.slug);
+  
+  // Завантажуємо статус улюбленого при першому рендері
+  useEffect(() => {
+    if (anime.slug && isLiked === null) {
+      fetchAnimeFavourite(anime.slug);
+    }
+  }, [anime.slug, isLiked, fetchAnimeFavourite]);
   
   // Memoize status colors to prevent recalculation
   const statusColors = useMemo(() => getStatusColors(theme), [theme]);
@@ -211,6 +222,11 @@ const AnimeColumnCard = React.memo(({
               </Text>
             </View>
           )}
+          {isLiked === true && (
+            <View style={styles.heartIcon}>
+              <Ionicons name="heart" size={20} color={theme.colors.favourite} />
+            </View>
+          )}
         </View>
 
                  <Text numberOfLines={titleNumberOfLines} style={[
@@ -280,6 +296,14 @@ const createStyles = (theme, props) => StyleSheet.create({
     color: 'white',
     fontSize: props.badgeFontSize,
     fontWeight: '500',
+  },
+  heartIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: theme.colors.favourite + '60',
+    padding: 6,
+    borderRadius: 10,
   },
   historyActionText: {
     fontSize: props.footerFontSize,

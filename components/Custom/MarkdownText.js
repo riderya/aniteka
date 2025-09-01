@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
-import { processCommentText } from '../../utils/textUtils';
 
 const MarkdownText = ({ 
   children, 
@@ -42,7 +41,7 @@ const MarkdownText = ({
   const renderMarkdownText = (text) => {
     if (!text) return null;
 
-    // Використовуємо оригінальний текст без очищення
+    // Використовуємо оригінальний текст без додаткової обробки
     const cleanedText = text;
 
     const parts = [];
@@ -120,9 +119,31 @@ const MarkdownText = ({
       });
     }
 
-    // Об'єднуємо всі матчі та сортуємо за позицією
-    const allMatches = [...spoilerMatches, ...linkMatches, ...boldMatches, ...italicMatches, ...codeMatches]
-      .sort((a, b) => a.start - b.start);
+    // Спочатку обробляємо спойлери, щоб виключити їх вміст з подальшої обробки
+    const processedText = cleanedText;
+    const allMatches = [];
+    
+    // Додаємо спойлери першими
+    allMatches.push(...spoilerMatches);
+    
+    // Для інших матчів перевіряємо, чи вони не знаходяться всередині спойлера
+    const otherMatches = [...linkMatches, ...boldMatches, ...italicMatches, ...codeMatches];
+    
+    for (const match of otherMatches) {
+      let isInsideSpoiler = false;
+      for (const spoiler of spoilerMatches) {
+        if (match.start >= spoiler.start && match.end <= spoiler.end) {
+          isInsideSpoiler = true;
+          break;
+        }
+      }
+      if (!isInsideSpoiler) {
+        allMatches.push(match);
+      }
+    }
+    
+    // Сортуємо за позицією
+    allMatches.sort((a, b) => a.start - b.start);
 
     // Рендеримо текст частинами
     let lastIndex = 0;
@@ -130,7 +151,7 @@ const MarkdownText = ({
     for (const match of allMatches) {
       // Додаємо текст перед матчем
       if (match.start > lastIndex) {
-        const plainText = cleanedText.slice(lastIndex, match.start);
+        const plainText = processedText.slice(lastIndex, match.start);
         if (plainText) {
           parts.push(
             <Text key={`text-${lastIndex}`} style={textStyle}>
@@ -145,10 +166,10 @@ const MarkdownText = ({
          case 'spoiler':
            parts.push(
              <Text key={`newline-before-${match.start}`} style={textStyle}>
-               {'\n\n'}
+               {'\n'}
              </Text>
            );
-                       parts.push(
+           parts.push(
               <InlineSpoiler
                 key={`spoiler-${match.start}`}
                 text={match.text}
@@ -243,9 +264,9 @@ const MarkdownText = ({
     }
     
     return (
-      <Text style={textStyle}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {markdownContent}
-      </Text>
+      </View>
     );
   }
   
@@ -264,41 +285,196 @@ const MarkdownText = ({
 // Inline Spoiler Component to avoid circular dependency
 const InlineSpoiler = ({ text, textStyle }) => {
   const { theme } = useTheme();
+  const navigation = useNavigation();
   const [revealed, setRevealed] = useState(false);
 
   const toggleSpoiler = () => {
     setRevealed(prev => !prev);
   };
 
+  // Функція для рендерингу маркдауну в спойлері
+  const renderSpoilerMarkdown = (text) => {
+    if (!text) return null;
+
+    const parts = [];
+    let lastIndex = 0;
+
+    // Обробка посилань [текст](url)
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    let linkMatch;
+    const linkMatches = [];
+    
+    while ((linkMatch = linkRegex.exec(text)) !== null) {
+      linkMatches.push({
+        type: 'link',
+        text: linkMatch[1],
+        url: linkMatch[2],
+        start: linkMatch.index,
+        end: linkMatch.index + linkMatch[0].length
+      });
+    }
+
+    // Обробка жирного тексту **текст**
+    const boldRegex = /\*\*([^*]+)\*\*/g;
+    let boldMatch;
+    const boldMatches = [];
+    
+    while ((boldMatch = boldRegex.exec(text)) !== null) {
+      boldMatches.push({
+        type: 'bold',
+        text: boldMatch[1],
+        start: boldMatch.index,
+        end: boldMatch.index + boldMatch[0].length
+      });
+    }
+
+    // Обробка курсиву *текст*
+    const italicRegex = /\*([^*]+)\*/g;
+    let italicMatch;
+    const italicMatches = [];
+    
+    while ((italicMatch = italicRegex.exec(text)) !== null) {
+      italicMatches.push({
+        type: 'italic',
+        text: italicMatch[1],
+        start: italicMatch.index,
+        end: italicMatch.index + italicMatch[0].length
+      });
+    }
+
+    // Обробка коду `код`
+    const codeRegex = /`([^`]+)`/g;
+    let codeMatch;
+    const codeMatches = [];
+    
+    while ((codeMatch = codeRegex.exec(text)) !== null) {
+      codeMatches.push({
+        type: 'code',
+        text: codeMatch[1],
+        start: codeMatch.index,
+        end: codeMatch.index + codeMatch[0].length
+      });
+    }
+
+    // Об'єднуємо всі матчі та сортуємо за позицією
+    const allMatches = [...linkMatches, ...boldMatches, ...italicMatches, ...codeMatches]
+      .sort((a, b) => a.start - b.start);
+
+    // Рендеримо текст частинами
+    for (const match of allMatches) {
+      // Додаємо текст перед матчем
+      if (match.start > lastIndex) {
+        const plainText = text.slice(lastIndex, match.start);
+        if (plainText) {
+          parts.push(
+            <Text key={`text-${lastIndex}`} style={textStyle}>
+              {plainText}
+            </Text>
+          );
+        }
+      }
+
+      // Рендеримо матч
+      switch (match.type) {
+        case 'link':
+          parts.push(
+            <Text
+              key={`link-${match.start}`}
+              style={[textStyle, { color: theme.colors.primary, textDecorationLine: 'underline' }]}
+              onPress={() => navigation.navigate('WebView', { 
+                url: match.url, 
+                title: match.text 
+              })}
+            >
+              {match.text}
+            </Text>
+          );
+          break;
+        case 'bold':
+          parts.push(
+            <Text
+              key={`bold-${match.start}`}
+              style={[textStyle, { fontWeight: 'bold' }]}
+            >
+              {match.text}
+            </Text>
+          );
+          break;
+        case 'italic':
+          parts.push(
+            <Text
+              key={`italic-${match.start}`}
+              style={[textStyle, { fontStyle: 'italic' }]}
+            >
+              {match.text}
+            </Text>
+          );
+          break;
+        case 'code':
+          parts.push(
+            <Text
+              key={`code-${match.start}`}
+              style={[textStyle, { 
+                backgroundColor: theme.colors.card,
+                fontFamily: 'monospace',
+                paddingHorizontal: 4,
+                paddingVertical: 2,
+                borderRadius: 4,
+              }]}
+            >
+              {match.text}
+            </Text>
+          );
+          break;
+      }
+
+      lastIndex = match.end;
+    }
+
+    // Додаємо залишок тексту
+    if (lastIndex < text.length) {
+      const remainingText = text.slice(lastIndex);
+      if (remainingText) {
+        parts.push(
+          <Text key={`text-${lastIndex}`} style={textStyle}>
+            {remainingText}
+          </Text>
+        );
+      }
+    }
+
+    return parts.length > 0 ? parts : <Text style={textStyle}>{text}</Text>;
+  };
+
   return (
     <TouchableOpacity 
       activeOpacity={0.8} 
       onPress={toggleSpoiler}
-      style={{ width: '100%', marginVertical: 8 }}
+      style={{ width: '100%', marginVertical: 4, zIndex: 10 }}
     >
       {revealed ? (
         <View style={{ 
           backgroundColor: theme.colors.inputBackground, 
-          padding: 10, 
-          borderRadius: 12,
+          padding: 8, 
+          borderRadius: 8,
           width: '100%',
           borderWidth: 1,
-          borderColor: theme.colors.border
+          borderColor: theme.colors.border,
+          marginVertical: 2
         }}>
-          <Text style={textStyle}>
-            {text}
-          </Text>
+          {renderSpoilerMarkdown(text)}
         </View>
       ) : (
         <View style={{ 
           backgroundColor: theme.colors.inputBackground, 
-          padding: 10, 
-          borderRadius: 12,
+          padding: 8, 
+          borderRadius: 8,
           width: '100%',
           alignItems: 'center',
           borderWidth: 1,
           borderColor: theme.colors.border,
-          borderStyle: 'dashed'
+          borderStyle: 'dashed',
+          marginVertical: 2
         }}>
           <Text style={[textStyle, { 
             color: theme.colors.gray,

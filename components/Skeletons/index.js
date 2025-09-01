@@ -3,3 +3,6 @@ export { default as CollectionCardSkeleton } from './CollectionCardSkeleton';
 export { default as ArticleCardSkeleton } from './ArticleCardSkeleton';
 export { default as AnimeScheduleCardSkeleton } from './AnimeScheduleCardSkeleton';
 export { default as CommentCardSkeleton } from './CommentCardSkeleton';
+export { default as CharacterColumnCardSkeleton } from './CharacterColumnCardSkeleton';
+export { default as AnimeColumnCardSkeleton } from './AnimeColumnCardSkeleton';
+export { default as StaffColumnCardSkeleton } from './StaffColumnCardSkeleton';

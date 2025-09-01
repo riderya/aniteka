@@ -3,10 +3,13 @@ import styled from 'styled-components/native';
 import avatarFallback from '../../assets/image/image404.png';
 import { TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { useWatchStatus } from '../../context/WatchStatusContext';
 
 const Card = styled.View`
   flex-direction: row;
-  margin: 6px 12px;
+  margin-bottom: 20px;
+  position: relative;
 `;
 
 const CharacterImage = styled.Image`
@@ -14,6 +17,10 @@ const CharacterImage = styled.Image`
   height: ${({ imageHeight }) => imageHeight || 120}px;
   border-radius: ${({ imageBorderRadius }) => imageBorderRadius || 16}px;
   background-color: ${({ theme }) => theme.colors.card};
+`;
+
+const ImageContainer = styled.View`
+  position: relative;
 `;
 
 const Info = styled.View`
@@ -33,6 +40,17 @@ const AltName = styled.Text`
   margin-top: 4px;
 `;
 
+const HeartIcon = styled(Ionicons)`
+  position: absolute;
+  top: 4px;
+  right: 12px;
+  color: ${({ theme }) => theme.colors.favourite};
+  background-color: ${({ theme }) => theme.colors.favourite + '50'};
+  padding: 4px;
+  border-radius: 10px;
+  font-size: 20px;
+`;
+
 const CharacterCardItem = ({ 
   character, 
   imageBorderRadius = 16,
@@ -42,6 +60,17 @@ const CharacterCardItem = ({
   altNameFontSize = '14px'
 }) => {
   const navigation = useNavigation();
+  const { getCharacterFavourite, fetchCharacterFavourite } = useWatchStatus();
+  
+  // Отримуємо статус улюбленого персонажа
+  const isLiked = getCharacterFavourite(character.slug);
+  
+  // Завантажуємо статус при першому рендері
+  React.useEffect(() => {
+    if (character.slug && isLiked === null) {
+      fetchCharacterFavourite(character.slug);
+    }
+  }, [character.slug, isLiked, fetchCharacterFavourite]);
 
   return (
     <TouchableOpacity
@@ -51,23 +80,28 @@ const CharacterCardItem = ({
         })
       }
     >
-      <Card>
-        <CharacterImage
-          source={
-            character?.image?.trim()
-              ? { uri: character.image }
-              : avatarFallback
-          }
-          imageBorderRadius={imageBorderRadius}
-          imageWidth={imageWidth}
-          imageHeight={imageHeight}
-        />
-        <Info>
-          <Name fontSize={nameFontSize} numberOfLines={1}>{character.name_ua || '?'}</Name>
-          <AltName fontSize={altNameFontSize}>{character.name_en || '?'}</AltName>
-          <AltName fontSize={altNameFontSize}>{character.name_ja || '?'}</AltName>
-        </Info>
-      </Card>
+             <Card>
+         <ImageContainer>
+           <CharacterImage
+             source={
+               character?.image?.trim()
+                 ? { uri: character.image }
+                 : avatarFallback
+             }
+             imageBorderRadius={imageBorderRadius}
+             imageWidth={imageWidth}
+             imageHeight={imageHeight}
+           />
+         </ImageContainer>
+         <Info>
+           <Name fontSize={nameFontSize} numberOfLines={1}>{character.name_ua || '?'}</Name>
+           <AltName fontSize={altNameFontSize}>{character.name_en || '?'}</AltName>
+           <AltName fontSize={altNameFontSize}>{character.name_ja || '?'}</AltName>
+         </Info>
+         {isLiked === true && (
+           <HeartIcon name="heart" />
+         )}
+       </Card>
     </TouchableOpacity>
   );
 };

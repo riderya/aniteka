@@ -55,6 +55,14 @@ const EndMessage = styled(Text)`
   font-weight: 500;
 `;
 
+const EmptyMessage = styled(Text)`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
+  font-weight: 500;
+`;
+
 const AnimeCharactersScreen = () => {
   const route = useRoute();
   const { slug, title } = route.params;
@@ -131,8 +139,8 @@ const AnimeCharactersScreen = () => {
   }, [loadingMore, hasMoreData, currentPage, fetchCharacters]);
 
   const renderFooter = useCallback(() => {
-    // Показуємо лоадер якщо завантажуємо більше або якщо є ще дані для завантаження
-    if (loadingMore || (hasMoreData && characters.length > 0)) {
+    // Показуємо лоадер тільки при завантаженні додаткових даних
+    if (loadingMore) {
       return (
         <LoadingFooter>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -154,13 +162,14 @@ const AnimeCharactersScreen = () => {
     return null;
   }, [loadingMore, hasMoreData, characters.length, theme]);
 
-  if (loading) {
-    return (
-      <CenteredContainer>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </CenteredContainer>
-    );
-  }
+  // Видаляємо лоадер при переході на екран
+  // if (loading) {
+  //   return (
+  //     <CenteredContainer>
+  //       <ActivityIndicator size="large" color={theme.colors.primary} />
+  //     </CenteredContainer>
+  //   );
+  // }
 
   return (
     <Container>
@@ -177,6 +186,8 @@ const AnimeCharactersScreen = () => {
         contentContainerStyle={{
           paddingTop: headerHeight,
           paddingBottom: 20 + insets.bottom,
+          flexGrow: 1, // Дозволяє контенту розтягуватися
+          paddingHorizontal: 12,
         }}
         renderItem={({ item }) => (
           <CharacterCardItem 
@@ -191,6 +202,17 @@ const AnimeCharactersScreen = () => {
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
+        ListEmptyComponent={() => (
+          <CenteredContainer style={{ flex: 1, paddingTop: headerHeight }}>
+            {loading ? (
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+            ) : (
+              <EmptyMessage theme={theme}>
+                Персонажі не знайдені
+              </EmptyMessage>
+            )}
+          </CenteredContainer>
+        )}
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
         windowSize={10}

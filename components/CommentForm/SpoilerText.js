@@ -26,9 +26,22 @@ const SpoilerText = ({ text, maxLines = 3 }) => {
                 color: theme.colors.text,
                 fontSize: 14,
                 lineHeight: 20,
+                fontWeight: 'normal',
+                fontStyle: 'normal',
               },
               link: {
                 color: theme.colors.primary,
+                textDecorationLine: 'underline',
+              },
+              code: {
+                backgroundColor: theme.colors.card,
+                fontFamily: 'monospace',
+                paddingHorizontal: 4,
+                paddingVertical: 2,
+                borderRadius: 4,
+              },
+              paragraph: {
+                marginVertical: 0,
               },
             }}
           >
@@ -54,7 +67,8 @@ export default SpoilerText;
 
 const Wrapper = styled(TouchableOpacity)`
   width: 100%;
-  margin-top: 10px;
+  margin-top: 6px;
+  margin-bottom: 6px;
 `;
 
 const SpoilerContainer = styled.View`
@@ -64,6 +78,7 @@ const SpoilerContainer = styled.View`
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.inputBackground};
   width: 100%;
+  zIndex: 5;
 `;
 
 const HiddenText = styled(Text)`
@@ -110,4 +125,5 @@ const RevealedContainer = styled.View`
   padding: 12px;
   border-radius: 16px;
   width: 100%;
+  zIndex: 5;
 `;

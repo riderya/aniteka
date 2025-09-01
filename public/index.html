@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YummyAnimeList - Аніме</title>
+    <meta name="description" content="Дивись аніме у додатку YummyAnimeList">
+    
+    <!-- Open Graph мета-теги для кращого поділення -->
+    <meta property="og:title" content="YummyAnimeList - Аніме">
+    <meta property="og:description" content="Дивись аніме у додатку YummyAnimeList">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    <meta property="og:image" content="https://via.placeholder.com/1200x630/FF6B6B/FFFFFF?text=YummyAnimeList">
+    
+    <!-- Twitter Card мета-теги -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="YummyAnimeList - Аніме">
+    <meta name="twitter:description" content="Дивись аніме у додатку YummyAnimeList">
+    <meta name="twitter:image" content="https://via.placeholder.com/1200x630/FF6B6B/FFFFFF?text=YummyAnimeList">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #FF6B6B, #FFE66D);
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .anime-info {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 5px solid #FF6B6B;
+        }
+        
+        .anime-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .anime-description {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .download-section {
+            margin-bottom: 30px;
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .feature {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+        
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .feature-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .feature-desc {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .footer {
+            color: #999;
+            font-size: 14px;
+            margin-top: 30px;
+        }
+        
+        .footer a {
+            color: #FF6B6B;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">YA</div>
+        
+        <h1>YummyAnimeList</h1>
+        <p class="subtitle">Найкращий додаток для перегляду аніме на вашому пристрої</p>
+        
+        <div class="anime-info">
+            <div class="anime-title" id="animeTitle">Аніме</div>
+            <div class="anime-description">
+                Це аніме доступне у нашому додатку. Завантажте YummyAnimeList, щоб дивитися його та багато інших аніме!
+            </div>
+        </div>
+        
+        <div class="download-section">
+            <a href="#" class="download-btn" id="downloadBtn">
+                📱 Завантажити додаток
+            </a>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🎬</div>
+                <div class="feature-title">Велика бібліотека</div>
+                <div class="feature-desc">Тисячі аніме в одному місці</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⭐</div>
+                <div class="feature-title">Рейтинги</div>
+                <div class="feature-desc">Оцінюйте та діліться думками</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📱</div>
+                <div class="feature-title">Зручний інтерфейс</div>
+                <div class="feature-desc">Адаптований для всіх пристроїв</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 YummyAnimeList. Всі права захищені.</p>
+            <p>Створено з ❤️ для любителів аніме</p>
+        </div>
+    </div>
+
+    <script>
+        // Отримуємо параметри з URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const slug = urlParams.get('slug');
+        const title = urlParams.get('title');
+        
+        // Оновлюємо заголовок сторінки
+        if (title) {
+            document.title = `${title} - YummyAnimeList`;
+            document.getElementById('animeTitle').textContent = title;
+            
+            // Оновлюємо Open Graph мета-теги
+            document.querySelector('meta[property="og:title"]').setAttribute('content', `${title} - YummyAnimeList`);
+            document.querySelector('meta[property="og:description"]').setAttribute('content', `Дивись аніме "${title}" у додатку YummyAnimeList`);
+            document.querySelector('meta[property="og:url"]').setAttribute('content', window.location.href);
+            
+            document.querySelector('meta[name="twitter:title"]').setAttribute('content', `${title} - YummyAnimeList`);
+            document.querySelector('meta[name="twitter:description"]').setAttribute('content', `Дивись аніме "${title}" у додатку YummyAnimeList`);
+        }
+        
+        // Оновлюємо посилання для завантаження
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        // Визначаємо тип пристрою
+        const userAgent = navigator.userAgent.toLowerCase();
+        
+        if (/iphone|ipad|ipod/.test(userAgent)) {
+            // iOS пристрій
+            downloadBtn.href = 'https://apps.apple.com/app/yummyanimelist';
+            downloadBtn.textContent = '🍎 Завантажити з App Store';
+        } else if (/android/.test(userAgent)) {
+            // Android пристрій
+            downloadBtn.href = 'https://play.google.com/store/apps/details?id=com.yummyanimelist.app';
+            downloadBtn.textContent = '🤖 Завантажити з Google Play';
+        } else {
+            // Desktop або інший пристрій
+            downloadBtn.href = '#';
+            downloadBtn.textContent = '📱 Завантажити додаток';
+            downloadBtn.onclick = function(e) {
+                e.preventDefault();
+                alert('Будь ласка, відкрийте цю сторінку на мобільному пристрої для завантаження додатку.');
+            };
+        }
+        
+        // Додаємо анімацію при завантаженні
+        window.addEventListener('load', function() {
+            document.querySelector('.container').style.opacity = '0';
+            document.querySelector('.container').style.transform = 'translateY(20px)';
+            document.querySelector('.container').style.transition = 'all 0.5s ease';
+            
+            setTimeout(() => {
+                document.querySelector('.container').style.opacity = '1';
+                document.querySelector('.container').style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body>
+</html>

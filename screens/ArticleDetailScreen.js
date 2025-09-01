@@ -40,40 +40,10 @@ const useDebounce = (value, delay) => {
   return debouncedValue;
 };
 
-// Мемоізований компонент для оптимізованого зображення
-const OptimizedImage = React.memo(({ source, style, resizeMode = "cover", onPress }) => {
-  const [imageError, setImageError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
-
-  const handleLoadStart = useCallback(() => {
-    setImageLoading(true);
-  }, []);
-
-  const handleLoadEnd = useCallback(() => {
-    setImageLoading(false);
-  }, []);
-
-  const handleError = useCallback(() => {
-    setImageError(true);
-    setImageLoading(false);
-  }, []);
-
-  const handlePress = useCallback(() => {
-    if (onPress) {
-      onPress();
-    }
-  }, [onPress]);
-
-  if (imageError) {
-    return (
-      <View style={[style, { backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: '#999', fontSize: 12 }}>Помилка завантаження</Text>
-      </View>
-    );
-  }
-
+// Простий компонент для зображення
+const OptimizedImage = ({ source, style, resizeMode = "cover", onPress }) => {
   const ImageComponent = onPress ? Pressable : View;
-  const imageProps = onPress ? { onPress: handlePress } : {};
+  const imageProps = onPress ? { onPress } : {};
 
   return (
     <ImageComponent {...imageProps}>
@@ -81,19 +51,10 @@ const OptimizedImage = React.memo(({ source, style, resizeMode = "cover", onPres
         source={source}
         style={style}
         resizeMode={resizeMode}
-        onLoadStart={handleLoadStart}
-        onLoadEnd={handleLoadEnd}
-        onError={handleError}
-        fadeDuration={300}
       />
-      {imageLoading && (
-        <View style={[style, { position: 'absolute', backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }]}>
-          <ActivityIndicator size="small" color="#999" />
-        </View>
-      )}
     </ImageComponent>
   );
-});
+};
 
 // Мемоізований компонент для YouTube відео
 const OptimizedYoutubePlayer = React.memo(({ videoId, height = 210 }) => {
@@ -732,6 +693,7 @@ const TopBlock = styled.View`
   padding: 12px;
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
+  margin-bottom: 10px;
 `;
 
 const Avatar = styled.Image`

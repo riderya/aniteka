@@ -265,7 +265,7 @@ const TopDetail = ({ anime }) => {
               <ButtonText>Дивитися</ButtonText>
             </WatchButton>
 
-            <MoreButton slug={anime.slug}/>
+            <MoreButton slug={anime.slug} animeTitle={anime.title_ua || anime.title_en || anime.title_ja}/>
           </ButtonsRow>
 
           <EpisodesCounter slug={anime.slug} episodes_total={anime.episodes_total}/>

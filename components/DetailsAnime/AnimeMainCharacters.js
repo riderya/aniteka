@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList } from 'react-native';
+import { FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import RowLineHeader from './RowLineHeader';
 import CharacterColumnCard from '../Cards/CharacterColumnCard';
+import { CharacterColumnCardSkeleton } from '../Skeletons';
 
 const Container = styled.View``;
+
+const SkeletonContainer = styled.View`
+  padding-horizontal: 12px;
+  padding-bottom: 50px;
+`;
 
 const AnimeMainCharacters = ({ anime, onVisibilityChange }) => {
   const navigation = useNavigation();
@@ -47,7 +53,29 @@ const AnimeMainCharacters = ({ anime, onVisibilityChange }) => {
   if (loading) {
     return (
       <Container>
-        <ActivityIndicator size="large" color="#ff6f61" />
+        <RowLineHeader
+          title="Головні персонажі"
+          onPress={() => {}}
+        />
+        <SkeletonContainer>
+          <FlatList
+            data={[1, 2, 3, 4, 5]} // Показуємо 5 скелетонів
+            keyExtractor={(_, index) => index.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            renderItem={() => (
+              <CharacterColumnCardSkeleton 
+                nameFontSize="14px"
+                fontSize="14px"
+                cardMarginRight="12px"
+                borderRadius={24}
+                cardWidth="100px"
+                width="100px"
+                height="130px"
+              />
+            )}
+          />
+        </SkeletonContainer>
       </Container>
     );
   }

@@ -160,6 +160,7 @@ const AnimeStaffScreen = () => {
         contentContainerStyle={{
           paddingTop: insets.top + 56 + 20,
           paddingBottom: insets.bottom + 20,
+          paddingHorizontal: 12,
         }}
         renderItem={({ item }) => (
           <StaffCardRow

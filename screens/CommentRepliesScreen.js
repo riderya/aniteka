@@ -97,7 +97,7 @@ const OriginalCommentContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
   border-radius: 12px;
   border-left-width: 4px;
-  border-left-color: ${({ theme }) => theme.colors.primary};
+  border-left-color: ${({ theme }) => theme.colors.primary + '50'};
   opacity: 0.9;
 `;
 
@@ -382,7 +382,7 @@ const CommentRepliesScreen = () => {
 
     return (
       <OriginalCommentContainer>
-        <OriginalCommentLabel>Оригінальний коментар</OriginalCommentLabel>
+        <OriginalCommentLabel>Відповідь на коментар</OriginalCommentLabel>
         <OriginalCommentHeader>
           <OriginalCommentAvatar
             source={{
@@ -522,7 +522,7 @@ const CommentRepliesScreen = () => {
             </View>
           }
           ListFooterComponent={renderListFooter}
-          contentContainerStyle={{ paddingTop: insets.top + 56 + 20, paddingBottom: insets.bottom + 160 }}
+          contentContainerStyle={{ paddingTop: insets.top + 56 + 20, paddingBottom: insets.bottom + 160, paddingHorizontal: 12 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

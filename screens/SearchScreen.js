@@ -17,7 +17,7 @@ import { useTheme } from '../context/ThemeContext';
 import { PlatformBlurView } from '../components/Custom/PlatformBlurView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import avatarFallback from '../assets/image/image404.png';
@@ -25,6 +25,8 @@ import noSearchImage from '../assets/image/noSearchImage.png';
 import AnimeRowCard from '../components/Cards/AnimeRowCard';
 import CharacterCardItem from '../components/Cards/CharacterCardItem';
 import StaffCardRow from '../components/Cards/StaffCardRow';
+import UserCardItem from '../components/Cards/UserCardItem';
+import CompanyCardItem from '../components/Cards/CompanyCardItem';
 
 const API_ANIME = 'https://api.hikka.io/anime';
 const API_CHARACTERS = 'https://api.hikka.io/characters';
@@ -202,97 +204,84 @@ export default function SearchScreen() {
 
       {loading && <ActivityIndicator size="large" color="#555" />}
 
-      {query.length < 3 && history.length > 0 && (
-  <HistoryWrapper>
-    <HistoryTitle>Історія пошуку</HistoryTitle>
+      {query.length < 3 && history.length > 0 ? (
+        <View style={{ flex: 1}}>
+          <ScrollView 
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal: 12, paddingTop: insets.top + 145, paddingBottom: insets.bottom + 20 }}
+            showsVerticalScrollIndicator={true}
+          >
+            <HistoryTitle>Історія пошуку</HistoryTitle>
 
-    <ScrollView showsVerticalScrollIndicator={false}>
-      {history.map((term, index) => (
-        <HistoryItemRow key={index}>
-          <TouchableOpacity onPress={() => handleHistoryPress(term)}>
-            <HistoryItem>{term}</HistoryItem>
-          </TouchableOpacity>
-          <DeleteButton onPress={() => handleDeleteHistoryItem(term)}>
-            <Ionicons name="close" size={16} color="#999" />
-          </DeleteButton>
-        </HistoryItemRow>
-      ))}
-    </ScrollView>
+            {history.map((term, index) => (
+              <HistoryItemRow key={index}>
+                <TouchableOpacity onPress={() => handleHistoryPress(term)}>
+                  <HistoryItem>{term}</HistoryItem>
+                </TouchableOpacity>
+                <DeleteButton onPress={() => handleDeleteHistoryItem(term)}>
+                  <Ionicons name="close" size={16} color="#999" />
+                </DeleteButton>
+              </HistoryItemRow>
+            ))}
 
-    <ClearAllButton onPress={handleClearAllHistory}>
-      <ClearAllText>Очистити все</ClearAllText>
-    </ClearAllButton>
-  </HistoryWrapper>
-)}
-
-
-      <FlatList
-        contentContainerStyle={{ paddingTop: 170, paddingBottom: insets.bottom, paddingHorizontal: 12 }}
-        data={results}
-        keyExtractor={(item) => item.slug || item.reference}
-        renderItem={({ item }) => {
-          if (type === 'anime') {
-            return <AnimeRowCard anime={item} imageBorderRadius={16} imageWidth={90} imageHeight={120} />;
-          } else if (type === 'characters') {
-            return <CharacterCardItem character={item} imageBorderRadius={16} imageWidth={90} imageHeight={120} />;
-          } else if (type === 'people') {
-            return (
-              <StaffCardRow 
-                person={item} 
-                roles={item.roles || []}
-                onPress={() => handlePress(item)}
-                imageBorderRadius={16}
-                imageWidth={90}
-                imageHeight={120}
-              />
-            );
-          } else if (type === 'users') {
-            return (
-              <TouchableOpacity onPress={() => handlePress(item)}>
-                <Item>
-                  <Thumbnail source={{ uri: item.avatar || 'https://i.imgur.com/R8uKmI0.png' }} />
-                  <Content>
-                    <Title numberOfLines={1}>{item.username}</Title>
-                    <TitleEn numberOfLines={1}>{item.description || 'Без опису'}</TitleEn>
-                    <RowInfo>
-                      <Info>{item.role || 'Користувач'}</Info>
-                      {item.active && <Info><StyledDot name="circle" /> Активний</Info>}
-                    </RowInfo>
-                  </Content>
-                </Item>
-              </TouchableOpacity>
-            );
-          } else {
-            return (
-              <TouchableOpacity onPress={() => handlePress(item)}>
-                <Item>
-                  <Thumbnail source={item.image ? { uri: item.image } : avatarFallback} />
-                  <Content>
-                    <Title numberOfLines={2}>
-                      {type === 'companies'
-                        ? item.name
-                        : item.name_ua || '?'}
-                    </Title>
-                    <TitleEn numberOfLines={1}>
-                      {type === 'companies'
-                        ? item.name || '?'
-                        : item.name_en || '?'}
-                    </TitleEn>
-                  </Content>
-                </Item>
-              </TouchableOpacity>
-            );
+            <ClearAllButton onPress={handleClearAllHistory}>
+              <ClearAllText>Очистити все</ClearAllText>
+            </ClearAllButton>
+          </ScrollView>
+        </View>
+      ) : (
+        <FlatList
+          contentContainerStyle={{ paddingTop: insets.top + 145, paddingBottom: insets.bottom, paddingHorizontal: 12 }}
+          data={results}
+          keyExtractor={(item) => item.slug || item.reference}
+          renderItem={({ item }) => {
+            if (type === 'anime') {
+              return <AnimeRowCard anime={item} imageBorderRadius={16} imageWidth={90} imageHeight={120} />;
+            } else if (type === 'characters') {
+              return <CharacterCardItem character={item} imageBorderRadius={16} imageWidth={90} imageHeight={120} />;
+            } else if (type === 'people') {
+              return (
+                <StaffCardRow 
+                  person={item} 
+                  roles={item.roles || []}
+                  onPress={() => handlePress(item)}
+                  imageBorderRadius={16}
+                  imageWidth={90}
+                  imageHeight={120}
+                />
+              );
+            } else if (type === 'users') {
+              return <UserCardItem user={item} imageBorderRadius={16} imageWidth={90} imageHeight={120} />;
+            } else if (type === 'companies') {
+              return <CompanyCardItem company={item} imageBorderRadius={16} imageWidth={90} imageHeight={120} />;
+            } else {
+              return (
+                <TouchableOpacity onPress={() => handlePress(item)}>
+                  <Item>
+                    <Thumbnail source={item.image ? { uri: item.image } : avatarFallback} />
+                    <Content>
+                      <Title numberOfLines={2}>
+                        {item.name_ua || '?'}
+                      </Title>
+                      <TitleEn numberOfLines={1}>
+                        {item.name_en || '?'}
+                      </TitleEn>
+                    </Content>
+                  </Item>
+                </TouchableOpacity>
+              );
+            }
+          }}
+          ListEmptyComponent={
+            !loading && query.length >= 3 && (
+              <View style={{ alignItems: 'center' }}>
+                <SearchImage source={noSearchImage} />
+                <EmptyText>Нічого не знайдено</EmptyText>
+              </View>
+            )
           }
-        }}
-        ListEmptyComponent={
-          !loading && (
-            <View style={{ alignItems: 'center' }}>
-              <SearchImage source={noSearchImage} />
-              <EmptyText>Нічого не знайдено</EmptyText>
-            </View>
-          )
-        }
-      />
+        />
+      )}
     </Container>
   );
 }
@@ -319,12 +308,6 @@ const Row = styled.View`
   padding: 0px 12px;
   border-bottom-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
-`;
-
-const RowInfo = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
 `;
 
 const ButtonBack = styled.TouchableOpacity`
@@ -372,6 +355,7 @@ const ClearButton = styled.TouchableOpacity`
 
 const Item = styled.View`
   flex-direction: row;
+  margin: 6px 0px;
   padding: 10px;
 `;
 
@@ -379,12 +363,6 @@ const Thumbnail = styled.Image`
   width: 90px;
   height: 120px;
   border-radius: 16px;
-`;
-
-const SearchImage = styled.Image`
-  width: 120px;
-  height: 120px;
-  margin-top: 20px;
 `;
 
 const Content = styled.View`
@@ -404,15 +382,10 @@ const TitleEn = styled.Text`
   color: ${({ theme }) => theme.colors.placeholder};
 `;
 
-const Info = styled.Text`
-  margin-top: 4px;
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 13px;
-`;
-
-const StyledDot = styled(FontAwesome)`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 4px;
+const SearchImage = styled.Image`
+  width: 120px;
+  height: 120px;
+  margin-top: 20px;
 `;
 
 const EmptyText = styled.Text`
@@ -421,16 +394,9 @@ const EmptyText = styled.Text`
   color: ${({ theme }) => theme.colors.gray};
 `;
 
-const HistoryWrapper = styled.View`
-  padding: 0px 12px;
-  padding-top: 170px;
-  padding-bottom: 40px;
-  height: 100%;
-`;
 
-const ScrollArea = styled.ScrollView`
-  max-height: 200px;
-`;
+
+
 
 const HistoryTitle = styled.Text`
   font-size: 18px;

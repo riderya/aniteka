@@ -3,12 +3,15 @@
 import React, { useCallback } from 'react';
 import styled from 'styled-components/native';
 import { TouchableOpacity, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import avatarFallback from '../../assets/image/image404.png';
 import { useNavigation } from '@react-navigation/native';
+import { useWatchStatus } from '../../context/WatchStatusContext';
 
 const Card = styled.View`
   margin-right: ${({ cardMarginRight }) => cardMarginRight || '15px'};
   width: ${({ cardWidth }) => cardWidth || '90px'};
+  position: relative;
 `;
 
 const CharacterImage = styled(Image)`
@@ -24,6 +27,17 @@ const CharacterName = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
+const HeartIcon = styled(Ionicons)`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: ${({ theme }) => theme.colors.favourite};
+  background-color: ${({ theme }) => theme.colors.favourite + '60'};
+  padding: 4px;
+  border-radius: 10px;
+  font-size: 20px;
+`;
+
 const CharacterColumnCard = React.memo(({
   character,
   width = '90px',
@@ -37,6 +51,17 @@ const CharacterColumnCard = React.memo(({
   nameFontSize = '14px',
 }) => {
   const navigation = useNavigation();
+  const { getCharacterFavourite, fetchCharacterFavourite } = useWatchStatus();
+  
+  // Отримуємо статус улюбленого персонажа
+  const isLiked = getCharacterFavourite(character.slug);
+  
+  // Завантажуємо статус при першому рендері
+  React.useEffect(() => {
+    if (character.slug && isLiked === null) {
+      fetchCharacterFavourite(character.slug);
+    }
+  }, [character.slug, isLiked, fetchCharacterFavourite]);
 
   const handlePress = useCallback(() => {
     if (onPress) {
@@ -63,6 +88,12 @@ const CharacterColumnCard = React.memo(({
           }
           resizeMode="cover"
         />
+        {isLiked === true && (
+          <HeartIcon
+            name="heart"
+            isLiked={true}
+          />
+        )}
         <CharacterName 
           fontSize={nameFontSize} 
           marginTop={marginTop} 

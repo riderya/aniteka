@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, FlatList, View } from 'react-native'
+import { FlatList, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native';
 import styled from 'styled-components/native'
 import axios from 'axios'
 import { useTheme } from '../../context/ThemeContext';
 import RowLineHeader from './RowLineHeader';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
+import { AnimeColumnCardSkeleton } from '../Skeletons';
 
 const Container = styled.View``
 
@@ -17,6 +18,11 @@ const StyledFlatList = styled.FlatList.attrs(() => ({
 
 const CardWrapper = styled.View`
   margin-right: ${({ isLast }) => (isLast ? '0px' : '12px')};
+`
+
+const SkeletonContainer = styled.View`
+  padding-horizontal: 12px;
+  padding-bottom: 50px;
 `
 
 const FranchiseList = ({ slug, title, onVisibilityChange }) => {
@@ -62,7 +68,34 @@ const FranchiseList = ({ slug, title, onVisibilityChange }) => {
   if (loading) {
     return (
       <Container>
-        <ActivityIndicator size="large" color="#ff6f61" />
+        <RowLineHeader 
+          title="Пов'язане" 
+          onPress={() => {}}
+          linkText="Більше"
+        />
+        <SkeletonContainer>
+          <FlatList
+            data={[1, 2, 3, 4, 5]} // Показуємо 5 скелетонів
+            keyExtractor={(_, index) => index.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item, index }) => (
+              <CardWrapper isLast={index === 4}>
+                <AnimeColumnCardSkeleton
+                  cardWidth={100}
+                  imageWidth={100}
+                  imageHeight={130}
+                  titleFontSize={14}
+                  badgeFontSize={11}
+                  footerFontSize={11}
+                  starIconSize={11}
+                  imageBorderRadius={24}
+                  titleNumberOfLines={2}
+                />
+              </CardWrapper>
+            )}
+          />
+        </SkeletonContainer>
       </Container>
     )
   }

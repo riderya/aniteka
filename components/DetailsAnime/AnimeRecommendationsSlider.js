@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { FlatList, View, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
 import RowLineHeader from './RowLineHeader';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
+import { AnimeColumnCardSkeleton } from '../Skeletons';
 
 const Spacer = styled.View`
   width: 12px;
+`;
+
+const SkeletonContainer = styled.View`
+  padding-bottom: 50px;
 `;
 
 const AnimeRecommendationsSlider = ({ slug, onVisibilityChange }) => {
@@ -78,7 +83,32 @@ const AnimeRecommendationsSlider = ({ slug, onVisibilityChange }) => {
     return (
       <>
         <RowLineHeader title="Схожий контент" />
-        <ActivityIndicator size="small" style={{ marginVertical: 20 }} />
+        <SkeletonContainer>
+          <FlatList
+            data={[1, 2, 3, 4, 5, 6]} // Показуємо 6 скелетонів
+            keyExtractor={(_, index) => index.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            ListHeaderComponent={<Spacer />}
+            ListFooterComponent={<Spacer />}
+            ItemSeparatorComponent={() => <View style={{ width: 15 }} />}
+            renderItem={() => (
+              <View style={{ width: 120 }}>
+                <AnimeColumnCardSkeleton
+                  cardWidth={120}
+                  imageWidth={120}
+                  imageHeight={170}
+                  titleFontSize={14}
+                  badgeFontSize={11}
+                  footerFontSize={11}
+                  starIconSize={11}
+                  imageBorderRadius={24}
+                  titleNumberOfLines={2}
+                />
+              </View>
+            )}
+          />
+        </SkeletonContainer>
       </>
     );
   }

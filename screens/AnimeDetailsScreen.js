@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
@@ -21,7 +21,6 @@ import { useWatchStatus } from '../context/WatchStatusContext';
 const AnimeDetailsScreen = ({ route }) => {
   const { slug } = route.params;
   const [anime, setAnime] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [showFranchiseDivider, setShowFranchiseDivider] = useState(false);
   const [showRecommendationsDivider, setShowRecommendationsDivider] = useState(false);
   const [showCharactersDivider, setShowCharactersDivider] = useState(false);
@@ -48,8 +47,8 @@ const AnimeDetailsScreen = ({ route }) => {
             console.log('Error preloading user data:', error);
           });
         }
-      } finally {
-        setLoading(false);
+      } catch (error) {
+        console.log('Error fetching anime details:', error);
       }
     };
     fetchAnimeDetails();
@@ -80,68 +79,64 @@ const AnimeDetailsScreen = ({ route }) => {
     setShowStaffDivider(isVisible);
   };
 
-  if (loading) {
-    return (
-      <Centered>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </Centered>
-    );
-  }
-
   return (
     <ScreenWrapper>
         <BackButton top={12} />
         <LikeAnimeButtonAbsolute slug={slug} top={12} />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
-        <TopDetail anime={anime} />
-        <Divider />
-        <AnimeMainCharacters 
-          anime={anime}
-          onVisibilityChange={handleCharactersVisibility}
-        />
-        {showCharactersDivider && <Divider />}
-        <AnimeRatingStats 
-          stats={anime.stats} 
-          score={anime.score} 
-          slug={anime.slug}
-        />
-        <Divider />
-        <AnimeStatusStats 
-          anime={anime}
-        />
-        <Divider />
-        <AnimeFranchiseList 
-          slug={anime.slug} 
-          title={anime.title_ua || anime.title_en || anime.title_ja || '?'} 
-          onVisibilityChange={handleFranchiseVisibility}
-        />
-        {showFranchiseDivider && <Divider />}
-        <VideoSlider 
-          slug={anime.slug} 
-          onVisibilityChange={handleVideoVisibility}
-        />
-        {showVideoDivider && <Divider />}
-        <MusicSlider 
-          slug={anime.slug} 
-          onVisibilityChange={handleMusicVisibility}
-        />
-        {showMusicDivider && <Divider />}
-        <AnimeStaffSlider 
-          slug={anime.slug} 
-          title={anime.title_ua || anime.title_en || anime.title_ja || '?'}
-          onVisibilityChange={handleStaffVisibility}
-        />
-        {showStaffDivider && <Divider />}
-        <AnimeRecommendationsSlider 
-          slug={anime.slug} 
-          onVisibilityChange={handleRecommendationsVisibility}
-        />
-        {showRecommendationsDivider && <Divider />}
-        <AnimeSendButton 
-          slug={anime.slug} 
-          title={anime.title_ua || anime.title_en || anime.title_ja || '?'}
-          commentsCount={anime.comments_count}
-        />
+        {anime && (
+          <>
+            <TopDetail anime={anime} />
+            <Divider />
+            <AnimeMainCharacters 
+              anime={anime}
+              onVisibilityChange={handleCharactersVisibility}
+            />
+            {showCharactersDivider && <Divider />}
+            <AnimeRatingStats 
+              stats={anime.stats} 
+              score={anime.score} 
+              slug={anime.slug}
+            />
+            <Divider />
+            <AnimeStatusStats 
+              anime={anime}
+            />
+            <Divider />
+            <AnimeFranchiseList 
+              slug={anime.slug} 
+              title={anime.title_ua || anime.title_en || anime.title_ja || '?'} 
+              onVisibilityChange={handleFranchiseVisibility}
+            />
+            {showFranchiseDivider && <Divider />}
+            <VideoSlider 
+              slug={anime.slug} 
+              onVisibilityChange={handleVideoVisibility}
+            />
+            {showVideoDivider && <Divider />}
+            <MusicSlider 
+              slug={anime.slug} 
+              onVisibilityChange={handleMusicVisibility}
+            />
+            {showMusicDivider && <Divider />}
+            <AnimeStaffSlider 
+              slug={anime.slug} 
+              title={anime.title_ua || anime.title_en || anime.title_ja || '?'}
+              onVisibilityChange={handleStaffVisibility}
+            />
+            {showStaffDivider && <Divider />}
+            <AnimeRecommendationsSlider 
+              slug={anime.slug} 
+              onVisibilityChange={handleRecommendationsVisibility}
+            />
+            {showRecommendationsDivider && <Divider />}
+            <AnimeSendButton 
+              slug={anime.slug} 
+              title={anime.title_ua || anime.title_en || anime.title_ja || '?'}
+              commentsCount={anime.comments_count}
+            />
+          </>
+        )}
       </ScrollView>
     </ScreenWrapper>
   );
@@ -152,13 +147,6 @@ export default AnimeDetailsScreen;
 const ScreenWrapper = styled.View`
   flex: 1;
   position: relative;
-  background-color: ${({ theme }) => theme.colors.background};
-`;
-
-const Centered = styled.View`
-  flex: 1;
-  justify-content: center;
-  align-items: center;
   background-color: ${({ theme }) => theme.colors.background};
 `;
 

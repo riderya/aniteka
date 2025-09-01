@@ -16,7 +16,7 @@ dayjs.extend(isToday);
 dayjs.extend(isYesterday);
 
 const CommentCardWrapper = styled.View`
-  margin: 8px 12px;
+  margin: 8px 0px;
   margin-left: ${({ level }) => 12 + (level * 16)}px;
 `;
 
@@ -128,9 +128,8 @@ const HierarchicalCommentCard = ({
 
   // Функція для створення скороченого тексту
   const getTruncatedText = (text, maxLength = 200) => {
-    const cleanedText = processCommentText(text);
-    if (cleanedText.length <= maxLength) return cleanedText;
-    return cleanedText.substring(0, maxLength) + '...';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   };
 
   useEffect(() => {
@@ -220,8 +219,8 @@ const HierarchicalCommentCard = ({
   };
 
   const handleCopy = () => {
-    const cleanedText = processCommentText(item.text || '');
-    Clipboard.setString(cleanedText);
+    const originalText = item.text || '';
+    Clipboard.setString(originalText);
     Toast.show({
       type: 'success',
       text1: 'Скопійовано',
@@ -243,8 +242,6 @@ const HierarchicalCommentCard = ({
   };
 
   const renderMarkdownWithSpoilers = () => {
-    const cleanedFullText = processCommentText(fullText);
-    
     return (
       <>
         <View style={{ 
@@ -266,7 +263,7 @@ const HierarchicalCommentCard = ({
             }}
             hideSpoilers={!isExpanded}
           >
-            {cleanedFullText}
+            {fullText}
           </Markdown>
         </View>
 
