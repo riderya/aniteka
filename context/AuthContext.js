@@ -39,7 +39,6 @@ export function AuthProvider({ children }) {
         setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('Помилка перевірки статусу авторизації:', error);
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
@@ -51,9 +50,9 @@ export function AuthProvider({ children }) {
       const response = await fetch('https://api.hikka.io/user/me', {
         headers: { auth: token },
       });
-      return response.ok;
+      const isValid = response.ok;
+      return isValid;
     } catch (error) {
-      console.error('Помилка валідації токена:', error);
       return false;
     }
   };
@@ -75,24 +74,25 @@ export function AuthProvider({ children }) {
           const saved = await saveUserToSupabaseWithFallback(data);
           if (saved.success) {
             if (saved.isNewUser) {
-              console.log('Новий користувач створений в Supabase');
+              // Новий користувач створений в Supabase
             } else {
-              // console.log('Існуючий користувач оновлений в Supabase');
+              // Існуючий користувач оновлений в Supabase
             }
             
             // Оновлюємо час оновлення в Hikka, якщо він є в даних
             if (data.updated_at) {
-              await updateHikkaUpdatedAt(data.reference, data.updated_at);
+              await updateLastLogin(data.reference);
             }
-          } else {
-            console.error('Помилка збереження в Supabase:', saved.error);
           }
         }
+        
+        // Повертаємо дані користувача
+        return data;
       } else {
-        console.error('AuthContext - Failed to fetch user data, status:', response.status);
+        return null;
       }
     } catch (error) {
-      console.error('Помилка отримання даних користувача:', error);
+      return null;
     }
   };
 
@@ -103,18 +103,22 @@ export function AuthProvider({ children }) {
         return;
       }
       
+      setIsLoading(true);
       await SecureStore.setItemAsync(TOKEN_KEY, newToken);
       setToken(newToken);
       setIsAuthenticated(true);
-      await fetchUserData(newToken);
+      
+      // Отримуємо дані користувача
+      const userDataResult = await fetchUserData(newToken);
       
       // Оновлюємо час останнього входу в Supabase
-      if (userData?.reference) {
-        await updateLastLogin(userData.reference);
+      if (userDataResult?.reference) {
+        await updateLastLogin(userDataResult.reference);
       }
     } catch (error) {
-      console.error('Помилка входу в систему:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -126,7 +130,7 @@ export function AuthProvider({ children }) {
       setUserData(null);
       setIsAuthenticated(false);
     } catch (error) {
-      console.error('Помилка виходу з системи:', error);
+      // Обробка помилки виходу
     }
   };
 

@@ -450,7 +450,7 @@ const CommentCard = ({
     if (item.parentInfo && item.parentInfo.username) {
       const parentUsername = item.parentInfo.username;
       if (!fullText.startsWith(`@${parentUsername}`)) {
-        displayText = `@${parentUsername} ${fullText}`;
+        displayText = `@${parentUsername}, ${fullText}`;
       }
     }
     

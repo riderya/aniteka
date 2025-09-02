@@ -265,7 +265,7 @@ const TopDetail = ({ anime }) => {
               <ButtonText>Дивитися</ButtonText>
             </WatchButton>
 
-            <MoreButton slug={anime.slug} animeTitle={anime.title_ua || anime.title_en || anime.title_ja}/>
+            <MoreButton slug={anime.slug}/>
           </ButtonsRow>
 
           <EpisodesCounter slug={anime.slug} episodes_total={anime.episodes_total}/>
@@ -506,6 +506,7 @@ const Poster = styled.Image`
   width: 230px;
   height: 320px;
   border-radius: 32px;
+  background-color: ${({ theme }) => theme.colors.card};
 `;
 
 const ButtonsRow = styled.View`

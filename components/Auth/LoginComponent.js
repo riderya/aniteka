@@ -23,6 +23,11 @@ export default function LoginComponent({ onLoginSuccess }) {
   const { theme } = useTheme();
   const { login, logout, token, userData, isAuthenticated } = useAuth();
 
+  // Якщо користувач вже авторизований, не показуємо компонент
+  if (isAuthenticated && userData) {
+    return null;
+  }
+
   useEffect(() => {
     const subscription = Linking.addEventListener('url', (event) => {
       const { queryParams } = Linking.parse(event.url);
@@ -37,6 +42,20 @@ export default function LoginComponent({ onLoginSuccess }) {
     };
   }, [loading]);
 
+  // Автоматично приховуємо компонент, коли користувач вже авторизований
+  useEffect(() => {
+    console.log('LoginComponent useEffect:', { isAuthenticated, userData: !!userData, hasCallback: !!onLoginSuccess, token: !!token });
+    if (isAuthenticated && userData && onLoginSuccess) {
+      console.log('LoginComponent: Auto-hiding component, calling onLoginSuccess...');
+      onLoginSuccess();
+    }
+  }, [isAuthenticated, userData, onLoginSuccess, token]);
+
+  // Логуємо зміни в стані аутентифікації
+  useEffect(() => {
+    console.log('LoginComponent: Auth state changed:', { isAuthenticated, userData: !!userData, token: !!token });
+  }, [isAuthenticated, userData, token]);
+
   const handleLogin = async () => {
     if (loading) return; // Prevent multiple login attempts
     
@@ -48,15 +67,16 @@ export default function LoginComponent({ onLoginSuccess }) {
     try {
       const result = await WebBrowser.openAuthSessionAsync(authUrl, REDIRECT_URI);
 
-      if (result.type === 'success' && result.url) {
-        const { queryParams } = Linking.parse(result.url);
-        const requestReference = queryParams?.reference;
+              if (result.type === 'success' && result.url) {
+          const { queryParams } = Linking.parse(result.url);
+          const requestReference = queryParams?.reference;
 
-        if (!requestReference) {
-          Alert.alert('❌ Помилка', 'Не вдалося отримати код підтвердження. Спробуйте знову.');
-          setLoading(false);
-          return;
-        }
+          if (!requestReference) {
+            // Не показуємо алерт, просто логуємо помилку
+            console.log('No request reference found');
+            setLoading(false);
+            return;
+          }
 
         const response = await fetch('https://api.hikka.io/auth/token', {
           method: 'POST',
@@ -70,18 +90,22 @@ export default function LoginComponent({ onLoginSuccess }) {
         const data = await response.json();
 
         if (response.ok && data.secret) {
+          console.log('LoginComponent: Token received, calling login...');
           await login(data.secret);
+          console.log('LoginComponent: Login completed, calling onLoginSuccess...');
           if (onLoginSuccess) {
             onLoginSuccess();
           }
         } else {
-          Alert.alert('🚫 Помилка авторизації', data.message || 'Не вдалося отримати токен.');
+          // Не показуємо алерт, просто логуємо помилку
+          console.log('Login error:', data.message || 'Не вдалося отримати токен.');
         }
       } else if (result.type === 'cancel') {
         // Користувач скасував авторизацію
       }
     } catch (error) {
-      Alert.alert('❗ Помилка', error.message || 'Щось пішло не так. Спробуйте пізніше.');
+      // Не показуємо алерт, просто логуємо помилку
+      console.log('Login error:', error.message || 'Щось пішло не так. Спробуйте пізніше.');
     } finally {
       setLoading(false);
     }
@@ -104,15 +128,19 @@ export default function LoginComponent({ onLoginSuccess }) {
       const data = await response.json();
 
       if (response.ok && data.secret) {
+        console.log('LoginComponent: Token exchange successful, calling login...');
         await login(data.secret);
+        console.log('LoginComponent: Login completed after token exchange, calling onLoginSuccess...');
         if (onLoginSuccess) {
           onLoginSuccess();
         }
       } else {
-        Alert.alert('🚫 Помилка авторизації', data.message || 'Не вдалося отримати токен.');
+        // Не показуємо алерт, просто логуємо помилку
+        console.log('Token exchange error:', data.message || 'Не вдалося отримати токен.');
       }
     } catch (error) {
-      Alert.alert('❗ Помилка', error.message || 'Щось пішло не так. Спробуйте пізніше.');
+      // Не показуємо алерт, просто логуємо помилку
+      console.log('Token exchange error:', error.message || 'Щось пішло не так. Спробуйте пізніше.');
     } finally {
       setLoading(false);
     }
@@ -123,7 +151,8 @@ export default function LoginComponent({ onLoginSuccess }) {
       await logout();
       // Після виходу компонент автоматично перерендериться і покаже форму логіну
     } catch (error) {
-      Alert.alert('❗ Помилка', 'Не вдалося вийти з системи');
+      // Не показуємо алерт, просто логуємо помилку
+      console.log('Logout error:', 'Не вдалося вийти з системи');
     }
   };
 

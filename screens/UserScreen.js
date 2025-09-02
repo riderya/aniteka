@@ -84,6 +84,15 @@ const LoadingContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
+
+
+const LoadingText = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 16px;
+  margin-top: 16px;
+  font-weight: 500;
+`;
+
 const ErrorContainer = styled.View`
   flex: 1;
   justify-content: center;
@@ -181,12 +190,12 @@ const formatTimeAgo = (timestamp) => {
 const UserScreen = () => {
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, userData: authUserData, isLoading: authLoading } = useAuth();
   const insets = useSafeAreaInsets();
   const [userData, setUserData] = useState(null);
   const [activityData, setActivityData] = useState([]);
   const [animeHours, setAnimeHours] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [followStats, setFollowStats] = useState({ followers: 0, following: 0 });
@@ -205,7 +214,7 @@ const UserScreen = () => {
   };
 
   // Prepare data for FlatList
-  const renderData = [
+  const renderData = (authUserData || userData) ? [
     { type: 'header', id: 'header' },
     { type: 'followStats', id: 'followStats' },
     { type: 'buttonsRow', id: 'buttonsRow' },
@@ -217,14 +226,13 @@ const UserScreen = () => {
     ...(activeTab === 'collections' ? [{ type: 'collections', id: 'collections' }] : []),
     ...(activeTab === 'history' ? [{ type: 'history', id: 'history' }] : []),
     ...(activeTab === 'statistics' && activityData.length > 0 ? [{ type: 'activity', id: 'activity' }] : [])
-  ];
+  ] : [];
 
   // Get auth token
   const getAuthToken = async () => {
     try {
       return await SecureStore.getItemAsync('hikka_token');
     } catch (err) {
-      
       return null;
     }
   };
@@ -232,9 +240,10 @@ const UserScreen = () => {
   const fetchFollowStats = async () => {
     try {
       const token = await getAuthToken();
-      if (!token || !userData?.username) return { followers: 0, following: 0 };
+      const currentUserData = authUserData || userData;
+      if (!token || !currentUserData?.username) return { followers: 0, following: 0 };
 
-      const response = await fetch(`https://api.hikka.io/follow/${userData.username}/stats`, {
+      const response = await fetch(`https://api.hikka.io/follow/${currentUserData.username}/stats`, {
         headers: { auth: token }
       });
       
@@ -252,7 +261,8 @@ const UserScreen = () => {
   const fetchWatchStats = async () => {
     try {
       const token = await getAuthToken();
-      if (!token || !userData?.username) return { 
+      const currentUserData = authUserData || userData;
+      if (!token || !currentUserData?.username) return { 
         duration: 0, 
         completed: 0, 
         watching: 0, 
@@ -261,7 +271,7 @@ const UserScreen = () => {
         on_hold: 0 
       };
 
-      const response = await fetch(`https://api.hikka.io/watch/${userData.username}/stats`, {
+      const response = await fetch(`https://api.hikka.io/watch/${currentUserData.username}/stats`, {
         headers: { auth: token }
       });
       
@@ -295,7 +305,7 @@ const UserScreen = () => {
       setError(null);
       const token = await getAuthToken();
       if (!token) {
-        setError('Потрібна авторизація');
+        // Не встановлюємо помилку, просто виходимо
         return;
       }
 
@@ -311,16 +321,17 @@ const UserScreen = () => {
       setUserData(data);
     } catch (err) {
       console.error('UserScreen - fetchUserProfile error:', err);
-      setError('Не вдалося завантажити профіль користувача');
+      // Не встановлюємо помилку, щоб не показувати повідомлення про помилку
     }
   };
 
   const fetchUserActivity = async () => {
     try {
       const token = await getAuthToken();
-      if (!token || !userData?.username) return;
+      const currentUserData = authUserData || userData;
+      if (!token || !currentUserData?.username) return;
 
-      const response = await fetch(`https://api.hikka.io/user/${userData.username}/activity`, {
+      const response = await fetch(`https://api.hikka.io/user/${currentUserData.username}/activity`, {
         headers: { auth: token }
       });
       
@@ -333,7 +344,7 @@ const UserScreen = () => {
       
       // Try to get actual watch duration from watch stats first
       try {
-        const watchResponse = await fetch(`https://api.hikka.io/watch/${userData.username}/stats`, {
+        const watchResponse = await fetch(`https://api.hikka.io/watch/${currentUserData.username}/stats`, {
           headers: { auth: token }
         });
         if (watchResponse.ok) {
@@ -361,43 +372,38 @@ const UserScreen = () => {
   };
 
   const loadData = async () => {
-    setLoading(true);
-    
-    const promises = [
-      fetchUserProfile()
-    ];
-    
-    await Promise.all(promises);
-    
-    // Load additional data after userData is available
-    if (userData?.username) {
-      const additionalPromises = [
-        fetchUserActivity(),
-        fetchWatchStats().then(stats => setWatchStats(stats)),
-        fetchFollowStats().then(stats => setFollowStats(stats))
-      ];
-      await Promise.all(additionalPromises);
+    try {
+      await fetchUserProfile();
+      // Додаткові дані будуть завантажені через useEffect коли userData оновиться
+    } catch (error) {
+      console.error('Load data error:', error);
     }
-    
-    setLoading(false);
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
+    try {
+      await loadData();
+    } catch (error) {
+      console.error('Refresh error:', error);
+      // Не показуємо помилку користувачу
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const renderItem = ({ item }) => {
+    const currentUserData = authUserData || userData;
+    
     switch (item.type) {
       case 'header':
         return (
           <>
             <HeaderContainer>
-              {userData?.cover && (
+              {currentUserData?.cover && (
                 <>
                   <CoverImage
-                    source={{ uri: userData.cover }}
+                    source={{ uri: currentUserData.cover }}
                     resizeMode="cover"
                   />
                   <CoverOverlay />
@@ -405,7 +411,7 @@ const UserScreen = () => {
               )}
             </HeaderContainer>
             <UserInfoContainer>
-              <UserAvatar userData={userData} showEmailButton={true} showUserBadge={true} />
+              <UserAvatar userData={currentUserData} showEmailButton={true} showUserBadge={true} />
             </UserInfoContainer>
           </>
         );
@@ -492,7 +498,7 @@ const UserScreen = () => {
       case 'followStats':
         return (
           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
-            <FollowStatsBlock stats={followStats} username={userData?.username} />
+            <FollowStatsBlock stats={followStats} username={currentUserData?.username} />
           </View>
         );
       
@@ -535,7 +541,7 @@ const UserScreen = () => {
         return (
           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
             <UserWatchList 
-              username={userData?.username}
+              username={currentUserData?.username}
               watchStatus="completed"
               limit={21}
             />
@@ -545,21 +551,21 @@ const UserScreen = () => {
       case 'favorites':
         return (
           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
-            <FavoritesBlock username={userData?.username} />
+            <FavoritesBlock username={currentUserData?.username} />
           </View>
         );
       
       case 'collections':
         return (
           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
-            <UserCollectionsBlock username={userData?.username} reference={userData?.reference} />
+            <UserCollectionsBlock username={currentUserData?.username} reference={currentUserData?.username} />
           </View>
         );
       
       case 'history':
         return (
           <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
-            <AnimeHistoryBlock username={userData?.username} limit={21} />
+            <AnimeHistoryBlock username={currentUserData?.username} limit={21} />
           </View>
         );
       
@@ -569,12 +575,18 @@ const UserScreen = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (authUserData) {
+      setUserData(authUserData);
+    } else if (isAuthenticated) {
+      // Якщо користувач авторизований, але немає даних, завантажуємо їх
+      loadData();
+    }
+  }, [authUserData, isAuthenticated, userData]);
 
   // Reload data when userData changes
   useEffect(() => {
-    if (userData?.username) {
+    const currentUserData = authUserData || userData;
+    if (currentUserData?.username) {
       const loadAdditionalData = async () => {
         const additionalPromises = [
           fetchUserActivity(),
@@ -585,53 +597,67 @@ const UserScreen = () => {
       };
       loadAdditionalData();
     }
-  }, [userData?.username]);
+  }, [authUserData?.username, userData?.username, isAuthenticated]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // Перевіряємо чи користувач авторизований
   
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !authLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <LoginComponent onLoginSuccess={loadData} />
+        <LoginComponent onLoginSuccess={() => {
+          // Після успішного входу, дані будуть автоматично оновлені через AuthContext
+          // Не потрібно викликати loadData тут
+        }} />
       </View>
     );
   }
 
-  if (loading) {
+  // Показуємо завантаження, якщо дані користувача ще не завантажені або йде авторизація
+  if (!userData || authLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <LoadingContainer>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </LoadingContainer>
-      </View>
+      <LoadingContainer theme={theme}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <LoadingText>Завантаження профілю...</LoadingText>
+      </LoadingContainer>
     );
   }
 
-  if (error) {
-    return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <ErrorContainer>
-          <ErrorText>{error}</ErrorText>
-          <RetryButton onPress={loadData}>
-            <RetryButtonText>Спробувати знову</RetryButtonText>
-          </RetryButton>
-        </ErrorContainer>
-      </View>
-    );
-  }
+  // Прибираємо перевірку loading - показуємо контент одразу
+  // if (loading) { ... }
 
-  if (!userData) {
-    return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <ErrorContainer>
-          <ErrorText>Користувача не знайдено</ErrorText>
-          <RetryButton onPress={() => navigation.goBack()}>
-            <RetryButtonText>Назад</RetryButtonText>
-          </RetryButton>
-        </ErrorContainer>
-      </View>
-    );
-  }
+  // Прибираємо перевірку error - показуємо контент навіть якщо є помилки
+  // if (error) { ... }
+
+  // Прибираємо перевірку userData - показуємо контент навіть якщо дані ще завантажуються
+  // if (!userData) { ... }
 
   return (
     <>
@@ -644,16 +670,17 @@ const UserScreen = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={[theme.colors.text]}
-              tintColor={theme.colors.text}
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
               progressViewOffset={insets.top + (Platform.OS === 'ios' ? 70 : 50)}
-              progressBackgroundColor={isDark ? theme.colors.card : undefined}
+              progressBackgroundColor={isDark ? theme.colors.card : 'transparent'}
             />
           }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             paddingBottom: insets.bottom + 110
           }}
+
         />
       </Container>
       <Toast config={toastConfig} position="bottom" />
