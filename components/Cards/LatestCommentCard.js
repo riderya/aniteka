@@ -1,16 +1,18 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import Entypo from '@expo/vector-icons/Entypo';
 import { useNavigation } from '@react-navigation/native';
-import SpoilerText from '../CommentForm/SpoilerText';
+import { useTheme } from '../../context/ThemeContext';
+import Markdown from '../Custom/MarkdownText';
 import * as WebBrowser from 'expo-web-browser';
-import { processCommentText } from '../../utils/textUtils';
 
 const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const commentType = {
+  const commentType = useMemo(() => ({
     collection: 'Колекція',
     edit: 'Правка',
     article: 'Стаття',
@@ -18,7 +20,7 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
     novel: 'Ранобе',
     character: 'Персонаж',
     person: 'Особа',
-  };
+  }), []);
 
   const timeAgo = useCallback((created) => {
     const secondsAgo = Math.floor(Date.now() / 1000) - created;
@@ -27,6 +29,19 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
     if (secondsAgo < 86400) return `близько ${Math.floor(secondsAgo / 3600)} год тому`;
     return `близько ${Math.floor(secondsAgo / 86400)} днів тому`;
   }, []);
+
+  const fullText = useMemo(() => item.text || '', [item.text]);
+  
+  // Функція для перевірки наявності спойлерів у тексті
+  const hasSpoilers = useCallback((text) => {
+    const spoilerRegex = /:::spoiler\s*\n?([\s\S]*?)\n?:::/g;
+    return spoilerRegex.test(text);
+  }, []);
+
+  const maxLines = useMemo(() => 5, []);
+  const shouldShowToggle = React.useMemo(() => {
+    return (fullText.length > 200 || hasSpoilers(fullText)) && !isExpanded;
+  }, [fullText, isExpanded, hasSpoilers]);
 
   const handleNavigate = useCallback((item) => {
     const { content_type, preview } = item;
@@ -60,64 +75,79 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
     }
   }, [navigation]);
 
-  const parseCommentText = useCallback((text) => {
-    // Очищуємо текст перед обробкою
-    const cleanedText = processCommentText(text);
+
+  const handleUserPress = useCallback(() => {
+    if (item.author?.username) {
+      navigation.navigate('UserProfileScreen', { username: item.author.username });
+    }
+  }, [navigation, item.author?.username]);
+
+  const renderMarkdownWithSpoilers = useCallback(() => {
+    // Використовуємо оригінальний текст без додаткової обробки
+    let displayText = fullText;
     
-    const regex = /:::spoiler\s*\n([\s\S]*?)\n:::/g;
-    let lastIndex = 0;
-    const result = [];
-    let match;
-
-    while ((match = regex.exec(cleanedText)) !== null) {
-      const index = match.index;
-      if (index > lastIndex) {
-        result.push({ type: 'text', content: cleanedText.slice(lastIndex, index) });
+    // Додаємо ім'я користувача, на якого відповідаємо (якщо це відповідь)
+    if (item.parentInfo && item.parentInfo.username) {
+      const parentUsername = item.parentInfo.username;
+      if (!fullText.startsWith(`@${parentUsername}`)) {
+        displayText = `@${parentUsername}, ${fullText}`;
       }
-      result.push({ type: 'spoiler', content: match[1] });
-      lastIndex = regex.lastIndex;
     }
-
-    if (lastIndex < cleanedText.length) {
-      result.push({ type: 'text', content: cleanedText.slice(lastIndex) });
-    }
-
-    return result;
-  }, []);
-
-  const RenderCommentText = useCallback(({ text }) => {
-    const parts = parseCommentText(text);
+    
     return (
       <>
-        {parts.map((part, i) => {
-          if (part.type === 'text') {
-            return <CommentText key={i} numberOfLines={3}>{part.content}</CommentText>;
-          }
-          if (part.type === 'spoiler') {
-            return <SpoilerText key={i} text={part.content} maxLines={3} />;
-          }
-          return null;
-        })}
+        <View style={{ 
+          maxHeight: isExpanded ? undefined : maxLines * 18, // maxLines * lineHeight
+          overflow: isExpanded ? 'visible' : 'hidden',
+          position: 'relative',
+          zIndex: 1,
+        }}>
+          <Markdown
+            style={{
+              body: {
+                color: theme.colors.text,
+                fontSize: 14,
+                lineHeight: 18,
+              },
+              link: { color: theme.colors.primary },
+              paragraph: {
+                marginVertical: 0,
+              },
+            }}
+            hideSpoilers={!isExpanded}
+          >
+            {displayText}
+          </Markdown>
+        </View>
+
+        {(shouldShowToggle || isExpanded) && (
+          <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
+            <ShowText style={{ marginTop: 8 }}>
+              {isExpanded ? 'Згорнути' : 'Показати більше...'}
+            </ShowText>
+          </TouchableOpacity>
+        )}
       </>
     );
-  }, [parseCommentText]);
+  }, [fullText, item.parentInfo, isExpanded, maxLines, theme.colors.text, theme.colors.primary, shouldShowToggle]);
 
-  const avatar = item.author?.avatar || 'https://ui-avatars.com/api/?name=?';
-  const username = item.author?.username || 'Користувач';
-  const time = timeAgo(item.created);
-  const preview = item.preview || {};
+  const avatar = useMemo(() => item.author?.avatar || 'https://ui-avatars.com/api/?name=?', [item.author?.avatar]);
+  const username = useMemo(() => item.author?.username || 'Користувач', [item.author?.username]);
+  const time = useMemo(() => timeAgo(item.created), [item.created, timeAgo]);
+  const preview = useMemo(() => item.preview || {}, [item.preview]);
 
   return (
     <CommentCardContainer>
       {showIndex && <CommentIndex>#{index + 1}</CommentIndex>}
       <CommentCard>
         <Row>
-          <Avatar source={{ uri: avatar }} />
-          <View>
-            <Username>{username}</Username>
-            <Timestamp>{time}</Timestamp>
-          </View>
-
+          <TouchableOpacity onPress={handleUserPress} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+            <Avatar source={{ uri: avatar }} />
+            <View>
+              <Username>{username}</Username>
+              <Timestamp>{time}</Timestamp>
+            </View>
+          </TouchableOpacity>
           {item.vote_score !== 0 && (
             <RowScore>
               <Entypo
@@ -131,9 +161,7 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
             </RowScore>
           )}
         </Row>
-
-        <RenderCommentText text={item.text} />
-
+        {renderMarkdownWithSpoilers()}
         <TagsRow>
           <TypeTag>{commentType[item.content_type]}</TypeTag>
           {preview?.slug && (
@@ -148,16 +176,13 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
 });
 
 LatestCommentCard.displayName = 'LatestCommentCard';
-
 export default LatestCommentCard;
 
 // --- Styled Components ---
-
 const CommentCardContainer = styled.View`
   position: relative;
   margin-bottom: 20px;
 `;
-
 const CommentIndex = styled.Text`
   position: absolute;
   font-size: 14px;
@@ -172,26 +197,22 @@ const CommentIndex = styled.Text`
   top: -15px;
   left: 10px;
 `;
-
 const CommentCard = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
   border-radius: 24px;
   padding: 16px;
   border: 1px solid ${({ theme }) => theme.colors.border};
 `;
-
 const Row = styled.View`
   flex-direction: row;
   align-items: center;
 `;
-
 const Avatar = styled.Image`
   width: 36px;
   height: 36px;
   border-radius: 18px;
   margin-right: 10px;
 `;
-
 const Username = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-weight: 600;
@@ -202,14 +223,6 @@ const Timestamp = styled.Text`
   font-size: 12px;
   margin-top: 2px;
 `;
-
-const CommentText = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  margin-top: 10px;
-  font-size: 14px;
-  line-height: 20px;
-`;
-
 const TagsRow = styled.View`
   flex-direction: row;
   gap: 12px;
@@ -217,13 +230,11 @@ const TagsRow = styled.View`
   align-items: flex-start;
   flex-wrap: wrap;
 `;
-
 const LikeScore = styled.Text`
   font-size: 16px;
   padding: 5px 0px;
   font-weight: bold;
 `;
-
 const RowScore = styled.View`
   position: absolute;
   flex-direction: row;
@@ -231,12 +242,10 @@ const RowScore = styled.View`
   gap: 2px;
   right: 0px;
 `;
-
 const LinkContainer = styled.TouchableOpacity`
   flex: 1;
   min-width: 0;
 `;
-
 const LinkTag = styled.Text`
   color: ${({ theme }) => theme.colors.primary};
   font-size: 12px;
@@ -245,7 +254,6 @@ const LinkTag = styled.Text`
   text-decoration-line: underline;
   flex-shrink: 1;
 `;
-
 const TypeTag = styled.Text`
   background-color: ${({ theme }) => theme.colors.inputBackground};
   color: ${({ theme }) => theme.colors.gray};
@@ -254,4 +262,13 @@ const TypeTag = styled.Text`
   padding: 5px 16px;
   border-radius: 999px;
   flex-shrink: 0;
+`;
+
+const ShowText = styled.Text`
+  background-color: ${({ theme }) => theme.colors.inputBackground};
+  padding: 12px;
+  border-radius: 999px;
+  text-align: center;
+  color: ${({ theme }) => theme.colors.gray}; 
+  font-weight: bold;
 `;

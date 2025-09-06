@@ -30,8 +30,8 @@ export const AppThemeProvider = ({ children }) => {
     loadThemeSettings();
   }, []);
 
-  const lightColors = ['#9A60AC', '#ff6666', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0'];
-  const darkColors = ['#C084E4', '#00E5FF', '#81C784', '#FFD54F', '#BA68C8', '#F06292'];
+  const lightColors = ['#E63946', '#ff6666', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0'];
+  const darkColors = ['#E63946', '#00E5FF', '#81C784', '#FFD54F', '#BA68C8', '#F06292'];
 
   // Memoize theme object to prevent unnecessary re-renders
   const theme = useMemo(() => {

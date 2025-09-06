@@ -1,6 +1,6 @@
 // AnimatedModal.js
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Animated, TouchableWithoutFeedback } from 'react-native';
+import { Modal, Animated, TouchableWithoutFeedback, ScrollView } from 'react-native';
 import styled from 'styled-components/native';
 
 const AnimatedModal = ({ visible, onClose, title, children }) => {
@@ -34,7 +34,15 @@ const AnimatedModal = ({ visible, onClose, title, children }) => {
         <AnimatedContent style={{ opacity, transform: [{ translateY }] }}>
   <HandleBar />
   {title && <SheetLabel style={{ marginBottom: 15 }}>{title}</SheetLabel>}
-  {children}
+  <ScrollView 
+    style={{ flex: 1 }}
+    showsVerticalScrollIndicator={true}
+    nestedScrollEnabled={true}
+    bounces={false}
+    keyboardShouldPersistTaps="handled"
+  >
+    {children}
+  </ScrollView>
   <CloseButton onPress={onClose}>
     <CloseButtonText>Закрити</CloseButtonText>
   </CloseButton>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { saveUserToSupabaseWithFallback, getUserFromSupabase, updateLastLogin, updateHikkaUpdatedAt, testSupabaseConnection, getUserCoins } from '../utils/supabase';
 
@@ -17,11 +17,15 @@ export function AuthProvider({ children }) {
     checkAuthStatus();
     // Ініціалізуємо Supabase при запуску
     testSupabaseConnection();
-  }, []);
+  }, []); // Видаляємо checkAuthStatus з залежностей
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     try {
       setIsLoading(true);
+      
+      // Тимчасова затримка для демонстрації лоадингу (3 секунди)
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
       const savedToken = await SecureStore.getItemAsync(TOKEN_KEY);
       
       if (savedToken) {
@@ -43,9 +47,9 @@ export function AuthProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // Видаляємо всі залежності, оскільки функції стабільні
 
-  const validateToken = async (token) => {
+  const validateToken = useCallback(async (token) => {
     try {
       const response = await fetch('https://api.hikka.io/user/me', {
         headers: { auth: token },
@@ -55,9 +59,9 @@ export function AuthProvider({ children }) {
     } catch (error) {
       return false;
     }
-  };
+  }, []);
 
-  const fetchUserData = async (accessToken) => {
+  const fetchUserData = useCallback(async (accessToken) => {
     try {
       const response = await fetch('https://api.hikka.io/user/me', {
         headers: { auth: accessToken },
@@ -65,6 +69,11 @@ export function AuthProvider({ children }) {
 
       if (response.ok) {
         const data = await response.json();
+        
+        if (!data.username) {
+          return null;
+        }
+        
         setUserData(data);
         
         if (data.reference) {
@@ -74,9 +83,7 @@ export function AuthProvider({ children }) {
           const saved = await saveUserToSupabaseWithFallback(data);
           if (saved.success) {
             if (saved.isNewUser) {
-              // Новий користувач створений в Supabase
             } else {
-              // Існуючий користувач оновлений в Supabase
             }
             
             // Оновлюємо час оновлення в Hikka, якщо він є в даних
@@ -89,15 +96,18 @@ export function AuthProvider({ children }) {
         // Повертаємо дані користувача
         return data;
       } else {
+        const errorText = await response.text();
         return null;
       }
     } catch (error) {
+      console.error('AuthContext: fetchUserData error:', error);
       return null;
     }
-  };
+  }, []);
 
   const login = async (newToken) => {
     try {
+      
       // Prevent multiple login calls
       if (isAuthenticated && token === newToken) {
         return;
@@ -108,7 +118,6 @@ export function AuthProvider({ children }) {
       setToken(newToken);
       setIsAuthenticated(true);
       
-      // Отримуємо дані користувача
       const userDataResult = await fetchUserData(newToken);
       
       // Оновлюємо час останнього входу в Supabase
@@ -116,13 +125,14 @@ export function AuthProvider({ children }) {
         await updateLastLogin(userDataResult.reference);
       }
     } catch (error) {
+      console.error('AuthContext: Login error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_REFERENCE_KEY);
@@ -132,7 +142,14 @@ export function AuthProvider({ children }) {
     } catch (error) {
       // Обробка помилки виходу
     }
-  };
+  }, []);
+
+  const refreshUserData = useCallback(async () => {
+    if (token) {
+      return await fetchUserData(token);
+    }
+    return null;
+  }, [token, fetchUserData]);
 
   const value = {
     isAuthenticated,
@@ -142,6 +159,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     checkAuthStatus,
+    refreshUserData,
   };
 
   return (

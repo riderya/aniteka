@@ -8,3 +8,5 @@ export { default as AnimeColumnCardSkeleton } from './AnimeColumnCardSkeleton';
 export { default as StaffColumnCardSkeleton } from './StaffColumnCardSkeleton';
 export { default as AnimeRowCardSkeleton } from './AnimeRowCardSkeleton';
 export { default as AnimeListSkeleton } from './AnimeListSkeleton';
+export { default as TopDetailSkeleton } from './TopDetailSkeleton';
+export { default as AnimeDetailsScreenSkeleton } from './AnimeDetailsScreenSkeleton';

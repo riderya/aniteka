@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import TopDetail from '../components/DetailsAnime/TopDetail';
+import AnimeDetailsScreenSkeleton from '../components/Skeletons/AnimeDetailsScreenSkeleton';
 import BackButton from '../components/DetailsAnime/BackButton';
 import LikeAnimeButtonAbsolute from '../components/DetailsAnime/LikeAnimeButtonAbsolute';
 import AnimeMainCharacters from '../components/DetailsAnime/AnimeMainCharacters';
@@ -16,26 +17,35 @@ import AnimeFranchiseList from '../components/DetailsAnime/AnimeFranchiseList';
 import AnimeStaffSlider from '../components/DetailsAnime/AnimeStaffSlider';
 import AnimeRecommendationsSlider from '../components/DetailsAnime/AnimeRecommendationsSlider';
 import AnimeSendButton from '../components/DetailsAnime/AnimeSendButton';
+import NSFWAgeVerificationModal from '../components/NSFWAgeVerificationModal';
 import { useWatchStatus } from '../context/WatchStatusContext';
 
-const AnimeDetailsScreen = ({ route }) => {
+const AnimeDetailsScreen = ({ route, navigation }) => {
   const { slug } = route.params;
   const [anime, setAnime] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showFranchiseDivider, setShowFranchiseDivider] = useState(false);
   const [showRecommendationsDivider, setShowRecommendationsDivider] = useState(false);
   const [showCharactersDivider, setShowCharactersDivider] = useState(false);
   const [showVideoDivider, setShowVideoDivider] = useState(false);
   const [showMusicDivider, setShowMusicDivider] = useState(false);
   const [showStaffDivider, setShowStaffDivider] = useState(false);
+  const [showNSFWModal, setShowNSFWModal] = useState(false);
   const { theme, isDark } = useTheme();
   const { authToken, isAuthChecked, fetchAnimeStatus, fetchAnimeFavourite } = useWatchStatus();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const fetchAnimeDetails = async () => {
+      setIsLoading(true);
       try {
         const response = await axios.get(`https://api.hikka.io/anime/${slug}`);
         setAnime(response.data);
+        
+        // Перевіряємо чи є NSFW контент
+        if (response.data && isNSFWContent(response.data)) {
+          setShowNSFWModal(true);
+        }
         
         // Попереднє завантаження даних користувача після отримання аніме
         if (isAuthChecked && authToken) {
@@ -49,10 +59,41 @@ const AnimeDetailsScreen = ({ route }) => {
         }
       } catch (error) {
         console.log('Error fetching anime details:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchAnimeDetails();
-  }, [slug, authToken, isAuthChecked, fetchAnimeStatus, fetchAnimeFavourite]);
+  }, [slug, authToken, isAuthChecked]); // Видаляємо функції з залежностей
+
+  // Функція для перевірки NSFW контенту
+  const isNSFWContent = (animeData) => {
+    // Спочатку перевіряємо явне поле nsfw
+    if (animeData.nsfw === true) {
+      return true;
+    }
+    
+    // Перевіряємо рейтинг - тільки R+ і RX вважаються NSFW
+    const rating = animeData.rating || '';
+    const ratingLower = rating.toLowerCase();
+    
+    // R+, R PLUS і RX - це дорослий контент
+    if (ratingLower === 'r+' || ratingLower === 'r plus' || ratingLower === 'r_plus' || ratingLower === 'rx') {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Обробники для модального вікна
+  const handleNSFWConfirm = () => {
+    setShowNSFWModal(false);
+  };
+
+  const handleNSFWCancel = () => {
+    setShowNSFWModal(false);
+    navigation.goBack();
+  };
 
   // Функції для відстеження видимості компонентів
   const handleFranchiseVisibility = (isVisible) => {
@@ -79,14 +120,24 @@ const AnimeDetailsScreen = ({ route }) => {
     setShowStaffDivider(isVisible);
   };
 
+    // Якщо завантаження та немає даних, показуємо повний скелетон екрану
+  if (isLoading && !anime) {
+    return (
+      <ScreenWrapper>
+        <BackButton top={12} />
+        <AnimeDetailsScreenSkeleton />
+      </ScreenWrapper>
+    );
+  }
+
   return (
     <ScreenWrapper>
         <BackButton top={12} />
         <LikeAnimeButtonAbsolute slug={slug} top={12} />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
-        {anime && (
+        <TopDetail anime={anime} isLoading={isLoading} />
+        {anime && !isLoading && (
           <>
-            <TopDetail anime={anime} />
             <Divider />
             <AnimeMainCharacters 
               anime={anime}
@@ -138,6 +189,12 @@ const AnimeDetailsScreen = ({ route }) => {
           </>
         )}
       </ScrollView>
+      
+      <NSFWAgeVerificationModal
+        visible={showNSFWModal}
+        onConfirm={handleNSFWConfirm}
+        onCancel={handleNSFWCancel}
+      />
     </ScreenWrapper>
   );
 };

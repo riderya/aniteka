@@ -15,7 +15,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 const CLIENT_ID = 'e31c506b-5841-4ac4-b2ba-ed900a558617';
 const CLIENT_SECRET = 'qRDNu2OQw9FrQW_d3ZsSk50INm5ZmPFPB-09mbyVOpuMcUAyDIRchgz9XK69GBFLQIKXbcNSsRACcTTPQYvTJeOZX5BNps5Qn6LmFATtN5Wj8VLOxR2Bx_y5O-T00kdm';
-const REDIRECT_URI = 'yummyanimelist://';
+const REDIRECT_URI = 'aniteka://';
 
 export default function LoginComponent({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -28,32 +28,39 @@ export default function LoginComponent({ onLoginSuccess }) {
     return null;
   }
 
-  useEffect(() => {
-    const subscription = Linking.addEventListener('url', (event) => {
-      const { queryParams } = Linking.parse(event.url);
+  // Видаляємо Linking.addEventListener, оскільки WebBrowser.openAuthSessionAsync сам обробляє redirect
+  // useEffect(() => {
+  //   const subscription = Linking.addEventListener('url', (event) => {
+  //     console.log('Linking URL received:', event.url);
+  //     const { queryParams } = Linking.parse(event.url);
+  //     console.log('Parsed query params:', queryParams);
       
-      if (queryParams?.reference && !loading) {
-        handleTokenExchange(queryParams.reference);
-      }
-    });
+  //     if (queryParams?.reference && !loading) {
+  //       console.log('Processing token exchange with reference:', queryParams.reference);
+  //       handleTokenExchange(queryParams.reference);
+  //     }
+  //   });
 
-    return () => {
-      subscription?.remove();
-    };
-  }, [loading]);
+  //   return () => {
+  //     subscription?.remove();
+  //   };
+  // }, [loading]);
 
   // Автоматично приховуємо компонент, коли користувач вже авторизований
   useEffect(() => {
-    console.log('LoginComponent useEffect:', { isAuthenticated, userData: !!userData, hasCallback: !!onLoginSuccess, token: !!token });
     if (isAuthenticated && userData && onLoginSuccess) {
-      console.log('LoginComponent: Auto-hiding component, calling onLoginSuccess...');
       onLoginSuccess();
     }
   }, [isAuthenticated, userData, onLoginSuccess, token]);
 
   // Логуємо зміни в стані аутентифікації
   useEffect(() => {
-    console.log('LoginComponent: Auth state changed:', { isAuthenticated, userData: !!userData, token: !!token });
+    console.log('LoginComponent: Auth state changed:', { 
+      isAuthenticated, 
+      hasUserData: !!userData, 
+      hasToken: !!token,
+      username: userData?.username 
+    });
   }, [isAuthenticated, userData, token]);
 
   const handleLogin = async () => {
@@ -62,60 +69,51 @@ export default function LoginComponent({ onLoginSuccess }) {
     const scope = HIKKA_SCOPES.join(',');
     const authUrl = `https://hikka.io/oauth?reference=${CLIENT_ID}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
+    console.log('Starting login process with URL:', authUrl);
     setLoading(true);
 
     try {
       const result = await WebBrowser.openAuthSessionAsync(authUrl, REDIRECT_URI);
+      console.log('WebBrowser result:', result);
 
-              if (result.type === 'success' && result.url) {
-          const { queryParams } = Linking.parse(result.url);
-          const requestReference = queryParams?.reference;
+      if (result.type === 'success' && result.url) {
+        console.log('Success URL:', result.url);
+        const { queryParams } = Linking.parse(result.url);
+        console.log('Parsed query params from success URL:', queryParams);
+        const requestReference = queryParams?.reference;
 
-          if (!requestReference) {
-            // Не показуємо алерт, просто логуємо помилку
-            console.log('No request reference found');
-            setLoading(false);
-            return;
-          }
-
-        const response = await fetch('https://api.hikka.io/auth/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            request_reference: requestReference,
-            client_secret: CLIENT_SECRET,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.secret) {
-          console.log('LoginComponent: Token received, calling login...');
-          await login(data.secret);
-          console.log('LoginComponent: Login completed, calling onLoginSuccess...');
-          if (onLoginSuccess) {
-            onLoginSuccess();
-          }
-        } else {
-          // Не показуємо алерт, просто логуємо помилку
-          console.log('Login error:', data.message || 'Не вдалося отримати токен.');
+        if (!requestReference) {
+          console.log('No request reference found in URL');
+          setLoading(false);
+          return;
         }
+
+        // Використовуємо handleTokenExchange для обробки токена
+        console.log('Calling handleTokenExchange with reference:', requestReference);
+        await handleTokenExchange(requestReference);
       } else if (result.type === 'cancel') {
-        // Користувач скасував авторизацію
+        console.log('User cancelled authorization');
+      } else if (result.type === 'dismiss') {
+        console.log('User dismissed the browser');
+      } else {
+        console.log('Unexpected result type:', result.type, 'Result:', result);
       }
     } catch (error) {
-      // Не показуємо алерт, просто логуємо помилку
-      console.log('Login error:', error.message || 'Щось пішло не так. Спробуйте пізніше.');
+      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleTokenExchange = async (requestReference) => {
-    if (loading) return; // Prevent multiple token exchange attempts
-    setLoading(true);
-
     try {
+      console.log('handleTokenExchange called with reference:', requestReference);
+      
+      if (!requestReference) {
+        console.error('No request reference provided to handleTokenExchange');
+        return;
+      }
+
       const response = await fetch('https://api.hikka.io/auth/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,24 +123,30 @@ export default function LoginComponent({ onLoginSuccess }) {
         }),
       });
 
-      const data = await response.json();
+      console.log('Token exchange response status:', response.status);
+      
+      if (!response.ok) {
+        console.error('Token exchange failed with status:', response.status);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        return;
+      }
 
-      if (response.ok && data.secret) {
-        console.log('LoginComponent: Token exchange successful, calling login...');
+      const data = await response.json();
+      console.log('Token exchange response data:', data);
+
+      if (data.secret) {
+        console.log('Token exchange successful, calling login function');
         await login(data.secret);
-        console.log('LoginComponent: Login completed after token exchange, calling onLoginSuccess...');
         if (onLoginSuccess) {
+          console.log('Calling onLoginSuccess callback');
           onLoginSuccess();
         }
       } else {
-        // Не показуємо алерт, просто логуємо помилку
-        console.log('Token exchange error:', data.message || 'Не вдалося отримати токен.');
+        console.log('No secret in token exchange response:', data);
       }
     } catch (error) {
-      // Не показуємо алерт, просто логуємо помилку
-      console.log('Token exchange error:', error.message || 'Щось пішло не так. Спробуйте пізніше.');
-    } finally {
-      setLoading(false);
+      console.error('Token exchange error:', error);
     }
   };
 
@@ -151,8 +155,6 @@ export default function LoginComponent({ onLoginSuccess }) {
       await logout();
       // Після виходу компонент автоматично перерендериться і покаже форму логіну
     } catch (error) {
-      // Не показуємо алерт, просто логуємо помилку
-      console.log('Logout error:', 'Не вдалося вийти з системи');
     }
   };
 
@@ -186,7 +188,7 @@ export default function LoginComponent({ onLoginSuccess }) {
 
         <BottomContainer insets={insets}>
           <PartnerRow>
-            <LogoImage source={require('../../assets/image/yummyanimelist-logo.jpg')} />
+            <LogoImage source={require('../../assets/image/logo.png')} />
             <Handshake>🤝</Handshake>
             <LogoImage source={require('../../assets/image/hikka-logo.jpg')} />
           </PartnerRow>

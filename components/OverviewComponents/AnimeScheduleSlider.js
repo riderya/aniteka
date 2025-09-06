@@ -63,6 +63,7 @@ const AnimeScheduleSlider = React.memo(({ onRefresh }) => {
   const [animeList, setAnimeList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
   const isToday = useCallback((timestamp) => {
     const airingDate = new Date(timestamp * 1000);
@@ -81,6 +82,7 @@ const AnimeScheduleSlider = React.memo(({ onRefresh }) => {
       } else {
         setLoading(true);
       }
+      setError(null);
       
       const response = await axios.post(
         'https://api.hikka.io/schedule/anime?page=1&size=50',
@@ -101,6 +103,10 @@ const AnimeScheduleSlider = React.memo(({ onRefresh }) => {
       setAnimeList(limitedList);
     } catch (error) {
       console.error('Error fetching schedule:', error);
+      // Якщо помилка 502, встановлюємо стан помилки
+      if (error.response?.status === 502) {
+        setError('502');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -165,7 +171,7 @@ const AnimeScheduleSlider = React.memo(({ onRefresh }) => {
         title="Календар"
         onPress={() => navigation.navigate('AnimeScheduleScreen')}
       />
-      {loading ? (
+      {loading || error === '502' ? (
         <SkeletonContainer>
           <AnimeScheduleCardSkeleton />
           <AnimeScheduleCardSkeleton />

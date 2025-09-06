@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +16,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RulesModal from './RulesModal';
 import { processCommentText } from '../../utils/textUtils';
+import Toast from 'react-native-toast-message';
+import toastConfig from '../CustomToast';
 
 const getAuthToken = async () => {
   const token = await SecureStore.getItemAsync('hikka_token');
@@ -109,7 +110,13 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
     const token = await getAuthToken();
 
     if (!token) {
-      Alert.alert('Помилка', 'Потрібна авторизація для відправки коментаря.');
+      Toast.show({
+        type: 'info',
+        text1: 'Авторизуйтеся, будь ласка',
+        text2: 'Щоб відправляти коментарі, потрібно увійти в акаунт.',
+        position: 'bottom',
+        visibilityTime: 3000,
+      });
       setIsSending(false);
       return;
     }
@@ -147,7 +154,13 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
       const result = await response.json();
 
       if (!response.ok) {
-        Alert.alert('Помилка', result?.detail || 'Не вдалося надіслати коментар');
+        Toast.show({
+          type: 'error',
+          text1: 'Помилка',
+          text2: result?.detail || 'Не вдалося надіслати коментар',
+          position: 'bottom',
+          visibilityTime: 3000,
+        });
         // Видаляємо оптимістичний коментар у випадку помилки
         if (optimisticComment && onCommentSent) {
           onCommentSent(null, optimisticComment.reference);
@@ -164,7 +177,13 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
         onCommentSent();
       }
     } catch (e) {
-      Alert.alert('Помилка', 'Сталася помилка під час відправки коментаря');
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка',
+        text2: 'Сталася помилка під час відправки коментаря',
+        position: 'bottom',
+        visibilityTime: 3000,
+      });
       // Видаляємо оптимістичний коментар у випадку помилки
       if (optimisticComment && onCommentSent) {
         onCommentSent(null, optimisticComment.reference);
@@ -299,7 +318,8 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
 
       {/* Модалка: Правила */}
       <RulesModal visible={rulesModalVisible} onClose={() => setRulesModalVisible(false)} />
-
+      
+      <Toast config={toastConfig} position="bottom" />
     </>
   );
 }

@@ -66,7 +66,7 @@ const StatusDropdown = ({ slug, episodes_total }) => {
     setEpisodes(null);
     setSelectedStatus('Не дивлюсь');
     setIsLoading(true);
-  }, [slug]);
+  }, [slug, setEpisodes]);
 
   useEffect(() => {
     // Чекаємо доки перевіриться токен. Поки не перевірено — лишаємо спінер.
@@ -109,7 +109,7 @@ const StatusDropdown = ({ slug, episodes_total }) => {
     };
 
     loadStatus();
-  }, [authToken, slug, isAuthChecked, getAnimeStatus, fetchAnimeStatus, updateAnimeStatus]);
+  }, [authToken, slug, isAuthChecked]); // Видаляємо функції з залежностей
 
   const showLoginToast = () => {
     Toast.show({

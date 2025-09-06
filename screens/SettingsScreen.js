@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components/native';
 import { 
   ScrollView, 
@@ -434,7 +434,7 @@ const SettingsScreen = () => {
     }
   };
 
-    const fetchUserProfile = async () => {
+    const fetchUserProfile = useCallback(async () => {
     try {
       const token = await getAuthToken();
       if (!token) {
@@ -449,7 +449,6 @@ const SettingsScreen = () => {
           setLastUsernameChange(parseInt(lastChange));
         }
       } catch (error) {
-        console.log('Не вдалося завантажити час останньої зміни імені користувача');
       }
 
       const response = await fetch('https://api.hikka.io/user/me', {
@@ -471,7 +470,7 @@ const SettingsScreen = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const pickImage = async () => {
     try {
@@ -493,7 +492,6 @@ const SettingsScreen = () => {
       });
 
              if (!result.canceled && result.assets[0]) {
-         console.log('Вибрано зображення для аватара:', result.assets[0].uri);
          
          // Обробляємо зображення до точного розміру
          const processedImage = await ImageManipulator.manipulateAsync(
@@ -533,7 +531,6 @@ const SettingsScreen = () => {
       });
 
              if (!result.canceled && result.assets[0]) {
-         console.log('Вибрано зображення для обкладинки:', result.assets[0].uri);
          
          // Обробляємо зображення до точного розміру
          const processedImage = await ImageManipulator.manipulateAsync(
@@ -571,10 +568,8 @@ const SettingsScreen = () => {
         type: 'image/jpeg',
         name: 'avatar.jpg'
       };
-      console.log('Файл для завантаження аватара:', fileInfo);
              formData.append('file', fileInfo);
 
-             console.log('Відправляємо запит на завантаження аватара');
        const response = await fetch('https://api.hikka.io/upload/avatar', {
          method: 'PUT',
          headers: {
@@ -588,7 +583,6 @@ const SettingsScreen = () => {
          body: formData,
        });
 
-      console.log('Статус відповіді аватара:', response.status);
       if (response.ok) {
         const data = await response.json();
                  setUserData(prev => ({ ...prev, avatar: data.url }));
@@ -632,10 +626,8 @@ const SettingsScreen = () => {
         type: 'image/jpeg',
         name: 'cover.jpg'
       };
-      console.log('Файл для завантаження обкладинки:', fileInfo);
              formData.append('file', fileInfo);
 
-             console.log('Відправляємо запит на завантаження обкладинки');
        const response = await fetch('https://api.hikka.io/upload/cover', {
          method: 'PUT',
          headers: {
@@ -649,7 +641,6 @@ const SettingsScreen = () => {
          body: formData,
        });
 
-      console.log('Статус відповіді обкладинки:', response.status);
       if (response.ok) {
         const data = await response.json();
                  setUserData(prev => ({ ...prev, cover: data.url }));
@@ -687,7 +678,6 @@ const SettingsScreen = () => {
          return;
        }
 
-              console.log('Відправляємо запит на видалення обкладинки');
         const response = await fetch('https://api.hikka.io/settings/image/cover', {
           method: 'DELETE',
           headers: {
@@ -700,7 +690,6 @@ const SettingsScreen = () => {
           },
         });
 
-       console.log('Статус відповіді видалення обкладинки:', response.status);
        if (response.ok) {
          setUserData(prev => ({ ...prev, cover: null }));
          Toast.show({
@@ -737,7 +726,6 @@ const SettingsScreen = () => {
          return;
        }
 
-       console.log('Відправляємо запит на видалення аватара');
        const response = await fetch('https://api.hikka.io/settings/image/avatar', {
          method: 'DELETE',
          headers: {
@@ -750,7 +738,6 @@ const SettingsScreen = () => {
          },
        });
 
-       console.log('Статус відповіді видалення аватара:', response.status);
        if (response.ok) {
          setUserData(prev => ({ ...prev, avatar: null }));
          Toast.show({
@@ -867,7 +854,6 @@ const SettingsScreen = () => {
         return;
       }
 
-             console.log('Відправляємо запит на зміну імені користувача:', formData.username);
        const response = await fetch('https://api.hikka.io/settings/username', {
          method: 'PUT',
          headers: {
@@ -878,8 +864,6 @@ const SettingsScreen = () => {
            username: formData.username
          }),
        });
-       
-       console.log('Статус відповіді:', response.status);
 
              if (response.ok) {
          // Зберігаємо час останньої зміни
@@ -896,7 +880,6 @@ const SettingsScreen = () => {
          }
               } else {
          const errorData = await response.json();
-         console.log('Помилка від API:', errorData);
          
                    // Обробляємо помилку cooldown від сервера
           if (errorData.code === 'settings:username_cooldown') {
@@ -1437,7 +1420,7 @@ const SettingsScreen = () => {
 
   useEffect(() => {
     fetchUserProfile();
-  }, []);
+  }, []); // Видаляємо функцію з залежностей
 
   useEffect(() => {
     if (userData) {

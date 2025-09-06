@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { RefreshControl, Platform } from 'react-native';
+import { RefreshControl, Platform, Image } from 'react-native';
 import styled from 'styled-components/native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Octicons from '@expo/vector-icons/Octicons';
@@ -10,7 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 import AnimeRowCard from '../Cards/AnimeRowCard';
 import { AnimeRowCardSkeleton } from '../Skeletons';
 
-const AnimeListSection = ({ animeList, sortOptions, toggleSort, showRandomAnime, theme, onRefreshData, isLoading = false, skeletonCount = 5 }) => {
+const AnimeListSection = ({ animeList, sortOptions, toggleSort, showRandomAnime, theme, onRefreshData, isLoading = false, skeletonCount = 5, isSortingLoading = false }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
@@ -20,7 +20,7 @@ const AnimeListSection = ({ animeList, sortOptions, toggleSort, showRandomAnime,
 
   // Анімація для крапок завантаження
   useEffect(() => {
-    if (isLoading) {
+    if (isLoading || isSortingLoading) {
       const interval = setInterval(() => {
         setLoadingDots(prev => {
           if (prev === '...') return '..';
@@ -33,7 +33,7 @@ const AnimeListSection = ({ animeList, sortOptions, toggleSort, showRandomAnime,
     } else {
       setLoadingDots('...');
     }
-  }, [isLoading]);
+  }, [isLoading, isSortingLoading]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -55,37 +55,37 @@ const AnimeListSection = ({ animeList, sortOptions, toggleSort, showRandomAnime,
   const renderHeader = () => (
     <RowSorting>
       <TextCount theme={theme}>
-        {isLoading ? loadingDots : `${animeList.length} Всього`}
+        {(isLoading || isSortingLoading) ? loadingDots : `${animeList.length} Всього`}
       </TextCount>
       <ButtonsRow>
         <SortButton 
           onPress={toggleSort} 
           theme={theme}
-          disabled={isLoading}
+          disabled={isLoading || isSortingLoading}
         >
           <MaterialIcons 
             name="sort" 
             size={24} 
-            color={isLoading ? theme.colors.gray + '80' : theme.colors.gray} 
+            color={(isLoading || isSortingLoading) ? theme.colors.gray + '80' : theme.colors.gray} 
           />
-          <SortText theme={theme} style={isLoading ? { opacity: 0.7 } : {}}>
-            По {sortOptions[0].includes('score') ? 'оцінкам' : 'додаванню'}
+          <SortText theme={theme} style={(isLoading || isSortingLoading) ? { opacity: 0.7 } : {}}>
+            По {sortOptions[0].includes('watch_score') ? 'оцінкам' : 'додаванню'}
           </SortText>
           <Octicons 
             name="chevron-down" 
             size={24} 
-            color={isLoading ? theme.colors.gray + '80' : theme.colors.gray} 
+            color={(isLoading || isSortingLoading) ? theme.colors.gray + '80' : theme.colors.gray} 
           />
         </SortButton>
         <RandomButton 
           onPress={onRandomPress} 
           theme={theme}
-          disabled={isLoading}
+          disabled={isLoading || isSortingLoading}
         >
           <FontAwesome5 
             name="random" 
             size={20} 
-            color={isLoading ? theme.colors.gray + '80' : theme.colors.gray} 
+            color={(isLoading || isSortingLoading) ? theme.colors.gray + '80' : theme.colors.gray} 
           />
         </RandomButton>
       </ButtonsRow>
@@ -122,15 +122,21 @@ const AnimeListSection = ({ animeList, sortOptions, toggleSort, showRandomAnime,
 
   return (
     <Container insets={insets}>
-      {!isLoading && animeList?.length === 0 ? (
+      {!isLoading && !isSortingLoading && (!animeList || animeList.length === 0) ? (
         <Center>
-          <EmptyText>🤷 Нічого не знайдено.</EmptyText>
+          <ImageContainer>
+            <NotFoundImage 
+              source={require('../../assets/image/not-found.png')}
+              resizeMode="contain"
+            />
+            <EmptyText>Тут поки що пусто</EmptyText>
+          </ImageContainer>
         </Center>
       ) : (
         <AnimeList
-          data={isLoading ? Array(skeletonCount).fill(null) : animeList}
+          data={(isLoading || isSortingLoading) ? Array(skeletonCount).fill(null) : animeList}
           keyExtractor={(item, index) => item?.slug || `skeleton-${index}`}
-          renderItem={isLoading ? renderSkeletonItem : renderItem}
+          renderItem={(isLoading || isSortingLoading) ? renderSkeletonItem : renderItem}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={renderHeader}
           contentContainerStyle={{
@@ -163,6 +169,17 @@ const Center = styled.View`
   flex: 1;
   justify-content: center;
   align-items: center;
+`;
+
+const ImageContainer = styled.View`
+  align-items: center;
+  justify-content: center;
+  margin-top: -100px;
+`;
+
+const NotFoundImage = styled.Image`
+  width: 200px;
+  height: 200px;
 `;
 
 const EmptyText = styled.Text`

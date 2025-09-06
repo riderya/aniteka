@@ -14,9 +14,9 @@ const ModalOverlay = styled.View`
 
 const ModalContent = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
-  border-radius: 16px;
+  border-radius: 24px;
   width: 90%;
-  max-height: 80%;
+  max-height: 70%;
   overflow: hidden;
 `;
 

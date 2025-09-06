@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { ActivityIndicator, StatusBar, FlatList } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
@@ -53,14 +53,14 @@ const AnimeAllLatestComments = () => {
     fetchComments();
   }, [page]);
 
-  const loadMoreComments = () => {
+  const loadMoreComments = useCallback(() => {
     if (!loadingMore && hasMore && !loading) {
       setLoadingMore(true);
       setPage(prev => prev + 1);
     }
-  };
+  }, [loadingMore, hasMore, loading]);
 
-  const renderComment = ({ item, index }) => {
+  const renderComment = useCallback(({ item, index }) => {
     // Розраховуємо глобальний номер коментаря
     const globalIndex = index + 1;
     return (
@@ -70,9 +70,9 @@ const AnimeAllLatestComments = () => {
         showIndex={true}
       />
     );
-  };
+  }, []);
 
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (loadingMore) {
       return (
         <LoadingMoreContainer>
@@ -91,9 +91,17 @@ const AnimeAllLatestComments = () => {
     }
     
     return null;
-  };
+  }, [loadingMore, hasMore, comments.length, theme.colors.primary]);
 
-  const keyExtractor = (item, index) => `${item.id || index}-${page}`;
+  const keyExtractor = useCallback((item, index) => `${item.id || `comment-${index}`}`, []);
+
+  const SeparatorComponent = useCallback(() => <Separator />, []);
+
+  const contentContainerStyle = useMemo(() => ({
+    paddingTop: insets.top + 56 + 30,
+    paddingBottom: 20 + insets.bottom,
+    paddingHorizontal: 12,
+  }), [insets.top, insets.bottom]);
 
   if (loading) {
     return (
@@ -124,20 +132,19 @@ const AnimeAllLatestComments = () => {
         data={comments}
         renderItem={renderComment}
         keyExtractor={keyExtractor}
-        contentContainerStyle={{
-          paddingTop: insets.top + 56 + 30,
-          paddingBottom: 20 + insets.bottom,
-          paddingHorizontal: 12,
-        }}
-        ItemSeparatorComponent={() => <Separator />}
+        contentContainerStyle={contentContainerStyle}
+        ItemSeparatorComponent={SeparatorComponent}
         onEndReached={loadMoreComments}
-        onEndReachedThreshold={0.3}
+        onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
         removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        initialNumToRender={8}
+        updateCellsBatchingPeriod={50}
+        getItemLayout={null}
+        legacyImplementation={false}
       />
     </ScreenContainer>
   );

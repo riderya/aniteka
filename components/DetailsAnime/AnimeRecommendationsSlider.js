@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, View, ActivityIndicator } from 'react-native';
+import { FlatList, View } from 'react-native';
 import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
 import RowLineHeader from './RowLineHeader';
@@ -130,15 +130,7 @@ const AnimeRecommendationsSlider = ({ slug, onVisibilityChange }) => {
         data={recommendations}
         keyExtractor={(item) => item.slug}
         ListHeaderComponent={<Spacer />}
-        ListFooterComponent={
-          isLoadingMore ? (
-            <View style={{ width: 60, justifyContent: 'center', alignItems: 'center' }}>
-              <ActivityIndicator size="small" />
-            </View>
-          ) : (
-            <Spacer />
-          )
-        }
+        ListFooterComponent={<Spacer />}
         ItemSeparatorComponent={() => <View style={{ width: 15 }} />}
         showsHorizontalScrollIndicator={false}
         onEndReached={handleEndReached}

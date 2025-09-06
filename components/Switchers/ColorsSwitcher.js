@@ -6,7 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 const ColorSelector = () => {
   const { changePrimaryColor, theme, isDark, primaryColorIndex } = useTheme();
 
-  const lightColors = ['#9A60AC', '#ff6666', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0'];
+  const lightColors = ['#E63946', '#ff6666', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0'];
   const darkColors = ['#C084E4', '#00E5FF', '#81C784', '#FFD54F', '#BA68C8', '#F06292'];
 
   const colors = isDark ? darkColors : lightColors;

@@ -20,13 +20,15 @@ const OverviewButtons = React.memo(() => {
 
   const handlePress = useCallback(async (key) => {
     const rootNav = navigation.getParent ? navigation.getParent() : navigation;
-    if (key === 'filter') {
+    if (key === 'popular') {
+      rootNav.navigate('PopularAnimeScreen');
+    } else if (key === 'filter') {
       rootNav.navigate('AnimeFilterScreen');
-    } if (key === 'schedule') {
+    } else if (key === 'schedule') {
       rootNav.navigate('AnimeScheduleScreen');
-    } if (key === 'collections') {
+    } else if (key === 'collections') {
       rootNav.navigate('AnimeCollectionsScreen');
-    } if (key === 'articles') {
+    } else if (key === 'articles') {
       rootNav.navigate('AnimeAllArticlesScreen');
     } else if (key === 'random') {
         const maxPages = 1000;

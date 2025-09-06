@@ -68,7 +68,6 @@ const AnimeStaffScreen = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreData, setHasMoreData] = useState(true);
   
-  const STAFF_PER_PAGE = 20;
   const headerHeight = insets.top + 60;
 
   const fetchStaff = useCallback(async (page = 1, isLoadMore = false) => {
@@ -78,7 +77,7 @@ const AnimeStaffScreen = () => {
       }
       
       const { data } = await axios.get(
-        `https://api.hikka.io/anime/${slug}/staff?page=${page}&size=${STAFF_PER_PAGE}`
+        `https://api.hikka.io/anime/${slug}/staff?page=${page}&size=20`
       );
       
       if (isLoadMore) {
@@ -93,7 +92,7 @@ const AnimeStaffScreen = () => {
       }
       
       // Перевіряємо, чи є ще дані для завантаження
-      setHasMoreData(data.list.length === STAFF_PER_PAGE);
+      setHasMoreData(data.list.length === 20);
       setCurrentPage(page);
     } catch (error) {
       
@@ -104,11 +103,32 @@ const AnimeStaffScreen = () => {
         setLoading(false);
       }
     }
-  }, [slug, STAFF_PER_PAGE]);
+  }, [slug]);
 
   useEffect(() => {
-    fetchStaff(1, false);
-  }, [fetchStaff]);
+    const loadInitialData = async () => {
+      setLoading(true);
+      setStaff([]);
+      setCurrentPage(1);
+      setHasMoreData(true);
+      
+      try {
+        const { data } = await axios.get(
+          `https://api.hikka.io/anime/${slug}/staff?page=1&size=20`
+        );
+        
+        setStaff(data.list);
+        setHasMoreData(data.list.length === 20);
+        setCurrentPage(1);
+      } catch (error) {
+        console.error('Error fetching staff:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, [slug]);
 
   const handleLoadMore = useCallback(() => {
     if (!loadingMore && hasMoreData) {
@@ -140,6 +160,25 @@ const AnimeStaffScreen = () => {
     return null;
   }, [loadingMore, hasMoreData, staff.length, theme]);
 
+  const renderItem = useCallback(({ item }) => (
+    <StaffCardRow
+      person={item.person}
+      roles={item.roles}
+      onPress={() =>
+        navigation.navigate('AnimePeopleDetailsScreen', {
+          slug: item.person.slug,
+        })
+      }
+      imageBorderRadius={24}
+      imageWidth={90}
+      imageHeight={120}
+      nameFontSize="16px"
+      roleFontSize="13px"
+    />
+  ), [navigation]);
+
+  const keyExtractor = useCallback((item, index) => `staff-${item.person.slug}-${index}`, []);
+
   if (loading) {
     return (
       <CenteredContainer>
@@ -156,28 +195,13 @@ const AnimeStaffScreen = () => {
 
       <FlatList
         data={staff}
-        keyExtractor={(item, index) => `staff-${item.person.slug}-${index}`}
+        keyExtractor={keyExtractor}
         contentContainerStyle={{
           paddingTop: insets.top + 56 + 20,
           paddingBottom: insets.bottom + 20,
           paddingHorizontal: 12,
         }}
-        renderItem={({ item }) => (
-          <StaffCardRow
-            person={item.person}
-            roles={item.roles}
-            onPress={() =>
-              navigation.navigate('AnimePeopleDetailsScreen', {
-                slug: item.person.slug,
-              })
-            }
-            imageBorderRadius={24}
-            imageWidth={90}
-            imageHeight={120}
-            nameFontSize="16px"
-            roleFontSize="13px"
-          />
-        )}
+        renderItem={renderItem}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}

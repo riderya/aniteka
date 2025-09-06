@@ -100,9 +100,8 @@ export default LatestCommentsSkeleton;
 // --- Styled Components ---
 
 const Container = styled.View`
-  margin-top: 25px;
+  margin-top: 20px;
   flex-direction: column;
-  padding: 0 12px;
 `;
 
 const Column = styled.View`
@@ -112,7 +111,7 @@ const Column = styled.View`
 
 const SkeletonCardContainer = styled.View`
   position: relative;
-  margin-bottom: 20px;
+  padding: 0 12px;
 `;
 
 const SkeletonCommentIndex = styled.View`

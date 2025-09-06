@@ -24,6 +24,7 @@ const ArticlesSlider = React.memo(({ slug, title, onRefresh }) => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const theme = useTheme();
   const navigation = useNavigation();
 
@@ -34,6 +35,7 @@ const ArticlesSlider = React.memo(({ slug, title, onRefresh }) => {
       } else {
         setLoading(true);
       }
+      setError(null);
       
       const response = await axios.post('https://api.hikka.io/articles?page=1&size=5', {
         sort: ['created:desc'],
@@ -43,6 +45,10 @@ const ArticlesSlider = React.memo(({ slug, title, onRefresh }) => {
       setArticles(response.data.list);
     } catch (error) {
       console.error('Error fetching articles:', error);
+      // Якщо помилка 502, встановлюємо стан помилки
+      if (error.response?.status === 502) {
+        setError('502');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -75,7 +81,7 @@ const ArticlesSlider = React.memo(({ slug, title, onRefresh }) => {
     index,
   }), []);
 
-  if (loading) {
+  if (loading || error === '502') {
     return (
       <Container>
         <RowLineHeader

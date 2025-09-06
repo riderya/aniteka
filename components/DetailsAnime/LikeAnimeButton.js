@@ -63,7 +63,7 @@ const LikeAnimeButton = ({ slug }) => {
     };
 
     loadFavourite();
-  }, [authToken, slug, isAuthChecked, getAnimeFavourite, fetchAnimeFavourite]);
+  }, [authToken, slug, isAuthChecked]); // Видаляємо функції з залежностей
 
   const toggleFavourite = async () => {
     if (!authToken) {

@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "yummyanimelist",
-    "slug": "yummyanimelist",
+    "name": "Aniteka",
+    "slug": "aniteka",
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "yummyanimelist",
+    "scheme": "aniteka",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#080808"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.osu-tenef.yummyanimelist",
+      "bundleIdentifier": "com.osu-tenef.aniteka",
       "associatedDomains": [
         "applinks:hikka.io"
       ],
@@ -26,26 +26,32 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#080808"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.osu_tenef.yummyanimelist",
+      "package": "com.osu_tenef.aniteka",
       "intentFilters": [
         {
           "action": "VIEW",
           "autoVerify": true,
           "data": [
             {
-              "scheme": "yummyanimelist"
+              "scheme": "aniteka"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "runtimeVersion": "1.0.1"
+      "runtimeVersion": "1.0.1",
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "buildToolsVersion": "35.0.0"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -57,14 +63,11 @@
       "expo-image-picker",
       "expo-font"
     ],
+    "owner": "osu_tenef",
     "extra": {
       "eas": {
-        "projectId": "848ddbb0-778e-480a-bff5-11710ba78d7d"
+        "projectId": "b10e7c03-5c1f-48fc-91be-e38230a6a9f1"
       }
-    },
-    "owner": "osu_tenef",
-    "updates": {
-      "url": "https://u.expo.dev/848ddbb0-778e-480a-bff5-11710ba78d7d"
     }
   }
 }

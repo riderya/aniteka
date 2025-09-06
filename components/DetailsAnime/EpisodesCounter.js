@@ -2,13 +2,6 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components/native';
 import { Text } from 'react-native';
 import { useWatchStatus } from '../../context/WatchStatusContext';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withRepeat, 
-  withTiming,
-  interpolate
-} from 'react-native-reanimated';
 
 const EpisodesCounter = ({ slug, episodes_total }) => {
   const { 
@@ -35,7 +28,7 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
   // Очищаємо episodes при зміні slug, щоб не залишалося значення від попереднього аніме
   useEffect(() => {
     setEpisodes(null);
-  }, [slug]);
+  }, [slug, setEpisodes]);
 
   useEffect(() => {
     if (!isAuthChecked || !authToken) return;
@@ -138,63 +131,8 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
     return null;
   }
 
-  // Скелетон компонент
-  const EpisodesSkeleton = () => {
-    const shimmerValue = useSharedValue(0);
-
-    useEffect(() => {
-      shimmerValue.value = withRepeat(
-        withTiming(1, { duration: 1500 }),
-        -1,
-        false
-      );
-    }, []);
-
-    const shimmerStyle = useAnimatedStyle(() => {
-      const translateX = interpolate(
-        shimmerValue.value,
-        [0, 1],
-        [-200, 200]
-      );
-
-      return {
-        transform: [{ translateX }],
-      };
-    });
-
-    return (
-      <Container>
-        <SkeletonTitle>
-          <ShimmerGradient style={shimmerStyle} />
-        </SkeletonTitle>
-        
-        <SkeletonEpisodesInfo>
-          <SkeletonEpisodesText>
-            <ShimmerGradient style={shimmerStyle} />
-          </SkeletonEpisodesText>
-        </SkeletonEpisodesInfo>
-
-        <SkeletonProgressBar>
-          <ShimmerGradient style={shimmerStyle} />
-        </SkeletonProgressBar>
-
-        <SkeletonButtonsRow>
-          <SkeletonButton>
-            <ShimmerGradient style={shimmerStyle} />
-          </SkeletonButton>
-          <SkeletonButtonSmall>
-            <ShimmerGradient style={shimmerStyle} />
-          </SkeletonButtonSmall>
-        </SkeletonButtonsRow>
-      </Container>
-    );
-  };
-
-  if (loading && episodes === null) {
-    return <EpisodesSkeleton />;
-  }
-
-  if (episodes === null) {
+  // Не показуємо компонент під час завантаження або коли episodes ще не завантажені
+  if (loading || episodes === null) {
     return null;
   }
 
@@ -316,63 +254,3 @@ const BtnText = styled.Text`
   font-size: 14px;
 `;
 
-// Скелетон стилі
-const ShimmerGradient = styled(Animated.View)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-`;
-
-const SkeletonTitle = styled.View`
-  width: 80px;
-  height: 22px;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  border-radius: 4px;
-  margin-bottom: 12px;
-  overflow: hidden;
-`;
-
-const SkeletonEpisodesInfo = styled.View`
-  margin-bottom: 12px;
-`;
-
-const SkeletonEpisodesText = styled.View`
-  width: 180px;
-  height: 18px;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  border-radius: 4px;
-  overflow: hidden;
-`;
-
-const SkeletonProgressBar = styled.View`
-  height: 8px;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  border-radius: 8px;
-  margin-bottom: 14px;
-  overflow: hidden;
-`;
-
-const SkeletonButtonsRow = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 8px;
-`;
-
-const SkeletonButton = styled.View`
-  height: 46px;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  border-radius: 12px;
-  flex: 1;
-  overflow: hidden;
-`;
-
-const SkeletonButtonSmall = styled.View`
-  width: 60px;
-  height: 46px;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
-  border-radius: 12px;
-  overflow: hidden;
-`;

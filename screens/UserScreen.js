@@ -18,6 +18,7 @@ import UserCollectionsBlock from '../components/UserComponents/UserCollectionsBl
 import AnimeHistoryBlock from '../components/UserComponents/AnimeHistoryBlock';
 import FavoritesBlock from '../components/UserComponents/FavoritesBlock';
 import LoginComponent from '../components/Auth/LoginComponent';
+import AuthDebugger from '../components/Auth/AuthDebugger';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -190,7 +191,7 @@ const formatTimeAgo = (timestamp) => {
 const UserScreen = () => {
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
-  const { isAuthenticated, userData: authUserData, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, userData: authUserData, isLoading: authLoading, refreshUserData } = useAuth();
   const insets = useSafeAreaInsets();
   const [userData, setUserData] = useState(null);
   const [activityData, setActivityData] = useState([]);
@@ -214,19 +215,22 @@ const UserScreen = () => {
   };
 
   // Prepare data for FlatList
-  const renderData = (authUserData || userData) ? [
-    { type: 'header', id: 'header' },
-    { type: 'followStats', id: 'followStats' },
-    { type: 'buttonsRow', id: 'buttonsRow' },
-    { type: 'actionButtons', id: 'actionButtons' },
-    // Показуємо блоки в залежності від активного табу
-    ...(activeTab === 'statistics' ? [{ type: 'watchStats', id: 'watchStats' }] : []),
-    ...(activeTab === 'animeList' ? [{ type: 'watchList', id: 'watchList' }] : []),
-    ...(activeTab === 'favorites' ? [{ type: 'favorites', id: 'favorites' }] : []),
-    ...(activeTab === 'collections' ? [{ type: 'collections', id: 'collections' }] : []),
-    ...(activeTab === 'history' ? [{ type: 'history', id: 'history' }] : []),
-    ...(activeTab === 'statistics' && activityData.length > 0 ? [{ type: 'activity', id: 'activity' }] : [])
-  ] : [];
+  const renderData = React.useMemo(() => {
+    const currentUserData = authUserData || userData;
+    return currentUserData ? [
+      { type: 'header', id: 'header' },
+      { type: 'followStats', id: 'followStats' },
+      { type: 'buttonsRow', id: 'buttonsRow' },
+      { type: 'actionButtons', id: 'actionButtons' },
+      // Показуємо блоки в залежності від активного табу
+      ...(activeTab === 'statistics' ? [{ type: 'watchStats', id: 'watchStats' }] : []),
+      ...(activeTab === 'animeList' ? [{ type: 'watchList', id: 'watchList' }] : []),
+      ...(activeTab === 'favorites' ? [{ type: 'favorites', id: 'favorites' }] : []),
+      ...(activeTab === 'collections' ? [{ type: 'collections', id: 'collections' }] : []),
+      ...(activeTab === 'history' ? [{ type: 'history', id: 'history' }] : []),
+      ...(activeTab === 'statistics' && activityData.length > 0 ? [{ type: 'activity', id: 'activity' }] : [])
+    ] : [];
+  }, [authUserData, userData, activeTab, activityData.length]);
 
   // Get auth token
   const getAuthToken = async () => {
@@ -383,7 +387,31 @@ const UserScreen = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await loadData();
+      // Оновлюємо основні дані користувача через AuthContext
+      const updatedUserData = await refreshUserData();
+      
+      // Оновлюємо локальний стан userData, якщо є нові дані
+      if (updatedUserData) {
+        setUserData(updatedUserData);
+      }
+      
+      // Оновлюємо всі додаткові дані
+      const currentUserData = updatedUserData || authUserData || userData;
+      if (currentUserData?.username) {
+        const [activityResult, watchStatsResult, followStatsResult] = await Promise.all([
+          fetchUserActivity(),
+          fetchWatchStats(),
+          fetchFollowStats()
+        ]);
+        
+        // Оновлюємо стани з новими даними
+        if (watchStatsResult) {
+          setWatchStats(watchStatsResult);
+        }
+        if (followStatsResult) {
+          setFollowStats(followStatsResult);
+        }
+      }
     } catch (error) {
       console.error('Refresh error:', error);
       // Не показуємо помилку користувачу
@@ -392,7 +420,7 @@ const UserScreen = () => {
     }
   };
 
-  const renderItem = ({ item }) => {
+  const renderItem = React.useCallback(({ item }) => {
     const currentUserData = authUserData || userData;
     
     switch (item.type) {
@@ -403,6 +431,7 @@ const UserScreen = () => {
               {currentUserData?.cover && (
                 <>
                   <CoverImage
+                    key={`cover-${currentUserData?.username || 'unknown'}-${currentUserData?.cover || 'no-cover'}`}
                     source={{ uri: currentUserData.cover }}
                     resizeMode="cover"
                   />
@@ -411,7 +440,12 @@ const UserScreen = () => {
               )}
             </HeaderContainer>
             <UserInfoContainer>
-              <UserAvatar userData={currentUserData} showEmailButton={true} showUserBadge={true} />
+              <UserAvatar 
+                key={`avatar-${currentUserData?.username || 'unknown'}-${currentUserData?.avatar || 'no-avatar'}`}
+                userData={currentUserData} 
+                showEmailButton={true} 
+                showUserBadge={true} 
+              />
             </UserInfoContainer>
           </>
         );
@@ -572,7 +606,7 @@ const UserScreen = () => {
       default:
         return null;
     }
-  };
+  }, [authUserData, userData, activeTab, followStats, watchStats, animeHours, activityData, theme, navigation]);
 
   useEffect(() => {
     if (authUserData) {
@@ -581,7 +615,7 @@ const UserScreen = () => {
       // Якщо користувач авторизований, але немає даних, завантажуємо їх
       loadData();
     }
-  }, [authUserData, isAuthenticated, userData]);
+  }, [authUserData, isAuthenticated]); // loadData стабільна функція
 
   // Reload data when userData changes
   useEffect(() => {
@@ -598,41 +632,13 @@ const UserScreen = () => {
       loadAdditionalData();
     }
   }, [authUserData?.username, userData?.username, isAuthenticated]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // Перевіряємо чи користувач авторизований
   
   if (!isAuthenticated && !authLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <AuthDebugger />
         <LoginComponent onLoginSuccess={() => {
+          console.log('UserScreen: Login success callback called');
           // Після успішного входу, дані будуть автоматично оновлені через AuthContext
           // Не потрібно викликати loadData тут
         }} />
@@ -663,9 +669,11 @@ const UserScreen = () => {
     <>
       <Container theme={theme}>
         <FlatList
+          key={`user-${(authUserData?.username || userData?.username || 'unknown')}`}
           data={renderData}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          extraData={[userData, authUserData, activityData, watchStats, followStats]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -680,7 +688,6 @@ const UserScreen = () => {
           contentContainerStyle={{
             paddingBottom: insets.bottom + 110
           }}
-
         />
       </Container>
       <Toast config={toastConfig} position="bottom" />

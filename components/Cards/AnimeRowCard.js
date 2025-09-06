@@ -85,7 +85,7 @@ const formatSeason = (season) => {
 const translateStatus = (status) => {
   switch (status) {
     case 'watching': return 'Дивлюсь';
-    case 'planned': return 'Заплановано';
+    case 'planned': return 'В планах';
     case 'completed': return 'Переглянуто';
     case 'on_hold': return 'Відкладено';
     case 'dropped': return 'Закинуто';
@@ -106,10 +106,10 @@ const formatHistoryAction = (historyData) => {
 
   const mapListStatus = (key) => {
     switch (key) {
-      case 'planned': return 'Заплановане';
+      case 'planned': return 'В планах';
       case 'watching': return 'Дивлюсь';
-      case 'completed': return 'Завершено';
-      case 'on_hold': return 'В очікуванні';
+      case 'completed': return 'Переглянуто';
+      case 'on_hold': return 'Відкладено';
       case 'dropped': return 'Закинуто';
       default: return key;
     }

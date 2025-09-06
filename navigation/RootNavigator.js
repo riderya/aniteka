@@ -1,5 +1,6 @@
 import { createStackNavigator } from '@react-navigation/stack';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Image, Animated } from 'react-native';
+import { useEffect, useRef } from 'react';
 import styled from 'styled-components/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -28,6 +29,7 @@ import WebViewScreen from '../screens/WebViewScreen';
 
 import CommentRepliesScreen from '../screens/CommentRepliesScreen';
 import AnimeFranchiseScreen from '../screens/AnimeFranchiseScreen';
+import PopularAnimeScreen from '../screens/PopularAnimeScreen';
 
 
 const RootStack = createStackNavigator();
@@ -39,14 +41,44 @@ const LoadingContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
+const LogoImage = styled(Animated.Image)`
+  width: 80px;
+  height: 80px;
+`;
+
 export default function RootNavigator() {
   const { isLoading, isAuthenticated } = useAuth();
   const { theme } = useTheme();
+  const scaleValue = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isLoading) {
+      const scale = () => {
+        Animated.sequence([
+          Animated.timing(scaleValue, {
+            toValue: 1.2,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleValue, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ]).start(() => scale());
+      };
+      scale();
+    }
+  }, [isLoading, scaleValue]);
 
   if (isLoading) {
     return (
       <LoadingContainer theme={theme}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <LogoImage
+          source={require('../assets/logo-loader.png')}
+          style={{ transform: [{ scale: scaleValue }] }}
+          resizeMode="contain"
+        />
       </LoadingContainer>
     );
   }
@@ -79,6 +111,7 @@ export default function RootNavigator() {
 
        <RootStack.Screen name="CommentRepliesScreen" component={CommentRepliesScreen} />
        <RootStack.Screen name="AnimeFranchise" component={AnimeFranchiseScreen} />
+       <RootStack.Screen name="PopularAnimeScreen" component={PopularAnimeScreen} />
 
     </RootStack.Navigator>
   );

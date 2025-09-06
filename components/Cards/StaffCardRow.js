@@ -1,5 +1,5 @@
 // components/Cards/StaffItemCard.js
-import React from 'react';
+import React, { useMemo } from 'react';
 import styled from 'styled-components/native';
 import { TouchableOpacity } from 'react-native';
 import avatarFallback from '../../assets/image/image404.png';
@@ -43,13 +43,19 @@ const StaffCardRow = ({
   nameFontSize = '16px',
   roleFontSize = '14px'
 }) => {
+  const rolesText = useMemo(() => {
+    return roles.map((r) => r.name_ua || r.name_en).join(', ');
+  }, [roles]);
+
+  const imageSource = useMemo(() => {
+    return person?.image?.trim() ? { uri: person.image } : avatarFallback;
+  }, [person?.image]);
+
   return (
     <TouchableOpacity onPress={onPress}>
       <Card>
         <Image
-          source={
-            person?.image?.trim() ? { uri: person.image } : avatarFallback
-          }
+          source={imageSource}
           imageBorderRadius={imageBorderRadius}
           imageWidth={imageWidth}
           imageHeight={imageHeight}
@@ -59,7 +65,7 @@ const StaffCardRow = ({
             {person.name_ua || person.name_en}
           </Name>
           <Role fontSize={roleFontSize} numberOfLines={2}>
-            {roles.map((r) => r.name_ua || r.name_en).join(', ')}
+            {rolesText}
           </Role>
         </Info>
       </Card>

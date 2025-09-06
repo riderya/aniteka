@@ -11,6 +11,7 @@ import axios from 'axios';
 import styled from 'styled-components/native';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
 import RowLineHeader from '../DetailsAnime/RowLineHeader';
+import AnimeColumnCardSkeleton from '../Skeletons/AnimeColumnCardSkeleton';
 import * as SecureStore from 'expo-secure-store';
 import { useOrientation } from '../../hooks';
 import { getResponsiveDimensions } from '../../utils/orientationUtils';
@@ -70,7 +71,27 @@ const AnimeSlider = ({ titleLineText, descriptionText, api, requestBody, refresh
           showsHorizontalScrollIndicator={false}
           data={[...Array(6).keys()]}
           keyExtractor={(item) => `skeleton-${item}`}
-          renderItem={() => <SkeletonItem orientation={orientation} />}
+          renderItem={() => (
+            <SkeletonWrapper>
+              <AnimeColumnCardSkeleton
+                cardWidth={orientation === 'landscape' ? 120 : 140}
+                imageWidth={orientation === 'landscape' ? 120 : 140}
+                imageHeight={orientation === 'landscape' ? 160 : 190}
+                titleFontSize={14}
+                footerFontSize={11}
+                badgeFontSize={11}
+                badgePadding={4}
+                badgeBottom={10}
+                badgeLeft={10}
+                badgeRight={10}
+                marginTop={0}
+                marginBottom={0}
+                imageBorderRadius={8}
+                titleNumberOfLines={2}
+                starIconSize={11}
+              />
+            </SkeletonWrapper>
+          )}
         />
       </Container>
     );
@@ -125,29 +146,8 @@ const SkeletonList = styled(FlatList)`
   padding-left: 10px;
 `;
 
-const SkeletonItem = ({ orientation }) => (
-  <SkeletonContainer orientation={orientation}>
-    <SkeletonPoster orientation={orientation} />
-    <SkeletonText />
-  </SkeletonContainer>
-);
-
-const SkeletonContainer = styled.View`
-  width: ${({ orientation }) => orientation === 'landscape' ? 120 : 140}px;
-  margin-right: ${({ orientation }) => orientation === 'landscape' ? 16 : 20}px;
-`;
-
-const SkeletonPoster = styled.View`
-  height: ${({ orientation }) => orientation === 'landscape' ? 160 : 190}px;
-  background-color: ${({ theme }) => theme.colors.disabled};
-  border-radius: 8px;
-`;
-
-const SkeletonText = styled.View`
-  height: 14px;
-  margin-top: 10px;
-  background-color: ${({ theme }) => theme.colors.disabled};
-  border-radius: 4px;
+const SkeletonWrapper = styled.View`
+  margin-right: 12px;
 `;
 
 const TextError = styled.Text`

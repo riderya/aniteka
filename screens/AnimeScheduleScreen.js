@@ -454,7 +454,12 @@ const handleCloseModal = useCallback(() => {
             </CloseButton>
           </ModalHeader>
           
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Рік */}
             <FilterSection>
               <FilterSectionTitle>Рік</FilterSectionTitle>

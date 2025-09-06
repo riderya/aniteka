@@ -5,6 +5,7 @@ import styled from 'styled-components/native';
 import { useTheme } from '../../context/ThemeContext';
 import { PlatformBlurView } from '../Custom/PlatformBlurView';
 import GradientBlock from '../GradientBlock/GradientBlock';
+import { getTMDBBanner, getTMDBBannerByTitle, isTMDBConfigured } from '../../utils/tmdbUtils';
 import axios from 'axios';
 
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -68,6 +69,8 @@ const HomeBannerSwiper = () => {
   const flatListRef = useRef(null);
   const [animeDetails, setAnimeDetails] = useState({});
   const [genreWidths, setGenreWidths] = useState({});
+  const [bannerUrls, setBannerUrls] = useState({});
+  const [bannerStates, setBannerStates] = useState({}); // Стан завантаження банерів для кожного аніме
   const navigation = useNavigation();
 
   const fetchAnime = async () => {
@@ -105,15 +108,70 @@ const HomeBannerSwiper = () => {
       const data = response.data || {};
       const genres = Array.isArray(data.genres) ? data.genres.map(g => g.name_ua || g.name_en || '—') : ['—'];
       const description = data.synopsis_ua || data.synopsis_en || 'Опис відсутній';
+      const tmdb_id = data.tmdb_id;
+      const titleEn = data.title_en; // Використовуємо тільки англійську назву
 
       setAnimeDetails(prev => ({
         ...prev,
-        [slug]: { genres, description },
+        [slug]: { genres, description, tmdb_id },
       }));
+
+      // Ініціалізуємо стан банерів для цього аніме
+      setBannerStates(prev => ({
+        ...prev,
+        [slug]: { tmdb: null }
+      }));
+
+      // Запускаємо завантаження TMDB банеру
+      fetchTMDBBanner(slug, tmdb_id, titleEn);
     } catch (error) {
       setAnimeDetails(prev => ({
         ...prev,
-        [slug]: { genres: ['—'], description: 'Опис відсутній' },
+        [slug]: { genres: ['—'], description: 'Опис відсутній', tmdb_id: null },
+      }));
+    }
+  };
+
+  // Функція для отримання банеру тільки з TMDB
+  const fetchTMDBBanner = async (slug, tmdb_id, title) => {
+    try {
+      if (!isTMDBConfigured()) {
+        setBannerStates(prev => ({
+          ...prev,
+          [slug]: { tmdb: false }
+        }));
+        return;
+      }
+
+      let bannerUrl = null;
+
+      // Спочатку намагаємося за tmdb_id
+      if (tmdb_id) {
+        bannerUrl = await getTMDBBanner(tmdb_id, 'tv');
+      }
+
+      // Якщо не знайшли за ID, намагаємося за англійською назвою
+      if (!bannerUrl && title) {
+        bannerUrl = await getTMDBBannerByTitle(title, 'tv');
+      } else if (!bannerUrl && !title) {
+      }
+
+      if (bannerUrl) {
+        setBannerUrls(prev => ({ ...prev, [slug]: bannerUrl }));
+        setBannerStates(prev => ({
+          ...prev,
+          [slug]: { tmdb: true }
+        }));
+      } else {
+        setBannerStates(prev => ({
+          ...prev,
+          [slug]: { tmdb: false }
+        }));
+      }
+    } catch (error) {
+      setBannerStates(prev => ({
+        ...prev,
+        [slug]: { tmdb: false }
       }));
     }
   };
@@ -126,6 +184,7 @@ const HomeBannerSwiper = () => {
   useEffect(() => {
     const subscription = Dimensions.addEventListener('change', () => {
       setGenreWidths({});
+      setBannerUrls({}); // Очищаємо також банерні URL
     });
 
     return () => subscription?.remove();
@@ -196,8 +255,9 @@ const HomeBannerSwiper = () => {
   };
 
   const renderItem = ({ item }) => {
-    const imageUrl = item.image || '';
+    const bannerUrl = bannerUrls[item.slug] || '';
     const details = animeDetails[item.slug] || { genres: ['Жанри відсутні'], description: 'Опис відсутній' };
+    const bannerState = bannerStates[item.slug] || { tmdb: null };
 
     // Невидимий текст для вимірювання ширини жанрів
     const renderInvisibleGenres = () => {
@@ -221,7 +281,7 @@ const HomeBannerSwiper = () => {
   return (
   <Slide key={`slide-${item.slug || item.id || Math.random().toString(36).substr(2, 9)}`}>
     <GradientBlock />
-    <BackgroundImage source={{ uri: imageUrl }} />
+    {bannerUrl && <BackgroundImage source={{ uri: bannerUrl }} />}
     {renderInvisibleGenres()}
     <Content>
       <Info>
@@ -396,10 +456,11 @@ width: 100%;
 const EpisodeText = styled.Text`
   font-size: 14px;
   padding: 4px 12px;
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: ${({ theme }) => `${theme.colors.primary}20`};
+  border: 1px solid ${({ theme }) => theme.colors.primary};
   align-self: flex-start; 
   border-radius: 999px; 
-  color: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 8px;
 `;
 

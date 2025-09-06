@@ -26,8 +26,9 @@ import Entypo from '@expo/vector-icons/Entypo';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import AnimatedModal from './AnimatedModalBottom';
+import TopDetailSkeleton from '../Skeletons/TopDetailSkeleton';
 
-const TopDetail = ({ anime }) => {
+const TopDetail = ({ anime, isLoading = false }) => {
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
   const { top: safeAreaTop } = useSafeAreaInsets();
@@ -63,7 +64,7 @@ const TopDetail = ({ anime }) => {
     };
 
     loadUserData();
-  }, [anime?.slug, authToken, isAuthChecked, fetchAnimeStatus, fetchAnimeFavourite]);
+  }, [anime?.slug, authToken, isAuthChecked]); // Видаляємо функції з залежностей
 
   const copyToClipboard = async (text) => {
     await Clipboard.setStringAsync(text);
@@ -141,6 +142,11 @@ const TopDetail = ({ anime }) => {
     }
   }, [anime.image, bannerUrls, studios]);
 
+
+  // Якщо завантаження, показуємо скелетон
+  if (isLoading || !anime) {
+    return <TopDetailSkeleton />;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

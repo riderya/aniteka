@@ -197,7 +197,7 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
     { key: 'dropped', title: 'Закинуто' }
   ];
 
-  const fetchWatchList = async (page = 1, append = false) => {
+  const fetchWatchList = useCallback(async (page = 1, append = false) => {
     try {
       if (page === 1) {
         setLoading(true);
@@ -272,9 +272,9 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [username, currentStatus, limit]);
 
-  const fetchStatusCounts = async () => {
+  const fetchStatusCounts = useCallback(async () => {
     try {
       const counts = {};
       
@@ -317,14 +317,14 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
     } catch (err) {
       
     }
-  };
+  }, [username]);
 
   useEffect(() => {
     if (username) {
       fetchWatchList();
       fetchStatusCounts();
     }
-  }, [username, currentStatus, limit]);
+  }, [username, currentStatus, limit, fetchWatchList, fetchStatusCounts]);
 
   useEffect(() => {
     setCurrentStatus(watchStatus);
@@ -378,7 +378,7 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
 
   const handleRetry = useCallback(() => {
     fetchWatchList();
-  }, []);
+  }, [fetchWatchList]);
 
   const renderGridItem = useCallback(({ item }) => (
     <View style={{ 

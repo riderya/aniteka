@@ -71,7 +71,7 @@ const LikeCharacterButton = ({ slug, top, left, right, bottom }) => {
       setIsLoading(false);
       setIsDataLoaded(true);
     });
-  }, [authToken, slug, isAuthChecked, getCharacterFavourite, fetchCharacterFavourite]);
+  }, [authToken, slug, isAuthChecked]); // Видаляємо функції з залежностей
 
   const toggleFavourite = async () => {
     if (!authToken) {

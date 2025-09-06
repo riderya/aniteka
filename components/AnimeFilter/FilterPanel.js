@@ -90,7 +90,7 @@ const BlurOverlay = styled(PlatformBlurView)`
   border-color: ${({ theme }) => theme.colors.border};
 `;
 
-const ModalContainer = styled.ScrollView`
+const ModalContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
   border-radius: 32px;
   max-height: ${({ maxHeight }) => maxHeight}px;
@@ -113,8 +113,10 @@ const ModalTitle = styled.Text`
 const ModalOption = styled.TouchableOpacity`
   padding: ${(props) => props.vertical || 8}px;
   padding: 12px;
-  /* background-color: ${(props) =>
-  props.selected ? props.theme.colors.primary : props.theme.colors.inputBackground}; */
+  background-color: ${(props) =>
+    props.selected ? `${props.theme.colors.primary}20` : 'transparent'};
+  border-width: ${(props) => (props.selected ? '1px' : '0px')};
+  border-color: ${(props) => (props.selected ? props.theme.colors.primary : 'transparent')};
   margin: 4px 0px;
   border-radius: 12px;
   flex-direction: ${(props) => (props.row ? 'row' : 'column')};
@@ -135,16 +137,16 @@ const FilterButton = styled.TouchableOpacity`
   border-color: ${({ theme }) => theme.colors.border};
   padding: 12px;
   border-radius: 12px;
-  background-color: ${({ selected, theme }) =>
-    selected ? theme.colors.inputBackground : 'transparent'};
 `;
 
 const FilterButtonText = styled.Text`
   padding: ${({ selected }) => (selected ? '4px 12px' : '4px 0px')};
   color: ${({ selected, theme }) =>
-    selected ? theme.colors.background : theme.colors.text};
+    selected ? theme.colors.primary : theme.colors.text};
+    border-width: 1px;
+    border-color: ${({ selected, theme }) => (selected ? theme.colors.primary : 'transparent')};
   background-color: ${({ selected, theme }) =>
-    selected ? theme.colors.primary : 'transparent'};
+    selected ? `${theme.colors.primary}20` : 'transparent'};
   border-radius: 8px;
 `;
 
@@ -267,6 +269,9 @@ const FilterModal = ({
         <ScrollView
           style={{ maxHeight: maxHeight - 50 }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={true}
+          nestedScrollEnabled={true}
+          bounces={false}
         >
           {options.map((option) => {
             const slug = option.slug;
@@ -321,6 +326,9 @@ const YearFilterModal = ({
           <ScrollView
             style={{ maxHeight: maxHeight - 50 }}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+            bounces={false}
           >
             {options.map((year) => {
               const isSelected = selectedYear === year;
@@ -371,6 +379,9 @@ const SingleSelectModal = ({
           <ScrollView
             style={{ maxHeight: maxHeight - 50 }}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+            bounces={false}
           >
             {options.map(({ slug, label }) => {
               const isSelected = selected === slug;
@@ -465,10 +476,10 @@ export default function AnimeFilters({
         <HeaderTitleBar title='Фільтр' />
       </BlurOverlay>
       <ScrollView
-        style={{ backgroundColor: theme.colors.background }}
+        style={{ backgroundColor: theme.colors.background}}
         contentContainerStyle={{
         paddingTop: insets.top + 50,
-        paddingBottom: insets.bottom + 80,
+        paddingBottom: insets.bottom + 120,
         paddingLeft: 12,
         paddingRight: 12,
       }}>
@@ -523,7 +534,7 @@ export default function AnimeFilters({
 </Column>
 
         {/* Джерела */}
-        <Column>
+        {/* <Column>
           <LabelName>Джерела</LabelName>
           <FilterButton
             selected={hasSelection(selectedSources)}
@@ -535,7 +546,7 @@ export default function AnimeFilters({
               {renderSelectedLabelsAsTags(selectedSources, sourceOptions)}
             </SelectedValuesContainer>
           </FilterButton>
-        </Column>
+        </Column> */}
 
         {/* Статус */}
         <Column>
@@ -626,7 +637,7 @@ export default function AnimeFilters({
       </ScrollView>
 
       {/* Кнопки знизу */}
-<BottomButtonsSafeArea edges={['bottom']}>
+<BottomButtonsSafeArea edges={['bottom']} style={{ paddingBottom: insets.bottom }}>
   <ResetButton onPress={resetFilters}>
     <ResetButtonText>Скинути</ResetButtonText>
   </ResetButton>
@@ -665,14 +676,14 @@ export default function AnimeFilters({
   title="Студії"
 />
 
-<FilterModal
+{/* <FilterModal
   visible={dropdownStates.dropdownSourcesVisible}
   onClose={() => setDropdownStates((prev) => ({ ...prev, dropdownSourcesVisible: false }))}
   options={sourceOptions}
   selected={selectedSources}
   toggleOption={toggleSource}
   title="Джерела"
-/>
+/> */}
 
 <FilterModal
   visible={dropdownStates.dropdownStatusVisible}

@@ -150,12 +150,6 @@ const renderItem = ({ item }) => <ArticleCard item={item} theme={theme} />;
   ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
   ListHeaderComponent={() => (
     <View style={{ flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-      <FilterButton style={{ backgroundColor: theme.colors.primary }}>
-        <Ionicons name="create" size={20} color={theme.colors.background} />
-        <FilterButtonText style={{ color: theme.colors.background }}>
-          Створити статтю
-        </FilterButtonText>
-      </FilterButton>
       <FilterButton onPress={() => setShowFilter(true)}>
         <FontAwesome6 name="filter" size={18} color={theme.colors.gray} />
         <FilterButtonText>Фільтр</FilterButtonText>
@@ -183,7 +177,11 @@ const renderItem = ({ item }) => <ArticleCard item={item} theme={theme} />;
         contentContainerStyle={{
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
-        }}>
+        }}
+        showsVerticalScrollIndicator={true}
+        nestedScrollEnabled={true}
+        bounces={false}
+        keyboardShouldPersistTaps="handled">
           <Text style={{ color: theme.colors.text, fontSize: 24, marginBottom: 10, fontWeight: 'bold' }}>Фільтри</Text>
 
 {/* Категорії */}

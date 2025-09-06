@@ -62,13 +62,13 @@ const DonutWrapper = styled.View`
 `;
 
 /* ====== ProgressRing компонент ====== */
-const ProgressRing = ({ data, size = 100, strokeWidth = 25, rotation = 0, isDark = false }) => {
+const ProgressRing = ({ data, size = 100, strokeWidth = 25, rotation = 0, isDark = false, theme }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const center = size / 2;
   
   // Фоновий колір кільця
-  const backgroundColor = isDark ? '#374151' : '#e5e7eb';
+  const backgroundColor = isDark ? `${theme.colors.primary}20` : '#e5e7eb'; 
   
   let currentAngle = rotation;
   
@@ -252,7 +252,8 @@ const StatsDonutBlock = ({ stats }) => {
                 size={115} 
                 strokeWidth={25} 
                 rotation={rotation} 
-                isDark={isDark} 
+                isDark={isDark}
+                theme={theme}
               />
             </TouchableOpacity>
           </PanGestureHandler>

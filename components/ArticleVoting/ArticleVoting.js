@@ -62,7 +62,7 @@ const ArticleVoting = ({
     
     if (!authToken) {
       Toast.show({
-        type: 'error',
+        type: 'info',
         text1: 'Потрібна авторизація',
         text2: 'Щоб голосувати, потрібно увійти в акаунт.',
         position: 'bottom',

@@ -22,6 +22,7 @@ const CollectionSlider = React.memo(({ onRefresh }) => {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const navigation = useNavigation();
 
   const fetchCollections = useCallback(async (isRefresh = false) => {
@@ -31,6 +32,7 @@ const CollectionSlider = React.memo(({ onRefresh }) => {
       } else {
         setLoading(true);
       }
+      setError(null);
       
       const response = await axios.post(
         'https://api.hikka.io/collections?page=1&size=10',
@@ -46,6 +48,10 @@ const CollectionSlider = React.memo(({ onRefresh }) => {
       setCollections(response.data.list);
     } catch (error) {
       console.error('Error fetching collections:', error);
+      // Якщо помилка 502, встановлюємо стан помилки
+      if (error.response?.status === 502) {
+        setError('502');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -78,7 +84,7 @@ const CollectionSlider = React.memo(({ onRefresh }) => {
     index,
   }), []);
 
-  if (loading) {
+  if (loading || error === '502') {
     return (
       <Container>
         <RowLineHeader

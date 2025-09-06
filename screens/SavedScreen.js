@@ -32,8 +32,10 @@ const SavedScreenNew = () => {
   const [pageIndex, setPageIndex] = useState(0);
   const [animeLists, setAnimeLists] = useState(Array(FILTERS.length).fill([]));
   const [loadingStates, setLoadingStates] = useState(Array(FILTERS.length).fill(false));
+  const [initialLoadStates, setInitialLoadStates] = useState(Array(FILTERS.length).fill(false));
   const [errorStates, setErrorStates] = useState(Array(FILTERS.length).fill(null));
-  const [sortOptions, setSortOptions] = useState(["watch_created:desc", "watch_score:desc"]);
+  const [sortOptions, setSortOptions] = useState(["watch_score:desc", "watch_created:desc"]);
+  const [isSortingLoading, setIsSortingLoading] = useState(false);
 
   // Створюємо routes для TabView
   const routes = FILTERS.map((filter, index) => ({
@@ -65,8 +67,9 @@ const SavedScreenNew = () => {
         showRandomAnime={(navigation) => showRandomAnime(navigation)}
         theme={theme}
         onRefreshData={onRefreshData}
-        isLoading={loadingStates[index] && animeLists[index].length === 0}
+        isLoading={loadingStates[index]}
         skeletonCount={5}
+        isSortingLoading={isSortingLoading}
         // Додаємо додаткову інформацію для улюблених аніме
         isFavouriteTab={FILTERS[index].type === 'favourite'}
       />
@@ -99,6 +102,11 @@ const SavedScreenNew = () => {
       setErrorStates(prev => {
         const arr = [...prev];
         arr[index] = null;
+        return arr;
+      });
+      setInitialLoadStates(prev => {
+        const arr = [...prev];
+        arr[index] = true;
         return arr;
       });
 
@@ -171,9 +179,9 @@ const SavedScreenNew = () => {
           }));
           
           // Застосовуємо клієнтське сортування для улюблених аніме
-          if (sortOptions.includes('watch_score:desc')) {
+          if (sortOptions[0] === 'watch_score:desc') {
             list.sort((a, b) => (b.score || 0) - (a.score || 0));
-          } else if (sortOptions.includes('watch_created:desc')) {
+          } else if (sortOptions[0] === 'watch_created:desc') {
             list.sort((a, b) => (b.favourite_created || 0) - (a.favourite_created || 0));
           }
         } else {
@@ -294,15 +302,11 @@ const SavedScreenNew = () => {
   };
 
   const toggleSort = () => {
+    setIsSortingLoading(true);
     const newSort = sortOptions[0] === "watch_score:desc"
       ? ["watch_created:desc", "watch_score:desc"]
       : ["watch_score:desc", "watch_created:desc"];
     setSortOptions(newSort);
-    
-    // Перезавантажуємо дані для поточного таба при зміні сортування
-    if (isAuthenticated && userData?.username) {
-      fetchList(pageIndex);
-    }
   };
 
   const showRandomAnime = (navigation) => {
@@ -332,7 +336,7 @@ const SavedScreenNew = () => {
   useEffect(() => {
     if (isAuthenticated && userData?.username) {
       // Завантажуємо дані тільки якщо їх ще немає
-      if (animeLists[pageIndex].length === 0) {
+      if (!initialLoadStates[pageIndex]) {
         fetchList(pageIndex);
       }
     }
@@ -342,10 +346,24 @@ const SavedScreenNew = () => {
   useEffect(() => {
     if (isAuthenticated && userData?.username) {
       FILTERS.forEach((_, index) => {
-        fetchList(index);
+        if (!initialLoadStates[index]) {
+          fetchList(index);
+        }
       });
     }
   }, [isAuthenticated, userData?.username]);
+
+  // Перезавантажуємо дані при зміні сортування
+  useEffect(() => {
+    if (isAuthenticated && userData?.username) {
+      FILTERS.forEach((_, index) => {
+        if (initialLoadStates[index]) {
+          fetchList(index);
+        }
+      });
+      setIsSortingLoading(false);
+    }
+  }, [sortOptions]);
 
   // Перевіряємо чи користувач авторизований
   if (!isAuthenticated) {

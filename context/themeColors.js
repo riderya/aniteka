@@ -1,5 +1,5 @@
 export const lightThemeColors = {
-  primary: '#9A60AC',
+  primary: '#E63946',
   background: '#ffffff',
   card: '#f9f9f9',
   text: '#080808',
@@ -29,7 +29,7 @@ export const lightThemeColors = {
 };
 
 export const darkThemeColors = {
-  primary: '#D46FFB',              // Яскравий акцент (фіолетовий)
+  primary: '#E63946',              // Яскравий акцент (червоний)
   background: '#080808',           // Головний темний фон
   card: '#121212',                 // Тло карток — трохи світліше
   text: '#F0F0F0',                 // Основний текст — майже білий
@@ -47,8 +47,8 @@ export const darkThemeColors = {
   transparentBackground: '#000000FC',       // Темний фон для ImageViewing
   transparentBackground70: 'rgba(5, 5, 5, 0.7)',
   disabled: '#2E2E2E',
-  skeletonBackground: '#2A2A2A',
-  skeletonShimmer: '#3A3A3A',
+  skeletonBackground: '#222222',
+  skeletonShimmer: '#333333',
   
   watching: '#43a047',
   planned: '#9575cd',

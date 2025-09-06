@@ -216,19 +216,54 @@ const CollectionDetailScreen = () => {
 
 const fetchCollection = async () => {
   const token = await SecureStore.getItemAsync('hikka_token');
+  
+  // Перевіряємо чи є reference
+  if (!reference) {
+    setLoading(false);
+    return;
+  }
+  
   try {
     const response = await axios.get(`https://api.hikka.io/collections/${reference}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Cookie: `auth=${token}`,
-      },
+      headers: { auth: token },
     });
     setCollection(response.data);
-    setVoteScore(response.data.vote_score);
-  } catch (error) {
+    setVoteScore(response.data.vote_score || 0);
     
+    // Якщо voteScore встановлено, скидаємо voteLoading
+    if (response.data.vote_score !== undefined) {
+      setVoteLoading(false);
+    }
+  } catch (error) {
+    console.error('Error fetching collection:', error);
+    
+    // Показуємо помилку користувачу
+    if (error.response?.status === 404) {
+      Toast.show({
+        type: 'error',
+        text1: 'Колекція не знайдена',
+        text2: 'Перевірте правильність посилання',
+      });
+    } else if (error.response?.status === 401) {
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка авторизації',
+        text2: 'Перевірте ваш токен доступу',
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка завантаження',
+        text2: 'Перевірте з\'єднання з інтернетом',
+      });
+    }
+    
+    // Скидаємо voteLoading при помилці
+    setVoteLoading(false);
   } finally {
     setLoading(false);
+    // Скидаємо voteLoading після завантаження
+    setVoteLoading(false);
   }
 };
 
@@ -236,20 +271,32 @@ const fetchCollection = async () => {
     const token = await SecureStore.getItemAsync('hikka_token');
     if (!token) return;
 
+    // Перевіряємо чи є reference
+    if (!reference) {
+      return;
+    }
+
     try {
       await axios.get(
         `https://api.hikka.io/favourite/collection/${reference}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Cookie: `auth=${token}`,
-          },
-        }
+        { headers: { auth: token } }
       );
       setIsFavourite(true);
     } catch (error) {
+      // If 404, it means not in favourites
+      if (error.response?.status === 404) {
+        setIsFavourite(false);
+      } else if (error.response?.status === 401) {
+        console.error('Unauthorized when checking favourite status:', error);
+        setIsFavourite(false);
+          } else {
+      console.error('Error checking favourite status:', error);
       setIsFavourite(false);
     }
+    
+    // Скидаємо voteLoading при помилці
+    setVoteLoading(false);
+  }
   };
 
   const toggleFavourite = async () => {
@@ -258,11 +305,20 @@ const fetchCollection = async () => {
     const token = await SecureStore.getItemAsync('hikka_token');
     if (!token) {
       Toast.show({
-        type: 'error',
-        text1: 'Потрібна авторизація',
-        text2: 'Щоб додати в улюблене, потрібно увійти в акаунт.',
+        type: 'info',
+        text1: 'Авторизуйтеся, будь ласка',
+        text2: 'Щоб додавати колекцію у улюблене, потрібно увійти в акаунт.',
         position: 'bottom',
         visibilityTime: 3000,
+      });
+      return;
+    }
+
+    // Перевіряємо чи є reference
+    if (!reference) {
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка при оновленні улюбленого',
       });
       return;
     }
@@ -272,7 +328,7 @@ const fetchCollection = async () => {
     try {
       if (isFavourite) {
         await axios.delete(`https://api.hikka.io/favourite/collection/${reference}`, {
-          headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
+          headers: { auth: token },
         });
         setIsFavourite(false);
         Toast.show({
@@ -281,7 +337,7 @@ const fetchCollection = async () => {
         });
       } else {
         await axios.put(`https://api.hikka.io/favourite/collection/${reference}`, {}, {
-          headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
+          headers: { auth: token },
         });
         setIsFavourite(true);
         Toast.show({
@@ -290,11 +346,30 @@ const fetchCollection = async () => {
         });
       }
     } catch (error) {
+      console.error('Error toggling favourite:', error);
       
-      Toast.show({
-        type: 'error',
-        text1: 'Помилка при оновленні улюбленого',
-      });
+      // Показуємо більш детальну помилку
+      if (error.response?.status === 401) {
+        Toast.show({
+          type: 'error',
+          text1: 'Помилка авторизації',
+          text2: 'Перевірте ваш токен доступу',
+        });
+      } else if (error.response?.status === 404) {
+        Toast.show({
+          type: 'error',
+          text1: 'Колекція не знайдена',
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Помилка при оновленні улюбленого',
+          text2: error.response?.data?.message || 'Спробуйте ще раз',
+        });
+      }
+      
+      // Скидаємо voteLoading при помилці
+      setVoteLoading(false);
     } finally {
       setFavouriteLoading(false);
     }
@@ -305,14 +380,16 @@ const checkVoteStatus = async () => {
   const token = await SecureStore.getItemAsync('hikka_token');
   if (!token) return;
 
+  // Перевіряємо чи є reference
+  if (!reference) {
+    return;
+  }
+
   try {
     const response = await axios.get(
       `https://api.hikka.io/vote/collection/${reference}`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Cookie: `auth=${token}`,
-        },
+        headers: { auth: token },
       }
     );
     if (response.data && typeof response.data.score === 'number') {
@@ -320,14 +397,28 @@ const checkVoteStatus = async () => {
     } else {
       setScore(0);
     }
+    
+    // Якщо voteScore ще не встановлено, встановлюємо його з колекції
+    if (collection && typeof collection.vote_score === 'number' && voteScore === 0) {
+      setVoteScore(collection.vote_score);
+    }
+    
+    // Скидаємо voteLoading після перевірки статусу
+    setVoteLoading(false);
   } catch (error) {
     // If 404, it means no vote exists yet
     if (error.response?.status === 404) {
       setScore(0);
+    } else if (error.response?.status === 401) {
+      console.error('Unauthorized when checking vote status:', error);
+      setScore(0);
     } else {
-      
+      console.error('Error checking vote status:', error);
       setScore(0);
     }
+    
+    // Скидаємо voteLoading після перевірки статусу
+    setVoteLoading(false);
   }
 };
 
@@ -337,11 +428,20 @@ const checkVoteStatus = async () => {
     const token = await SecureStore.getItemAsync('hikka_token');
     if (!token) {
       Toast.show({
-        type: 'error',
-        text1: 'Потрібна авторизація',
+        type: 'info',
+        text1: 'Авторизуйтеся, будь ласка',
         text2: 'Щоб голосувати, потрібно увійти в акаунт.',
         position: 'bottom',
         visibilityTime: 3000,
+      });
+      return;
+    }
+
+    // Перевіряємо чи є reference
+    if (!reference) {
+      Toast.show({
+        type: 'error',
+        text1: 'Помилка при голосуванні',
       });
       return;
     }
@@ -352,11 +452,34 @@ const checkVoteStatus = async () => {
       await axios.put(
         `https://api.hikka.io/vote/collection/${reference}`,
         { score: newScore },
-        {
-          headers: { Authorization: `Bearer ${token}`, Cookie: `auth=${token}` },
-        }
+        { headers: { auth: token } }
       );
-      setVoteScore(prev => prev - score + newScore);
+      
+      // Оновлюємо загальний рахунок локально
+      let newVoteScore = voteScore;
+      const currentScore = score || 0;
+      
+      if (currentScore === 1 && newScore === 0) {
+        // Було +1, стало 0 - віднімаємо 1
+        newVoteScore = voteScore - 1;
+      } else if (currentScore === -1 && newScore === 0) {
+        // Було -1, стало 0 - додаємо 1
+        newVoteScore = voteScore + 1;
+      } else if (currentScore === 0 && newScore === 1) {
+        // Було 0, стало +1 - додаємо 1
+        newVoteScore = voteScore + 1;
+      } else if (currentScore === 0 && newScore === -1) {
+        // Було 0, стало -1 - віднімаємо 1
+        newVoteScore = voteScore - 1;
+      } else if (currentScore === 1 && newScore === -1) {
+        // Було +1, стало -1 - віднімаємо 2
+        newVoteScore = voteScore - 2;
+      } else if (currentScore === -1 && newScore === 1) {
+        // Було -1, стало +1 - додаємо 2
+        newVoteScore = voteScore + 2;
+      }
+      
+      setVoteScore(newVoteScore);
       setScore(newScore);
 
       if (newScore === 1) {
@@ -376,11 +499,30 @@ const checkVoteStatus = async () => {
         });
       }
     } catch (error) {
+      console.error('Error voting:', error);
       
-      Toast.show({
-        type: 'error',
-        text1: 'Помилка при голосуванні',
-      });
+      // Показуємо більш детальну помилку
+      if (error.response?.status === 401) {
+        Toast.show({
+          type: 'error',
+          text1: 'Помилка авторизації',
+          text2: 'Перевірте ваш токен доступу',
+        });
+      } else if (error.response?.status === 404) {
+        Toast.show({
+          type: 'error',
+          text1: 'Колекція не знайдена',
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Помилка при голосуванні',
+          text2: error.response?.data?.message || 'Спробуйте ще раз',
+        });
+      }
+      
+      // Скидаємо voteLoading при помилці
+      setVoteLoading(false);
     } finally {
       setVoteLoading(false);
     }
@@ -428,11 +570,17 @@ const checkVoteStatus = async () => {
 useFocusEffect(
   useCallback(() => {
     const loadData = async () => {
-      await Promise.all([
-        fetchCollection(), 
-        checkIsFavourite(),
-        checkVoteStatus()
-      ]);
+      if (reference) {
+        try {
+          await Promise.all([
+            fetchCollection(), 
+            checkIsFavourite(),
+            checkVoteStatus()
+          ]);
+        } catch (error) {
+          console.error('Error loading collection data:', error);
+        }
+      }
     };
     loadData();
   }, [reference])
@@ -527,32 +675,38 @@ useFocusEffect(
             <HeaderButtonsContainer>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>  
                 <VoteButton
-                  active={score === 1}
-                  onPress={() => sendVote(score === 1 ? 0 : 1)}
+                  active={(score || 0) === 1}
+                  onPress={() => sendVote((score || 0) === 1 ? 0 : 1)}
                   theme={theme}
                   disabled={voteLoading}
+                  style={{ opacity: voteLoading ? 0.5 : 1 }}
                 >
                   <Ionicons 
                     name="chevron-up" 
                     size={24} 
-                    color={score === 1 
+                    color={(score || 0) === 1 
                       ? theme.colors.success 
                       : theme.colors.gray}
                   />
                 </VoteButton>
 
-                <VoteScoreText>{voteScore}</VoteScoreText>
+                {voteLoading ? (
+                  <ActivityIndicator size="small" color={theme.colors.gray} />
+                ) : (
+                  <VoteScoreText>{voteScore || 0}</VoteScoreText>
+                )}
 
                 <VoteButton
-                  active={score === -1}
-                  onPress={() => sendVote(score === -1 ? 0 : -1)}
+                  active={(score || 0) === -1}
+                  onPress={() => sendVote((score || 0) === -1 ? 0 : -1)}
                   theme={theme}
                   disabled={voteLoading}
+                  style={{ opacity: voteLoading ? 0.5 : 1 }}
                 >
                   <Ionicons 
                     name="chevron-down"
                     size={24} 
-                    color={score === -1
+                    color={(score || 0) === -1
                       ? theme.colors.error
                       : theme.colors.gray}
                   />
@@ -813,11 +967,6 @@ const DescriptionContainer = styled.View`
   padding: 12px;
   margin-bottom: 24px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  shadow-color: #000;
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.1;
-  shadow-radius: 4px;
-  elevation: 3;
 `;
 
 const ShowMoreButton = styled.TouchableOpacity`
@@ -892,11 +1041,6 @@ const HeaderBlock = styled.View`
   padding: 16px;
   margin-bottom: 16px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  shadow-color: #000;
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.1;
-  shadow-radius: 4px;
-  elevation: 3;
 `;
 
 const HeaderTitle = styled.Text`

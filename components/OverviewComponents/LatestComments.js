@@ -12,6 +12,7 @@ const LatestComments = React.memo(({ onRefresh }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const navigation = useNavigation();
   const { theme } = useTheme();
 
@@ -22,6 +23,7 @@ const LatestComments = React.memo(({ onRefresh }) => {
       } else {
         setLoading(true);
       }
+      setError(null);
       
       const response = await axios.get('https://api.hikka.io/comments/list');
       // Фільтруємо коментарі, виключаючи manga, novel та edit, і обмежуємо до 5
@@ -31,6 +33,10 @@ const LatestComments = React.memo(({ onRefresh }) => {
       setComments(filteredComments);
     } catch (error) {
       console.error('Error fetching comments:', error);
+      // Якщо помилка 502, встановлюємо стан помилки
+      if (error.response?.status === 502) {
+        setError('502');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -51,8 +57,8 @@ const LatestComments = React.memo(({ onRefresh }) => {
 
   return (
     <Container>
-      <RowLineHeader title="Коментарі" onPress={() => navigation.navigate('AnimeAllLatestCommentsScreen')} />
-      {loading ? (
+      <RowLineHeader title="Останні коментарі" onPress={() => navigation.navigate('AnimeAllLatestCommentsScreen')} />
+      {loading || error === '502' ? (
         <LatestCommentsSkeleton showIndex={false} />
       ) : refreshing ? (
         <LoadingContainer>
@@ -77,11 +83,11 @@ export default LatestComments;
 
 const Container = styled.View`
   flex-direction: column;
-  padding: 0 12px;
 `;
 
 const Column = styled.View`
   flex-direction: column;
+  padding: 0 12px;
 `;
 
 const LoadingContainer = styled.View`

@@ -41,7 +41,7 @@ const DaysValue = styled.Text`
 
 const ProgressBar = styled.View`
   height: 15px;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
+  background-color: ${({ theme }) => `${theme.colors.primary}20`};
   border-radius: 999px;
   overflow: hidden;
   margin-top: 8px;
@@ -84,7 +84,7 @@ const BarBackground = styled.View`
   position: absolute;
   width: 15px;
   height: 100%;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
+  background-color: ${({ theme }) => `${theme.colors.primary}20`};
   border-radius: 999px;
 `;
 

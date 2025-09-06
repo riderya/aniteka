@@ -64,7 +64,7 @@ export const NotificationsProvider = ({ children }) => {
     } else {
       setUnseenCount(0);
     }
-  }, [isAuthenticated, token, loadUnseenCount]);
+  }, [isAuthenticated, token]); // Видаляємо loadUnseenCount з залежностей
 
   const value = {
     unseenCount,
