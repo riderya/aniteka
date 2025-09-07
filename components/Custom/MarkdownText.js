@@ -41,8 +41,17 @@ const MarkdownText = ({
   const renderMarkdownText = (text) => {
     if (!text) return null;
 
-    // Використовуємо оригінальний текст без додаткової обробки
-    const cleanedText = text;
+    // Очищаємо зайві відступи після спойлерів
+    let cleanedText = text;
+    
+    // Видаляємо зайві переноси рядків та пробіли після спойлерів
+    cleanedText = cleanedText.replace(/:::\s*spoiler\s*\n?([\s\S]*?)\n?:::\s*\n+/g, (match, content) => {
+      // Видаляємо зайві переноси рядків після закриваючого :::
+      return `:::spoiler\n${content.trim()}\n:::`;
+    });
+    
+    // Видаляємо зайві переноси рядків на початку та в кінці тексту
+    cleanedText = cleanedText.trim();
 
     const parts = [];
     let currentIndex = 0;
@@ -54,9 +63,11 @@ const MarkdownText = ({
     const spoilerMatches = [];
     
     while ((spoilerMatch = spoilerRegex.exec(cleanedText)) !== null) {
+      // Очищаємо вміст спойлера від зайвих відступів
+      const spoilerContent = spoilerMatch[1].trim();
       spoilerMatches.push({
         type: 'spoiler',
-        text: spoilerMatch[1],
+        text: spoilerContent,
         start: spoilerMatch.index,
         end: spoilerMatch.index + spoilerMatch[0].length
       });
@@ -152,7 +163,7 @@ const MarkdownText = ({
       // Додаємо текст перед матчем
       if (match.start > lastIndex) {
         const plainText = processedText.slice(lastIndex, match.start);
-        if (plainText) {
+        if (plainText.trim()) {
           parts.push(
             <Text key={`text-${lastIndex}`} style={textStyle}>
               {plainText}
@@ -164,23 +175,16 @@ const MarkdownText = ({
              // Рендеримо матч
        switch (match.type) {
          case 'spoiler':
-           parts.push(
-             <Text key={`newline-before-${match.start}`} style={textStyle}>
-               {'\n'}
-             </Text>
-           );
-           parts.push(
+           parts.push({
+             type: 'spoiler',
+             element: (
               <InlineSpoiler
                 key={`spoiler-${match.start}`}
                 text={match.text}
                 textStyle={textStyle}
               />
-            );
-            parts.push(
-              <Text key={`newline-after-${match.start}`} style={textStyle}>
-                {'\n'}
-              </Text>
-            );
+            )
+           });
             break;
         case 'link':
           parts.push(
@@ -234,7 +238,7 @@ const MarkdownText = ({
     // Додаємо залишок тексту
     if (lastIndex < cleanedText.length) {
       const remainingText = cleanedText.slice(lastIndex);
-      if (remainingText) {
+      if (remainingText.trim()) {
         parts.push(
           <Text key={`text-${lastIndex}`} style={textStyle}>
             {remainingText}
@@ -263,9 +267,41 @@ const MarkdownText = ({
       );
     }
     
+    // Розділяємо елементи на групи: інлайн та блочні
+    const result = [];
+    let currentInlineGroup = [];
+    
+    markdownContent.forEach((part, index) => {
+      if (part.type === 'spoiler') {
+        // Якщо є накопичені інлайн елементи, додаємо їх як групу
+        if (currentInlineGroup.length > 0) {
+          result.push(
+            <Text key={`inline-${index}`} style={textStyle}>
+              {currentInlineGroup}
+            </Text>
+          );
+          currentInlineGroup = [];
+        }
+        // Додаємо спойлер як блочний елемент
+        result.push(part.element);
+      } else {
+        // Додаємо до поточної інлайн групи
+        currentInlineGroup.push(part);
+      }
+    });
+    
+    // Додаємо останню групу інлайн елементів, якщо вона є
+    if (currentInlineGroup.length > 0) {
+      result.push(
+        <Text key="inline-last" style={textStyle}>
+          {currentInlineGroup}
+        </Text>
+      );
+    }
+    
     return (
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-        {markdownContent}
+      <View>
+        {result}
       </View>
     );
   }
@@ -365,7 +401,7 @@ const InlineSpoiler = ({ text, textStyle }) => {
       // Додаємо текст перед матчем
       if (match.start > lastIndex) {
         const plainText = text.slice(lastIndex, match.start);
-        if (plainText) {
+        if (plainText.trim()) {
           parts.push(
             <Text key={`text-${lastIndex}`} style={textStyle}>
               {plainText}
@@ -434,7 +470,7 @@ const InlineSpoiler = ({ text, textStyle }) => {
     // Додаємо залишок тексту
     if (lastIndex < text.length) {
       const remainingText = text.slice(lastIndex);
-      if (remainingText) {
+      if (remainingText.trim()) {
         parts.push(
           <Text key={`text-${lastIndex}`} style={textStyle}>
             {remainingText}

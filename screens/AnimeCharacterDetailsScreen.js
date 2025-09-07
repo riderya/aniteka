@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { ActivityIndicator, ScrollView, FlatList, TouchableOpacity, Linking, View, Text } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import styled from 'styled-components/native';
@@ -242,6 +242,10 @@ const AnimeCharacterDetailsScreen = () => {
   const [novelList, setNovelList] = useState([]);
   const [voicesList, setVoicesList] = useState([]);
   const [isUpdatingLike, setIsUpdatingLike] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  
+  // Ref для debounce
+  const scrollTimeoutRef = useRef(null);
 
   useEffect(() => {
     const fetchCharacter = async () => {
@@ -365,6 +369,26 @@ const AnimeCharacterDetailsScreen = () => {
     }
   };
 
+  // Обробник скролу для показу/приховування кнопки з debounce
+  const handleScroll = useCallback((event) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    const threshold = 450; // Поріг скролу в пікселях
+    
+    // Очищуємо попередній таймаут
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    
+    // Додаємо невелику затримку для уникнення занадто частих оновлень
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (scrollY > threshold && !isScrolled) {
+        setIsScrolled(true);
+      } else if (scrollY <= threshold && isScrolled) {
+        setIsScrolled(false);
+      }
+    }, 50); // 50ms затримка
+  }, [isScrolled]);
+
   if (loading || !character) {
     return (
       <Container>
@@ -379,12 +403,17 @@ const AnimeCharacterDetailsScreen = () => {
   return (
     <Container>
         <BackButton top={12}/>
-        <LikeCharacterButton slug={slug} top={12}/>
+        <LikeCharacterButton slug={slug} top={12} isVisible={isScrolled}/>
 
-      <Content contentContainerStyle={{
-        paddingBottom: insets.bottom + 20,
-        paddingTop: insets.top + 12,
-       }}>
+      <Content 
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 20,
+          paddingTop: insets.top + 12,
+        }}
+        onScroll={handleScroll}
+        scrollEventThrottle={8}
+        showsVerticalScrollIndicator={false}
+      >
         <CharacterImageWrapper>
           <CharacterImage 
   source={

@@ -6,16 +6,19 @@ import { useWatchStatus } from '../../context/WatchStatusContext';
 const EpisodesCounter = ({ slug, episodes_total }) => {
   const { 
     status, 
-    episodes, 
-    setEpisodes,
     authToken,
     isAuthChecked,
     fetchAnimeStatus
   } = useWatchStatus();
 
+  // Локальний стан для episodes конкретного аніме
+  const [episodes, setEpisodes] = useState(null);
   const [duration, setDuration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingUpdate, setLoadingUpdate] = useState(false);
+  
+  // Кеш для збереження даних між рендерами
+  const [cachedData, setCachedData] = useState({});
 
   const allowedStatuses = [
     'Дивлюсь',
@@ -25,16 +28,31 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
     'Закинуто',
   ];
 
-  // Очищаємо episodes при зміні slug, щоб не залишалося значення від попереднього аніме
+  // Очищаємо локальний стан episodes при зміні slug
   useEffect(() => {
-    setEpisodes(null);
-  }, [slug, setEpisodes]);
+    // Перевіряємо кеш для цього slug
+    if (cachedData[slug]) {
+      setEpisodes(cachedData[slug].episodes);
+      setDuration(cachedData[slug].duration);
+      setLoading(false);
+    } else {
+      setEpisodes(null);
+      setDuration(null);
+      setLoading(true);
+    }
+  }, [slug, cachedData]);
 
   useEffect(() => {
     if (!isAuthChecked || !authToken) return;
 
     if (!allowedStatuses.includes(status)) {
       // Не виконуємо запит і не обнуляємо episodes, просто ховаємо компонент
+      setLoading(false);
+      return;
+    }
+
+    // Якщо дані вже є в кеші, не виконуємо запит
+    if (cachedData[slug]) {
       setLoading(false);
       return;
     }
@@ -48,15 +66,32 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
 
         if (res.ok) {
           const data = await res.json();
-          if (data.episodes !== null && data.episodes !== undefined) {
-            setEpisodes(data.episodes);
-          } else {
-            setEpisodes(null);
-          }
-          setDuration(data.duration);
+          const episodesData = data.episodes !== null && data.episodes !== undefined ? data.episodes : null;
+          const durationData = data.duration || null;
+          
+          setEpisodes(episodesData);
+          setDuration(durationData);
+          
+          // Зберігаємо в кеш
+          setCachedData(prev => ({
+            ...prev,
+            [slug]: {
+              episodes: episodesData,
+              duration: durationData
+            }
+          }));
         } else if (res.status === 404) {
           // Не скидаємо episodes (бо може це не існує в базі)
           setDuration(null);
+          
+          // Зберігаємо в кеш
+          setCachedData(prev => ({
+            ...prev,
+            [slug]: {
+              episodes: null,
+              duration: null
+            }
+          }));
         }
       } catch (error) {
         console.error('Episodes fetch error:', error);
@@ -66,7 +101,7 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
     };
 
     fetchWatch();
-  }, [authToken, status, slug, isAuthChecked]);
+  }, [authToken, status, slug, isAuthChecked, cachedData]);
 
   const statusApiMapping = {
     Дивлюсь: 'watching',
@@ -97,6 +132,16 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
 
       if (res.ok) {
         setEpisodes(newEpisodes);
+        
+        // Оновлюємо кеш
+        setCachedData(prev => ({
+          ...prev,
+          [slug]: {
+            ...prev[slug],
+            episodes: newEpisodes
+          }
+        }));
+        
         // Оновлюємо кеш статусу
         await fetchAnimeStatus(slug);
       }

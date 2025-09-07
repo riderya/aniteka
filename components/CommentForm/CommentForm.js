@@ -331,7 +331,7 @@ const BackgroundContainer = styled.View`
   left: 0;
   right: 0;
   background-color: ${({ theme }) => theme.colors.background};
-  z-index: 999;
+  z-index: 1;
 `;
 
 const Container = styled.View`

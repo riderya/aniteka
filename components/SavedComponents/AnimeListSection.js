@@ -126,10 +126,10 @@ const AnimeListSection = ({ animeList, sortOptions, toggleSort, showRandomAnime,
         <Center>
           <ImageContainer>
             <NotFoundImage 
-              source={require('../../assets/image/not-found.png')}
+              source={require('../../assets/image/not-found.webp')}
               resizeMode="contain"
             />
-            <EmptyText>Тут поки що пусто</EmptyText>
+            <EmptyText>Список порожній{'\n'}Додайте аніме до списку</EmptyText>
           </ImageContainer>
         </Center>
       ) : (
@@ -178,12 +178,12 @@ const ImageContainer = styled.View`
 `;
 
 const NotFoundImage = styled.Image`
-  width: 200px;
-  height: 200px;
+  width: 150px;
+  height: 150px;
 `;
 
 const EmptyText = styled.Text`
-  font-size: 16px;
+  font-size: 14px;
   color: #666;
   text-align: center;
 `;

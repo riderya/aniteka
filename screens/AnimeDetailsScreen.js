@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,9 +31,13 @@ const AnimeDetailsScreen = ({ route, navigation }) => {
   const [showMusicDivider, setShowMusicDivider] = useState(false);
   const [showStaffDivider, setShowStaffDivider] = useState(false);
   const [showNSFWModal, setShowNSFWModal] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { theme, isDark } = useTheme();
   const { authToken, isAuthChecked, fetchAnimeStatus, fetchAnimeFavourite } = useWatchStatus();
   const insets = useSafeAreaInsets();
+  
+  // Ref для debounce
+  const scrollTimeoutRef = useRef(null);
 
   useEffect(() => {
     const fetchAnimeDetails = async () => {
@@ -120,6 +124,26 @@ const AnimeDetailsScreen = ({ route, navigation }) => {
     setShowStaffDivider(isVisible);
   };
 
+  // Обробник скролу для показу/приховування кнопки з debounce
+  const handleScroll = useCallback((event) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    const threshold = 450; // Збільшуємо поріг для більш плавної роботи
+    
+    // Очищуємо попередній таймаут
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    
+    // Додаємо невелику затримку для уникнення занадто частих оновлень
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (scrollY > threshold && !isScrolled) {
+        setIsScrolled(true);
+      } else if (scrollY <= threshold && isScrolled) {
+        setIsScrolled(false);
+      }
+    }, 50); // 50ms затримка
+  }, [isScrolled]);
+
     // Якщо завантаження та немає даних, показуємо повний скелетон екрану
   if (isLoading && !anime) {
     return (
@@ -133,8 +157,13 @@ const AnimeDetailsScreen = ({ route, navigation }) => {
   return (
     <ScreenWrapper>
         <BackButton top={12} />
-        <LikeAnimeButtonAbsolute slug={slug} top={12} />
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
+        <LikeAnimeButtonAbsolute slug={slug} top={12} isVisible={isScrolled} />
+      <ScrollView 
+        contentContainerStyle={{ paddingBottom: insets.bottom }}
+        onScroll={handleScroll}
+        scrollEventThrottle={8}
+        showsVerticalScrollIndicator={false}
+      >
         <TopDetail anime={anime} isLoading={isLoading} />
         {anime && !isLoading && (
           <>

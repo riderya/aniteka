@@ -289,7 +289,7 @@ const PopularAnimeScreen = () => {
     return (
       <EmptyContainer>
         <EmptyImage 
-          source={require('../assets/image/not-found.png')} 
+          source={require('../assets/image/not-found.webp')} 
           resizeMode="contain" 
         />
         <EmptyText>Аніме не знайдено</EmptyText>

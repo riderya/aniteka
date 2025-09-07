@@ -91,7 +91,6 @@ const CommentFormContainer = styled.View`
 `;
 
 const OriginalCommentContainer = styled.View`
-  margin: 0px 12px;
   margin-bottom: 12px;
   padding: 16px;
   background-color: ${({ theme }) => theme.colors.card};

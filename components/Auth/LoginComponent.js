@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Text, Alert, ActivityIndicator, Image, View
+  Text, ActivityIndicator, Image, View, Platform
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import { openURL } from 'expo-linking';
 import styled from 'styled-components/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
@@ -19,6 +20,7 @@ const REDIRECT_URI = 'aniteka://';
 
 export default function LoginComponent({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
+  const [lastError, setLastError] = useState(null);
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { login, logout, token, userData, isAuthenticated } = useAuth();
@@ -28,23 +30,6 @@ export default function LoginComponent({ onLoginSuccess }) {
     return null;
   }
 
-  // Видаляємо Linking.addEventListener, оскільки WebBrowser.openAuthSessionAsync сам обробляє redirect
-  // useEffect(() => {
-  //   const subscription = Linking.addEventListener('url', (event) => {
-  //     console.log('Linking URL received:', event.url);
-  //     const { queryParams } = Linking.parse(event.url);
-  //     console.log('Parsed query params:', queryParams);
-      
-  //     if (queryParams?.reference && !loading) {
-  //       console.log('Processing token exchange with reference:', queryParams.reference);
-  //       handleTokenExchange(queryParams.reference);
-  //     }
-  //   });
-
-  //   return () => {
-  //     subscription?.remove();
-  //   };
-  // }, [loading]);
 
   // Автоматично приховуємо компонент, коли користувач вже авторизований
   useEffect(() => {
@@ -53,53 +38,86 @@ export default function LoginComponent({ onLoginSuccess }) {
     }
   }, [isAuthenticated, userData, onLoginSuccess, token]);
 
-  // Логуємо зміни в стані аутентифікації
+  // Обробка deep links для зовнішнього браузера
   useEffect(() => {
-    console.log('LoginComponent: Auth state changed:', { 
-      isAuthenticated, 
-      hasUserData: !!userData, 
-      hasToken: !!token,
-      username: userData?.username 
+    const subscription = Linking.addEventListener('url', (event) => {
+      const { queryParams } = Linking.parse(event.url);
+      
+      if (queryParams?.reference && !loading) {
+        handleTokenExchange(queryParams.reference);
+      }
     });
-  }, [isAuthenticated, userData, token]);
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [loading]);
+
+
+
+  const handleExternalBrowserLogin = async () => {
+    if (loading) return;
+    
+    const scope = HIKKA_SCOPES.join(',');
+    const authUrl = `https://hikka.io/oauth?reference=${CLIENT_ID}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    
+    
+    try {
+      await openURL(authUrl);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     if (loading) return; // Prevent multiple login attempts
+    setLastError(null); // Очищуємо попередні помилки
     
     const scope = HIKKA_SCOPES.join(',');
     const authUrl = `https://hikka.io/oauth?reference=${CLIENT_ID}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
-    console.log('Starting login process with URL:', authUrl);
     setLoading(true);
 
+    // Використовуємо різні методи для різних платформ
+    if (Platform.OS === 'android') {
+      // На Android використовуємо зовнішній браузер
+      await handleExternalBrowserLogin();
+      return;
+    }
+
+    // На iOS використовуємо внутрішній браузер
     try {
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, REDIRECT_URI);
-      console.log('WebBrowser result:', result);
+      const browserOptions = {
+        showTitle: false,
+        enableBarCollapsing: false,
+        showInRecents: false,
+        // Налаштування для iOS
+        preferredBarTintColor: '#000000',
+        preferredControlTintColor: '#ffffff',
+      };
+
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, REDIRECT_URI, browserOptions);
 
       if (result.type === 'success' && result.url) {
-        console.log('Success URL:', result.url);
         const { queryParams } = Linking.parse(result.url);
-        console.log('Parsed query params from success URL:', queryParams);
         const requestReference = queryParams?.reference;
 
         if (!requestReference) {
-          console.log('No request reference found in URL');
           setLoading(false);
           return;
         }
 
         // Використовуємо handleTokenExchange для обробки токена
-        console.log('Calling handleTokenExchange with reference:', requestReference);
         await handleTokenExchange(requestReference);
       } else if (result.type === 'cancel') {
-        console.log('User cancelled authorization');
+        console.log('Авторизацію скасовано');
       } else if (result.type === 'dismiss') {
-        console.log('User dismissed the browser');
+        console.log('Авторизацію скасовано');
       } else {
-        console.log('Unexpected result type:', result.type, 'Result:', result);
+        console.log('Помилка авторизації');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.log('Помилка авторизації:', error);
     } finally {
       setLoading(false);
     }
@@ -107,10 +125,7 @@ export default function LoginComponent({ onLoginSuccess }) {
 
   const handleTokenExchange = async (requestReference) => {
     try {
-      console.log('handleTokenExchange called with reference:', requestReference);
-      
       if (!requestReference) {
-        console.error('No request reference provided to handleTokenExchange');
         return;
       }
 
@@ -123,37 +138,27 @@ export default function LoginComponent({ onLoginSuccess }) {
         }),
       });
 
-      console.log('Token exchange response status:', response.status);
-      
       if (!response.ok) {
-        console.error('Token exchange failed with status:', response.status);
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
         return;
       }
 
       const data = await response.json();
-      console.log('Token exchange response data:', data);
 
       if (data.secret) {
-        console.log('Token exchange successful, calling login function');
         await login(data.secret);
         if (onLoginSuccess) {
-          console.log('Calling onLoginSuccess callback');
           onLoginSuccess();
         }
       } else {
-        console.log('No secret in token exchange response:', data);
       }
     } catch (error) {
-      console.error('Token exchange error:', error);
+      console.log('Помилка обробки токена:', error);
     }
   };
 
   const handleLogout = async () => {
     try {
       await logout();
-      // Після виходу компонент автоматично перерендериться і покаже форму логіну
     } catch (error) {
     }
   };
@@ -172,11 +177,8 @@ export default function LoginComponent({ onLoginSuccess }) {
             source={require('../../assets/image/welcome-login.webp')}
             style={{ width: 180, height: 180, resizeMode: 'contain' }}
           />
-          <Title>Ласкаво просимо до YummyAnimeList!</Title>
+          <Title>Ласкаво просимо до Aniteka!</Title>
           <Description>🎌 Авторизуйтесь, щоб отримати повний доступ до функцій додатка.</Description>
-          {isAuthenticated && userData && (
-            <StatusText>✅ Ви вже авторизовані як {userData.username}! Натисніть кнопку для повторної авторизації.</StatusText>
-          )}
           <Button onPress={handleLogin} disabled={loading}>
             {loading ? <ActivityIndicator color={theme.colors.background} /> : <ButtonText>Увійти</ButtonText>}
           </Button>
@@ -219,20 +221,12 @@ const Title = styled.Text`
   font-size: 24px;
   font-weight: bold;
   text-align: center;
-  margin-top: 16px;
 `;
 const Description = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: 16px;
   text-align: center;
   margin: 12px 0 24px;
-`;
-const StatusText = styled.Text`
-  color: ${({ theme }) => theme.colors.primary};
-  font-size: 14px;
-  text-align: center;
-  margin: 8px 0 16px;
-  font-weight: 500;
 `;
 const Button = styled.TouchableOpacity`
   width: 100%;

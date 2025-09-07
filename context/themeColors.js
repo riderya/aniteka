@@ -1,5 +1,5 @@
 export const lightThemeColors = {
-  primary: '#E63946',
+  primary: '#9B5571',
   background: '#ffffff',
   card: '#f9f9f9',
   text: '#080808',
@@ -29,7 +29,7 @@ export const lightThemeColors = {
 };
 
 export const darkThemeColors = {
-  primary: '#E63946',              // Яскравий акцент (червоний)
+  primary: '#9B5571',              // Яскравий акцент (червоний)
   background: '#080808',           // Головний темний фон
   card: '#121212',                 // Тло карток — трохи світліше
   text: '#F0F0F0',                 // Основний текст — майже білий

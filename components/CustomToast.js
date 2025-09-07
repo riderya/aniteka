@@ -58,7 +58,7 @@ const Container = styled.View`
   shadow-radius: 8px;
   elevation: 8;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  z-index: 9999;
+  z-index: 999;
 `;
 
 const IconContainer = styled.View`

@@ -375,7 +375,7 @@ const AnimeRowCard = React.memo(({
           {(anime.media_type || anime.type) && (
             <View style={styles.tag}>
               <Text style={styles.tagText}>
-                {(anime.media_type || anime.type) === 'tv' ? 'Сериал' : 
+                {(anime.media_type || anime.type) === 'tv' ? 'Серіал' : 
                  (anime.media_type || anime.type) === 'movie' ? 'Фільм' :
                  (anime.media_type || anime.type) === 'ova' ? 'OVA' :
                  (anime.media_type || anime.type) === 'ona' ? 'ONA' :

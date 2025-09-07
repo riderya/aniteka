@@ -40,8 +40,9 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
 
   const maxLines = useMemo(() => 5, []);
   const shouldShowToggle = React.useMemo(() => {
-    return (fullText.length > 200 || hasSpoilers(fullText)) && !isExpanded;
-  }, [fullText, isExpanded, hasSpoilers]);
+    // Показуємо кнопку тільки для довгих текстів (більше 200 символів)
+    return fullText.length > 200 && !isExpanded;
+  }, [fullText, isExpanded]);
 
   const handleNavigate = useCallback((item) => {
     const { content_type, preview } = item;
@@ -84,13 +85,13 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
 
   const renderMarkdownWithSpoilers = useCallback(() => {
     // Використовуємо оригінальний текст без додаткової обробки
-    let displayText = fullText;
+    let displayText = fullText.trimEnd(); // Прибираємо зайві пробіли та переноси в кінці
     
     // Додаємо ім'я користувача, на якого відповідаємо (якщо це відповідь)
     if (item.parentInfo && item.parentInfo.username) {
       const parentUsername = item.parentInfo.username;
       if (!fullText.startsWith(`@${parentUsername}`)) {
-        displayText = `@${parentUsername}, ${fullText}`;
+        displayText = `@${parentUsername}, ${displayText}`;
       }
     }
     
@@ -141,7 +142,7 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
       {showIndex && <CommentIndex>#{index + 1}</CommentIndex>}
       <CommentCard>
         <Row>
-          <TouchableOpacity onPress={handleUserPress} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+          <TouchableOpacity onPress={handleUserPress} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
             <Avatar source={{ uri: avatar }} />
             <View>
               <Username>{username}</Username>

@@ -41,24 +41,24 @@ const CurrentColorInfo = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
-  padding: 16px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
   background-color: ${({ theme }) => theme.colors.card};
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const CurrentColorLabel = styled.Text`
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text};
   margin-right: 12px;
 `;
 
 const CurrentColorPreview = styled.View`
-  width: 32px;
-  height: 32px;
-  border-radius: 16px;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
   background-color: ${({ color }) => color};
   border: 2px solid ${({ theme }) => theme.colors.border};
 `;
@@ -66,31 +66,31 @@ const CurrentColorPreview = styled.View`
 const Row = styled.View`
   flex-direction: row;
   justify-content: center;
-  padding: 16px 0;
+  padding: 12px 0;
   flex-wrap: wrap;
 `;
 
 const Circle = styled.View`
-  width: 48px;
-  height: 48px;
-  border-radius: 24px;
-  margin: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  margin: 6px;
   background-color: ${({ color }) => color};
-  border-width: ${({ active }) => (active ? 4 : 2)}px;
-  border-color: ${({ active }) => (active ? '#000' : 'rgba(0,0,0,0.1)')};
+  border-width: ${({ active }) => (active ? 3 : 2)}px;
+  border-color: ${({ active, theme }) => (active ? theme.colors.primary : theme.colors.border)};
   align-items: center;
   justify-content: center;
   shadow-color: #000;
-  shadow-offset: 0px 2px;
+  shadow-offset: 0px 1px;
   shadow-opacity: 0.1;
-  shadow-radius: 4px;
-  elevation: 3;
+  shadow-radius: 2px;
+  elevation: 2;
 `;
 
 const ActiveIndicator = styled.View`
-  width: 16px;
-  height: 16px;
-  border-radius: 8px;
-  background-color: #000;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background-color: ${({ theme }) => theme.colors.background};
   opacity: ${({ active }) => (active ? 1 : 0)};
 `;

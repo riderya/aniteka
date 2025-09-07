@@ -7,6 +7,11 @@ import { useTheme } from '../context/ThemeContext';
 import TabNavigator from './TabNavigator';
 import SearchScreen from '../screens/SearchScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import SecuritySettingsScreen from '../screens/SecuritySettingsScreen';
+import ProfileEditScreen from '../screens/ProfileEditScreen';
+import CustomizationScreen from '../screens/CustomizationScreen';
+import ListImportScreen from '../screens/ListImportScreen';
+import NotificationsSettingsScreen from '../screens/NotificationsSettingsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AnimeDetailsScreen from '../screens/AnimeDetailsScreen';
 import AnimeVideosScreen from '../screens/AnimeInfo/AnimeVideosScreen';
@@ -89,6 +94,11 @@ export default function RootNavigator() {
       <RootStack.Screen name="Tabs" component={TabNavigator} />
       <RootStack.Screen name="Search" component={SearchScreen} />
       <RootStack.Screen name="Settings" component={SettingsScreen} />
+      <RootStack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
+      <RootStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+      <RootStack.Screen name="Customization" component={CustomizationScreen} />
+      <RootStack.Screen name="ListImport" component={ListImportScreen} />
+      <RootStack.Screen name="NotificationsSettings" component={NotificationsSettingsScreen} />
       <RootStack.Screen name="Notifications" component={NotificationsScreen} />
       <RootStack.Screen name="AnimeDetails" component={AnimeDetailsScreen} />
       <RootStack.Screen name="AnimeVideosScreen" component={AnimeVideosScreen} />

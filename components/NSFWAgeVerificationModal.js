@@ -51,7 +51,7 @@ const NSFWAgeVerificationModal = ({ visible, onConfirm, onCancel }) => {
       <Overlay>
         <ModalContainer theme={theme}>
           <CharacterImage 
-            source={require('../assets/image/hikka-logo.jpg')}
+            source={require('../assets/image/warning.webp')}
             resizeMode="contain"
           />
           
@@ -87,28 +87,21 @@ const Overlay = styled.View`
   background-color: rgba(0, 0, 0, 0.5);
   justify-content: center;
   align-items: center;
-  padding: 20px;
 `;
 
 const ModalContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
-  border-radius: 20px;
   padding: 28px 24px;
   width: 100%;
-  max-width: 360px;
+  height: 100%;
   align-items: center;
-  shadow-color: #000;
-  shadow-offset: 0px 6px;
-  shadow-opacity: 0.3;
-  shadow-radius: 12px;
-  elevation: 12;
+  justify-content: center;
 `;
 
 const CharacterImage = styled.Image`
-  width: 140px;
-  height: 140px;
+  width: 150px;
+  height: 150px;
   margin-bottom: 24px;
-  border-radius: 70px;
 `;
 
 const TitleText = styled.Text`
@@ -138,14 +131,14 @@ const ButtonContainer = styled.View`
 const BackButton = styled.TouchableOpacity`
   flex: 1;
   padding: 16px 20px;
-  border-radius: 12px;
+  border-radius: 999px;
   border-width: 1.5px;
-  border-color: #ff4444;
+  border-color: ${({ theme }) => theme.colors.border};
   background-color: transparent;
 `;
 
 const BackButtonText = styled.Text`
-  color: #ff4444;
+  color: ${({ theme }) => theme.colors.gray};
   font-size: 16px;
   font-weight: 600;
   text-align: center;
@@ -154,12 +147,12 @@ const BackButtonText = styled.Text`
 const ConfirmButton = styled.TouchableOpacity`
   flex: 1;
   padding: 16px 20px;
-  border-radius: 12px;
-  background-color: #ff4444;
+  border-radius: 999px;
+  background-color: ${({ theme }) => theme.colors.primary};
 `;
 
 const ConfirmButtonText = styled.Text`
-  color: white;
+  color: ${({ theme }) => theme.colors.text};
   font-size: 16px;
   font-weight: 600;
   text-align: center;
@@ -167,8 +160,7 @@ const ConfirmButtonText = styled.Text`
 
 const DisclaimerText = styled.Text`
   font-size: 13px;
-  color: ${({ theme }) => theme.colors.textSecondary || '#888'};
+  color: ${({ theme }) => theme.colors.textSecondary};
   text-align: center;
   line-height: 18px;
-  padding-horizontal: 4px;
 `;

@@ -57,7 +57,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-web-browser",
+      [
+        "expo-web-browser",
+        {
+          "android": {
+            "package": "com.android.chrome"
+          }
+        }
+      ],
       "expo-asset",
       "expo-secure-store",
       "expo-image-picker",

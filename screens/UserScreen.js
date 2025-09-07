@@ -18,7 +18,6 @@ import UserCollectionsBlock from '../components/UserComponents/UserCollectionsBl
 import AnimeHistoryBlock from '../components/UserComponents/AnimeHistoryBlock';
 import FavoritesBlock from '../components/UserComponents/FavoritesBlock';
 import LoginComponent from '../components/Auth/LoginComponent';
-import AuthDebugger from '../components/Auth/AuthDebugger';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -540,7 +539,7 @@ const UserScreen = () => {
          return (
            <View style={{ paddingHorizontal: 12, marginTop: 20 }}>
              <ButtonsContainer>
-               <EditButton onPress={() => navigation.navigate('Settings', { fromEditProfile: true })} style={{ flex: 1 }}>
+               <EditButton onPress={() => navigation.navigate('ProfileEdit')} style={{ flex: 1 }}>
                  <EditButtonIconWrapper>
                    <Feather name="edit-3" size={20} color={theme.colors.text} />
                  </EditButtonIconWrapper>
@@ -636,11 +635,7 @@ const UserScreen = () => {
   if (!isAuthenticated && !authLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <AuthDebugger />
         <LoginComponent onLoginSuccess={() => {
-          console.log('UserScreen: Login success callback called');
-          // Після успішного входу, дані будуть автоматично оновлені через AuthContext
-          // Не потрібно викликати loadData тут
         }} />
       </View>
     );

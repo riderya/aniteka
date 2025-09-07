@@ -4,47 +4,44 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 
 const ToggleButton = styled.TouchableOpacity`
-  padding: 16px 24px;
-  background-color: ${({ theme }) => theme.colors.primary};
-  border-radius: 12px;
+  padding: 8px 16px;
+  background-color: ${({ theme }) => theme.colors.primary}20;
+  border: 1px solid ${({ theme }) => theme.colors.primary}40;
+  border-radius: 999px;
   align-items: center;
   justify-content: center;
   flex-direction: row;
-  shadow-color: #000;
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.1;
-  shadow-radius: 4px;
-  elevation: 3;
+  min-width: 100px;
 `;
 
 const ToggleButtonText = styled.Text`
-  color: white;
+  color: ${({ theme }) => theme.colors.primary};
   font-weight: 600;
-  font-size: 16px;
-  margin-left: 8px;
+  font-size: 14px;
+  margin-left: 6px;
 `;
 
 const ThemeIcon = styled.View`
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   align-items: center;
   justify-content: center;
 `;
 
 export const ThemeToggleButton = () => {
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, toggleTheme, theme } = useTheme();
 
   return (
     <ToggleButton onPress={toggleTheme} activeOpacity={0.8}>
       <ThemeIcon>
         <Ionicons 
           name={isDark ? 'sunny' : 'moon'} 
-          size={20} 
-          color="white" 
+          size={14} 
+          color={theme.colors.primary} 
         />
       </ThemeIcon>
       <ToggleButtonText>
-        {isDark ? 'Світла тема' : 'Темна тема'}
+        {isDark ? 'Світла' : 'Темна'}
       </ToggleButtonText>
     </ToggleButton>
   );

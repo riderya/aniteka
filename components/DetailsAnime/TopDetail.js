@@ -363,7 +363,7 @@ const TopDetail = ({ anime, isLoading = false }) => {
           <DescriptionTitle>Опис</DescriptionTitle>
           <DescriptionWrapper>
             <View style={{ 
-              maxHeight: expanded ? undefined : maxLines * 22, // maxLines * lineHeight
+              maxHeight: expanded ? undefined : maxLines * 20,
               overflow: 'hidden',
               position: 'relative'
             }}>
@@ -371,8 +371,8 @@ const TopDetail = ({ anime, isLoading = false }) => {
                 style={{
                   body: {
                     color: theme.colors.text,
-                    fontSize: 16,
-                    lineHeight: 22,
+                    fontSize: 14,
+                    lineHeight: 20,
                   },
                   link: {
                     color: theme.colors.primary,

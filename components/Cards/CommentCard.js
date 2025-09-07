@@ -233,8 +233,11 @@ const CommentCard = ({
 
   const maxLines = 5;
   const shouldShowToggle = React.useMemo(() => {
-    return (fullText.length > 200 || hasSpoilers(fullText)) && !isExpanded;
-  }, [fullText, isExpanded]); // 5 рядків * ~40 символів або є спойлери
+    // Показуємо кнопку коли є 2 рядки І спойлер
+    const hasSpoiler = hasSpoilers(fullText);
+    const isLongEnough = fullText.length > 100; // Зменшуємо поріг для 2 рядків
+    return isLongEnough && hasSpoiler && !isExpanded;
+  }, [fullText, isExpanded]);
 
 
 

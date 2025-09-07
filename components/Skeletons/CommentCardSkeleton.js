@@ -339,7 +339,6 @@ const ShimmerGradient = styled(Animated.View)`
 
 // Стилі для скелетону оригінального коментаря
 const SkeletonOriginalCommentContainer = styled.View`
-  margin: 12px;
   margin-bottom: 12px;
   padding: 16px;
   background-color: ${({ theme }) => theme.colors.card};

@@ -8,6 +8,40 @@ import GradientBlock from '../GradientBlock/GradientBlock';
 import { getTMDBBanner, getTMDBBannerByTitle, isTMDBConfigured } from '../../utils/tmdbUtils';
 import axios from 'axios';
 
+// Функція для отримання банеру з AniList
+const getAnilistBanner = async (mal_id) => {
+  if (!mal_id) return null;
+  
+  try {
+    const query = `
+      query ($mal_id: Int) {
+        Media(idMal: $mal_id, type: ANIME) {
+          bannerImage
+        }
+      }
+    `;
+
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables: { mal_id },
+      }),
+    });
+
+    const json = await response.json();
+    const bannerUrl = json?.data?.Media?.bannerImage || null;
+    return bannerUrl;
+  } catch (error) {
+    console.error('Error fetching AniList banner:', error);
+    return null;
+  }
+};
+
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -71,6 +105,7 @@ const HomeBannerSwiper = () => {
   const [genreWidths, setGenreWidths] = useState({});
   const [bannerUrls, setBannerUrls] = useState({});
   const [bannerStates, setBannerStates] = useState({}); // Стан завантаження банерів для кожного аніме
+  const [anilistBannerUrls, setAnilistBannerUrls] = useState({}); // URL банерів з AniList
   const navigation = useNavigation();
 
   const fetchAnime = async () => {
@@ -109,69 +144,78 @@ const HomeBannerSwiper = () => {
       const genres = Array.isArray(data.genres) ? data.genres.map(g => g.name_ua || g.name_en || '—') : ['—'];
       const description = data.synopsis_ua || data.synopsis_en || 'Опис відсутній';
       const tmdb_id = data.tmdb_id;
+      const mal_id = data.mal_id; // Додаємо mal_id для AniList
       const titleEn = data.title_en; // Використовуємо тільки англійську назву
 
       setAnimeDetails(prev => ({
         ...prev,
-        [slug]: { genres, description, tmdb_id },
+        [slug]: { genres, description, tmdb_id, mal_id },
       }));
 
       // Ініціалізуємо стан банерів для цього аніме
       setBannerStates(prev => ({
         ...prev,
-        [slug]: { tmdb: null }
+        [slug]: { tmdb: null, anilist: null }
       }));
 
       // Запускаємо завантаження TMDB банеру
-      fetchTMDBBanner(slug, tmdb_id, titleEn);
+      fetchTMDBBanner(slug, tmdb_id, titleEn, mal_id);
     } catch (error) {
       setAnimeDetails(prev => ({
         ...prev,
-        [slug]: { genres: ['—'], description: 'Опис відсутній', tmdb_id: null },
+        [slug]: { genres: ['—'], description: 'Опис відсутній', tmdb_id: null, mal_id: null },
       }));
     }
   };
 
-  // Функція для отримання банеру тільки з TMDB
-  const fetchTMDBBanner = async (slug, tmdb_id, title) => {
+  // Функція для отримання банеру з TMDB з fallback на AniList
+  const fetchTMDBBanner = async (slug, tmdb_id, title, mal_id) => {
     try {
-      if (!isTMDBConfigured()) {
-        setBannerStates(prev => ({
-          ...prev,
-          [slug]: { tmdb: false }
-        }));
-        return;
-      }
-
       let bannerUrl = null;
+      let bannerSource = null;
 
-      // Спочатку намагаємося за tmdb_id
-      if (tmdb_id) {
-        bannerUrl = await getTMDBBanner(tmdb_id, 'tv');
+      // Спочатку намагаємося отримати банер з TMDB
+      if (isTMDBConfigured()) {
+        // Спочатку намагаємося за tmdb_id
+        if (tmdb_id) {
+          bannerUrl = await getTMDBBanner(tmdb_id, 'tv');
+        }
+
+        // Якщо не знайшли за ID, намагаємося за англійською назвою
+        if (!bannerUrl && title) {
+          bannerUrl = await getTMDBBannerByTitle(title, 'tv');
+        }
+
+        if (bannerUrl) {
+          bannerSource = 'tmdb';
+        }
       }
 
-      // Якщо не знайшли за ID, намагаємося за англійською назвою
-      if (!bannerUrl && title) {
-        bannerUrl = await getTMDBBannerByTitle(title, 'tv');
-      } else if (!bannerUrl && !title) {
+      // Якщо TMDB не дав результату, намагаємося AniList
+      if (!bannerUrl && mal_id) {
+        bannerUrl = await getAnilistBanner(mal_id);
+        if (bannerUrl) {
+          bannerSource = 'anilist';
+        }
       }
 
       if (bannerUrl) {
         setBannerUrls(prev => ({ ...prev, [slug]: bannerUrl }));
         setBannerStates(prev => ({
           ...prev,
-          [slug]: { tmdb: true }
+          [slug]: { tmdb: bannerSource === 'tmdb', anilist: bannerSource === 'anilist' }
         }));
       } else {
+        console.log(`❌ No banner found for ${slug}`);
         setBannerStates(prev => ({
           ...prev,
-          [slug]: { tmdb: false }
+          [slug]: { tmdb: false, anilist: false }
         }));
       }
     } catch (error) {
       setBannerStates(prev => ({
         ...prev,
-        [slug]: { tmdb: false }
+        [slug]: { tmdb: false, anilist: false }
       }));
     }
   };
@@ -185,6 +229,7 @@ const HomeBannerSwiper = () => {
     const subscription = Dimensions.addEventListener('change', () => {
       setGenreWidths({});
       setBannerUrls({}); // Очищаємо також банерні URL
+      setAnilistBannerUrls({}); // Очищаємо AniList банерні URL
     });
 
     return () => subscription?.remove();

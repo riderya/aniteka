@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, StyleSheet, Pressable, Alert } from 'react-native';
+import { Text, View, StyleSheet, Pressable } from 'react-native';
 import styled from 'styled-components/native';
 import { FontAwesome } from '@expo/vector-icons';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { useWatchStatus } from '../../context/WatchStatusContext';
+import { useTheme } from '../../context/ThemeContext';
+import ModernAlert from '../Custom/ModernAlert';
 // import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'; // не використовується
 
 const statusApi = {
@@ -23,10 +25,14 @@ const STAR_COLOR_INACTIVE = '#666';
 
 const AnimeRating = ({ slug }) => {
   const { status, setStatus, score, setScore } = useWatchStatus();
+  const { theme } = useTheme();
   const [auth, setAuth] = useState(null);
   const [loading, setLoad] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Отримання токена
   useEffect(() => {
@@ -91,36 +97,27 @@ const AnimeRating = ({ slug }) => {
 
   const onDelete = async () => {
     if (!auth) return;
+    setShowDeleteAlert(true);
+  };
 
-    Alert.alert(
-      'Підтвердіть',
-      'Ви дійсно хочете видалити оцінку?',
-      [
-        { text: 'Скасувати', style: 'cancel' },
-        {
-          text: 'Видалити',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setDeleting(true);
-              const response = await axios.delete(`https://api.hikka.io/watch/${slug}`, {
-                headers: { auth },
-              });
-              if (response.status === 200 && response.data.success) {
-                setScore(0);
-              } else {
-                Alert.alert('Помилка', 'Не вдалося видалити оцінку');
-              }
-            } catch (e) {
-      
-              Alert.alert('Помилка', 'Не вдалося видалити оцінку');
-            } finally {
-              setDeleting(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteConfirm = async () => {
+    try {
+      setDeleting(true);
+      const response = await axios.delete(`https://api.hikka.io/watch/${slug}`, {
+        headers: { auth },
+      });
+      if (response.status === 200 && response.data.success) {
+        setScore(0);
+      } else {
+        setErrorMessage('Не вдалося видалити оцінку');
+        setShowErrorAlert(true);
+      }
+    } catch (e) {
+      setErrorMessage('Не вдалося видалити оцінку');
+      setShowErrorAlert(true);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const createStars = (isFullScreen = false) => Array.from({ length: 5 }, (_, i) => {
@@ -181,20 +178,47 @@ const AnimeRating = ({ slug }) => {
   }
 
   return (
-    <Block>
-      <Row>
-        <Avatar source={avatarUrl ? { uri: avatarUrl } : require('../../assets/image/welcome-login.webp')} />
-        <Stars>{stars}</Stars>
+    <>
+      <Block>
+        <Row>
+          <Avatar source={avatarUrl ? { uri: avatarUrl } : require('../../assets/image/welcome-login.webp')} />
+          <Stars>{stars}</Stars>
 
-        {score > 0 && (
-          <DeleteButton onPress={onDelete} disabled={deleting}>
-            <RowDelete>
-              <DeleteButtonText>{deleting ? 'Видаляємо...' : 'Видалити'}</DeleteButtonText>
-            </RowDelete>
-          </DeleteButton>
-        )}
-      </Row>
-    </Block>
+          {score > 0 && (
+            <DeleteButton onPress={onDelete} disabled={deleting}>
+              <RowDelete>
+                <DeleteButtonText>{deleting ? 'Видаляємо...' : 'Видалити'}</DeleteButtonText>
+              </RowDelete>
+            </DeleteButton>
+          )}
+        </Row>
+      </Block>
+
+      {/* Сучасний алерт для підтвердження видалення */}
+      <ModernAlert
+        visible={showDeleteAlert}
+        title="Підтвердіть"
+        message="Ви дійсно хочете видалити оцінку?"
+        theme={theme}
+        buttons={[
+          { text: 'Скасувати', style: 'cancel' },
+          { text: 'Видалити', style: 'destructive', onPress: handleDeleteConfirm },
+        ]}
+        onClose={() => setShowDeleteAlert(false)}
+      />
+
+      {/* Сучасний алерт для помилок */}
+      <ModernAlert
+        visible={showErrorAlert}
+        title="Помилка"
+        message={errorMessage}
+        theme={theme}
+        buttons={[
+          { text: 'OK', style: 'default' },
+        ]}
+        onClose={() => setShowErrorAlert(false)}
+      />
+    </>
   );
 };
 
