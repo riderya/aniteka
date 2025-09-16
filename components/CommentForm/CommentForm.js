@@ -4,7 +4,6 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
   Animated,
   Dimensions,
 } from 'react-native';
@@ -18,6 +17,7 @@ import RulesModal from './RulesModal';
 import { processCommentText } from '../../utils/textUtils';
 import Toast from 'react-native-toast-message';
 import toastConfig from '../CustomToast';
+import NotificationService from '../../services/NotificationService';
 
 const getAuthToken = async () => {
   const token = await SecureStore.getItemAsync('hikka_token');
@@ -214,83 +214,79 @@ export default function CommentForm({ content_type, slug, onCommentSent, current
 
   return (
     <>
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <BackgroundContainer theme={theme}>
-          <AnimatedContainer 
-            theme={theme}
-            insets={insets}
+      <BackgroundContainer theme={theme}>
+        <AnimatedContainer 
+          theme={theme}
+          insets={insets}
+          style={{
+            bottom: Platform.OS === 'ios' ? (keyboardVisible ? 12 : insets.bottom + 12) : containerBottom,
+            zIndex: 1000,
+          }}
+        >
+        
+        <RowTop theme={theme}>
+          <SpoilerToggleBar onPress={() => {
+            setModalVisible(true);
+          }}>
+            <SpoilerText>
+              {spoiler ? (
+                <>
+                  Містить <GrayText>спойлер</GrayText>
+                </>
+              ) : (
+                <>
+                  Не містить <GrayText>спойлер</GrayText>
+                </>
+              )}
+            </SpoilerText>
+          </SpoilerToggleBar>
+
+          <RulesButton onPress={() => {
+            setRulesModalVisible(true);
+          }}>
+            <FontAwesome name="clipboard" size={14} color={theme.colors.gray} />
+            <RulesText>Правила</RulesText>
+          </RulesButton>
+        </RowTop>
+
+        <Row theme={theme}>
+          <CommentInput
+            ref={inputRef}
+            placeholder={isReply ? `Відповідь на коментар ${parentComment?.author?.username ? `@${parentComment.author.username}` : 'користувача'}...` : "Ваш коментар"}
+            placeholderTextColor={theme.colors.gray}
+            multiline
+            value={comment}
+            onChangeText={setComment}
+            onKeyPress={handleKeyPress}
+            returnKeyType="default"
+            blurOnSubmit={false}
+            enablesReturnKeyAutomatically={false}
+            textAlignVertical="top"
+            keyboardAppearance={isDark ? 'dark' : 'light'}
             style={{
-              bottom: Platform.OS === 'ios' ? (keyboardVisible ? 12 : insets.bottom + 12) : containerBottom,
-              zIndex: 1000,
+              paddingTop: 12,
+              paddingBottom: 12,
+              backgroundColor: 'transparent',
+            }}
+          />
+
+          <SendButton
+            onPress={handleSend}
+            disabled={isCommentTooShort || isSending}
+            style={{ 
+              opacity: (isCommentTooShort || isSending) ? 0.5 : 1,
+              transform: [{ scale: isSending ? 0.9 : 1 }]
             }}
           >
-          
-          <RowTop theme={theme}>
-            <SpoilerToggleBar onPress={() => {
-              dismissKeyboard();
-              setModalVisible(true);
-            }}>
-              <SpoilerText>
-                {spoiler ? (
-                  <>
-                    Містить <GrayText>спойлер</GrayText>
-                  </>
-                ) : (
-                  <>
-                    Не містить <GrayText>спойлер</GrayText>
-                  </>
-                )}
-              </SpoilerText>
-            </SpoilerToggleBar>
-
-            <RulesButton onPress={() => {
-              dismissKeyboard();
-              setRulesModalVisible(true);
-            }}>
-              <FontAwesome name="clipboard" size={14} color={theme.colors.gray} />
-              <RulesText>Правила</RulesText>
-            </RulesButton>
-          </RowTop>
-
-          <Row theme={theme}>
-            <CommentInput
-              ref={inputRef}
-              placeholder={isReply ? `Відповідь на коментар ${parentComment?.author?.username ? `@${parentComment.author.username}` : 'користувача'}...` : "Ваш коментар"}
-              placeholderTextColor={theme.colors.gray}
-              multiline
-              value={comment}
-              onChangeText={setComment}
-              onKeyPress={handleKeyPress}
-              returnKeyType="default"
-              blurOnSubmit={false}
-              enablesReturnKeyAutomatically={false}
-              textAlignVertical="top"
-              keyboardAppearance={isDark ? 'dark' : 'light'}
-              style={{
-                paddingTop: 12,
-                paddingBottom: 12,
-                backgroundColor: 'transparent',
-              }}
+            <Ionicons
+              name={isSending ? "hourglass" : "send"}
+              size={26}
+              color={(isCommentTooShort || isSending) ? theme.colors.borderInput : theme.colors.gray}
             />
-
-            <SendButton
-              onPress={handleSend}
-              disabled={isCommentTooShort || isSending}
-              style={{ 
-                opacity: (isCommentTooShort || isSending) ? 0.5 : 1,
-                transform: [{ scale: isSending ? 0.9 : 1 }]
-              }}
-            >
-              <Ionicons
-                name={isSending ? "hourglass" : "send"}
-                size={26}
-                color={(isCommentTooShort || isSending) ? theme.colors.borderInput : theme.colors.gray}
-              />
-            </SendButton>
-          </Row>
-        </AnimatedContainer>
-        </BackgroundContainer>
-      </TouchableWithoutFeedback>
+          </SendButton>
+        </Row>
+      </AnimatedContainer>
+      </BackgroundContainer>
 
       {/* Модалка: Спойлер */}
       <Modal transparent visible={modalVisible} animationType="fade">
@@ -418,7 +414,7 @@ const ModalContainer = styled.View`
 const ModalContent = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
   padding: 20px;
-  border-radius: 36px;
+  border-radius: 32px;
   width: 90%;
 `;
 

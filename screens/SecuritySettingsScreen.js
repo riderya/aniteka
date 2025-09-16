@@ -234,7 +234,7 @@ const SecurityInfoDescription = styled.Text`
 const SecuritySettingsScreen = () => {
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
-  const { user } = useAuth();
+  const { logout } = useAuth();
   const insets = useSafeAreaInsets();
   
   // Стан для модальних вікон
@@ -253,6 +253,37 @@ const SecuritySettingsScreen = () => {
     } catch (err) {
       return null;
     }
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Вийти з облікового запису',
+      'Ви впевнені, що хочете вийти?',
+      [
+        { text: 'Скасувати', style: 'cancel' },
+        {
+          text: 'Вийти',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              Toast.show({
+                type: 'success',
+                text1: 'Готово',
+                text2: 'Ви вийшли з облікового запису'
+              });
+              navigation.goBack();
+            } catch (e) {
+              Toast.show({
+                type: 'error',
+                text1: 'Помилка',
+                text2: 'Не вдалося вийти'
+              });
+            }
+          },
+        },
+      ]
+    );
   };
 
   const fetchUserProfile = async () => {
@@ -305,8 +336,8 @@ const SecuritySettingsScreen = () => {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Видалення акаунту',
-      'Ви впевнені, що хочете видалити свій акаунт? Ця дія незворотна.',
+      'Видалення облікового запису',
+      'Ви впевнені, що хочете видалити свій обліковий запис? Ця дія незворотна.',
       [
         {
           text: 'Скасувати',
@@ -319,7 +350,7 @@ const SecuritySettingsScreen = () => {
             Toast.show({
               type: 'info',
               text1: 'Розробляється',
-              text2: 'Функція видалення акаунту буде доступна найближчим часом'
+              text2: 'Функція видалення облікового запису буде доступна найближчим часом'
             });
           },
         },
@@ -465,7 +496,7 @@ const SecuritySettingsScreen = () => {
               />
             </SecurityInfoIcon>
             <SecurityInfoText>
-              <SecurityInfoTitle>Безпека вашого акаунту</SecurityInfoTitle>
+              <SecurityInfoTitle>Безпека вашого облікового запису</SecurityInfoTitle>
               <SecurityInfoDescription>
                 Керуйте паролем, email та налаштуваннями безпеки для захисту свого профілю
               </SecurityInfoDescription>
@@ -536,7 +567,7 @@ const SecuritySettingsScreen = () => {
                 </SettingsIcon>
                 <SettingsText>
                   <SettingsTitle>Двофакторна автентифікація</SettingsTitle>
-                  <SettingsDescription>Додатковий захист вашого акаунту</SettingsDescription>
+                  <SettingsDescription>Додатковий захист вашого облікового запису</SettingsDescription>
                 </SettingsText>
               </SettingsItemLeft>
               <ArrowIcon>
@@ -559,7 +590,34 @@ const SecuritySettingsScreen = () => {
                 </SettingsIcon>
                 <SettingsText>
                   <SettingsTitle>Історія входів</SettingsTitle>
-                  <SettingsDescription>Переглянути останні входи в акаунт</SettingsDescription>
+                  <SettingsDescription>Переглянути останні входи в обліковий запис</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <ArrowIcon>
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={20} 
+                  color={theme.colors.textSecondary} 
+                />
+              </ArrowIcon>
+            </SettingsItem>
+          </Section>
+
+          <Section>
+            <SectionTitle>Обліковий запис</SectionTitle>
+            
+            <SettingsItem onPress={handleLogout}>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons 
+                    name="log-out-outline" 
+                    size={20} 
+                    color={theme.colors.primary} 
+                  />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Вийти з облікового запису</SettingsTitle>
+                  <SettingsDescription>Завершити поточну сесію</SettingsDescription>
                 </SettingsText>
               </SettingsItemLeft>
               <ArrowIcon>
@@ -585,8 +643,8 @@ const SecuritySettingsScreen = () => {
                   />
                 </SettingsIcon>
                 <SettingsText>
-                  <SettingsTitle style={{ color: '#ff4444' }}>Видалити акаунт</SettingsTitle>
-                  <SettingsDescription>Назавжди видалити свій акаунт та всі дані</SettingsDescription>
+                  <SettingsTitle style={{ color: '#ff4444' }}>Видалити обліковий запис</SettingsTitle>
+                  <SettingsDescription>Назавжди видалити свій обліковий запис та всі дані</SettingsDescription>
                 </SettingsText>
               </SettingsItemLeft>
               <ArrowIcon>

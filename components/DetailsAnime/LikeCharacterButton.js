@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +7,7 @@ import Toast from 'react-native-toast-message';
 import { useTheme } from '../../context/ThemeContext';
 import { useWatchStatus } from '../../context/WatchStatusContext';
 
-const LikeButtonWrapper = styled(Animated.createAnimatedComponent(TouchableOpacity))`
+const LikeButtonWrapper = styled(TouchableOpacity)`
   position: absolute;
   top: ${({ top, safeAreaTop }) => (top || 0) + safeAreaTop}px;
   left: ${({ left }) => left || 'auto'};
@@ -19,7 +19,7 @@ const LikeButtonWrapper = styled(Animated.createAnimatedComponent(TouchableOpaci
   border-radius: 16px;
   background-color: ${({ theme }) => theme.colors.background};
   border-width: 1px;
-  border-color: ${({ theme, liked }) => (liked === true ? theme.colors.favourite : theme.colors.border)};
+  border-color: ${({ theme }) => theme.colors.border};
   align-items: center;
   justify-content: center;
 `;
@@ -29,16 +29,12 @@ const StyledIcon = styled(Ionicons)`
   font-size: 24px;
 `;
 
-const LikeCharacterButton = ({ slug, top, left, right, bottom, isVisible = false }) => {
+const LikeCharacterButton = ({ slug, top, left, right, bottom }) => {
   const { top: safeAreaTop } = useSafeAreaInsets();
   const { theme } = useTheme();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  
-  // Анімаційні значення
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.6)).current;
 
   const {
     authToken,
@@ -50,38 +46,7 @@ const LikeCharacterButton = ({ slug, top, left, right, bottom, isVisible = false
 
   const liked = getCharacterFavourite(slug);
 
-  // Анімація появи/зникнення кнопки
-  useEffect(() => {
-    if (isVisible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 120,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 0.7,
-          tension: 100,
-          friction: 6,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [isVisible, fadeAnim, scaleAnim]);
+  
 
   useEffect(() => {
     // Чекаємо доки перевіриться токен
@@ -177,10 +142,6 @@ const LikeCharacterButton = ({ slug, top, left, right, bottom, isVisible = false
         safeAreaTop={safeAreaTop}
         liked={false}
         disabled={true}
-        style={{
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }],
-        }}
       >
         <ActivityIndicator size="small" color={theme.colors.textSecondary || '#fff'} />
       </LikeButtonWrapper>
@@ -198,10 +159,6 @@ const LikeCharacterButton = ({ slug, top, left, right, bottom, isVisible = false
       safeAreaTop={safeAreaTop}
       liked={liked}
       disabled={isUpdating}
-      style={{
-        opacity: fadeAnim,
-        transform: [{ scale: scaleAnim }],
-      }}
     >
       {isUpdating ? (
         <ActivityIndicator size="small" color={theme.colors.textSecondary || '#fff'} />

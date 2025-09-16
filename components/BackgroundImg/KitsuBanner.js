@@ -14,6 +14,7 @@ const KitsuBanner = ({ slug, height = 350, onLoaded }) => {
       return;
     }
 
+    let isActive = true;
     const fetchBanner = async () => {
       const cleanedSlug = slug.replace(/-[a-z0-9]{6}$/, '');
 
@@ -23,6 +24,7 @@ const KitsuBanner = ({ slug, height = 350, onLoaded }) => {
         const anime = json?.data?.[0];
         const url = anime?.attributes?.coverImage?.original;
 
+        if (!isActive) return;
         if (url) {
           setBannerUrl(url);
           setOffset(anime?.attributes?.coverImageTopOffset || 0);
@@ -32,8 +34,10 @@ const KitsuBanner = ({ slug, height = 350, onLoaded }) => {
         }
       } catch (err) {
         console.error('Error fetching Kitsu banner:', err);
+        if (!isActive) return;
         onLoaded?.(false);
       } finally {
+        if (!isActive) return;
         setLoading(false);
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -44,6 +48,9 @@ const KitsuBanner = ({ slug, height = 350, onLoaded }) => {
     };
 
     fetchBanner();
+    return () => {
+      isActive = false;
+    };
   }, [slug]);
 
   if (!bannerUrl) return null;

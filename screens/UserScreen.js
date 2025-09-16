@@ -7,8 +7,7 @@ import { Ionicons, Feather } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import toastConfig from '../components/CustomToast';
-
-
+import Header from '../components/Header/Header';
 import UserAvatar from '../components/UserComponents/UserAvatar';
 import FollowStatsBlock from '../components/UserComponents/FollowStatsBlock';
 import UserActivityBlock from '../components/UserComponents/UserActivityBlock';
@@ -53,8 +52,6 @@ const EditButton = styled.TouchableOpacity`
   justify-content: center;
 `;
 
-
-
 const ButtonsContainer = styled.View`
   flex-direction: row;
   align-items: center;
@@ -84,8 +81,6 @@ const LoadingContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-
-
 const LoadingText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: 16px;
@@ -93,36 +88,9 @@ const LoadingText = styled.Text`
   font-weight: 500;
 `;
 
-const ErrorContainer = styled.View`
-  flex: 1;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  background-color: ${({ theme }) => theme.colors.background};
-`;
-
 const Container = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
-`;
-
-const ErrorText = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 16px;
-  text-align: center;
-  margin-bottom: 20px;
-`;
-
-const RetryButton = styled.TouchableOpacity`
-  background-color: ${({ theme }) => theme.colors.primary};
-  padding: 12px 24px;
-  border-radius: 8px;
-`;
-
-const RetryButtonText = styled.Text`
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 16px;
 `;
 
 const ProfileActionButtonsContainer = styled.View`
@@ -140,7 +108,7 @@ const ActionButtonsScrollView = styled.ScrollView.attrs({
 
 const ActionButton = styled.TouchableOpacity`
   background-color: ${({ theme, isActive }) => 
-    isActive ? theme.colors.primary : theme.colors.card};
+    isActive ? `${theme.colors.primary}20` : theme.colors.card};
   padding: 12px 20px;
   border-radius: 25px;
   margin-right: 12px;
@@ -154,7 +122,7 @@ const ActionButton = styled.TouchableOpacity`
 
 const ActionButtonText = styled.Text`
   color: ${({ theme, isActive }) => 
-    isActive ? '#ffffff' : theme.colors.text};
+    isActive ? `${theme.colors.primary}` : theme.colors.text};
   font-size: 14px;
   font-weight: 600;
 `;
@@ -460,7 +428,7 @@ const UserScreen = () => {
                 <Ionicons 
                   name="stats-chart" 
                   size={16} 
-                  color={activeTab === 'statistics' ? '#ffffff' : theme.colors.text} 
+                  color={activeTab === 'statistics' ? `${theme.colors.primary}` : theme.colors.text} 
                 />
                 <ActionButtonText isActive={activeTab === 'statistics'}>
                   Статистика
@@ -474,7 +442,7 @@ const UserScreen = () => {
                 <Ionicons 
                   name="list" 
                   size={16} 
-                  color={activeTab === 'animeList' ? '#ffffff' : theme.colors.text} 
+                  color={activeTab === 'animeList' ? `${theme.colors.primary}` : theme.colors.text} 
                 />
                 <ActionButtonText isActive={activeTab === 'animeList'}>
                   Список аніме
@@ -488,7 +456,7 @@ const UserScreen = () => {
                 <Ionicons 
                   name="heart" 
                   size={16} 
-                  color={activeTab === 'favorites' ? '#ffffff' : theme.colors.text} 
+                  color={activeTab === 'favorites' ? `${theme.colors.primary}` : theme.colors.text} 
                 />
                 <ActionButtonText isActive={activeTab === 'favorites'}>
                   Улюблені
@@ -502,7 +470,7 @@ const UserScreen = () => {
                 <Ionicons 
                   name="folder" 
                   size={16} 
-                  color={activeTab === 'collections' ? '#ffffff' : theme.colors.text} 
+                  color={activeTab === 'collections' ? `${theme.colors.primary}` : theme.colors.text} 
                 />
                 <ActionButtonText isActive={activeTab === 'collections'}>
                   Колекції
@@ -516,7 +484,7 @@ const UserScreen = () => {
                  <Ionicons 
                    name="time" 
                    size={16} 
-                   color={activeTab === 'history' ? '#ffffff' : theme.colors.text} 
+                   color={activeTab === 'history' ? `${theme.colors.primary}` : theme.colors.text} 
                  />
                  <ActionButtonText isActive={activeTab === 'history'}>
                    Історія
@@ -662,6 +630,7 @@ const UserScreen = () => {
 
   return (
     <>
+      <Header />
       <Container theme={theme}>
         <FlatList
           key={`user-${(authUserData?.username || userData?.username || 'unknown')}`}

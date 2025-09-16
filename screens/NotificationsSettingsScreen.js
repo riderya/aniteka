@@ -14,8 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useTheme } from '../context/ThemeContext';
+import { useNotifications } from '../context/NotificationsContext';
 import { PlatformBlurView } from '../components/Custom/PlatformBlurView';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
+import NotificationService from '../services/NotificationService';
 
 const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
 
@@ -23,25 +25,72 @@ export default function NotificationsSettingsScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const { expoPushToken, initializeNotifications, checkNotificationsManually, isWifiConnected } = useNotifications();
   
   const [settings, setSettings] = useState({
+    // Загальні
     pushNotifications: true,
-    animeUpdates: true,
-    comments: true,
-    social: true,
     sound: true,
     vibration: true,
+
+    // Аніме
+    animeUpdates: true,
+
+    // Коментарі
+    commentReply: true,
+    commentMention: true,
+    commentInCollection: true,
+    commentInArticle: true,
+    commentInWork: true,
+
+    // Оцінки
+    ratingComment: true,
+    ratingCollection: true,
+    ratingArticle: true,
+
+    // Правки
+    editAccepted: true,
+    editRejected: true,
+
+    // Користувачі
+    userSubscribe: true,
+    userLike: true,
+
+    // Інше
+    systemUpdates: true,
   });
+  const [permissionStatus, setPermissionStatus] = useState(null);
 
   useEffect(() => {
     loadSettings();
+    // Перевіряємо дозвіл при завантаженні
+    checkPermissionStatus();
+    
+    // Періодично перевіряємо статус дозволу
+    const interval = setInterval(checkPermissionStatus, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
+
+  const checkPermissionStatus = async () => {
+    try {
+      const hasPermission = await NotificationService.checkPermissions();
+      setPermissionStatus(hasPermission);
+      if (!hasPermission && settings.pushNotifications) {
+        // Якщо пуш-повідомлення увімкнені але дозволу немає, показуємо попередження
+        console.log('Пуш-повідомлення увімкнені, але дозволу немає');
+      }
+    } catch (error) {
+      console.error('Помилка перевірки дозволу:', error);
+      setPermissionStatus(false);
+    }
+  };
 
   const loadSettings = async () => {
     try {
-      const savedSettings = await AsyncStorage.getItem(NOTIFICATION_SETTINGS_KEY);
+      const savedSettings = await NotificationService.getNotificationSettings();
       if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
+        setSettings(savedSettings);
       }
     } catch (error) {
       console.error('Error loading notification settings:', error);
@@ -50,16 +99,65 @@ export default function NotificationsSettingsScreen() {
 
   const saveSettings = async (newSettings) => {
     try {
-      await AsyncStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(newSettings));
-      setSettings(newSettings);
+      const success = await NotificationService.saveNotificationSettings(newSettings);
+      if (success) {
+        setSettings(newSettings);
+      } else {
+        Alert.alert('Помилка', 'Не вдалося зберегти налаштування');
+      }
     } catch (error) {
       console.error('Error saving notification settings:', error);
       Alert.alert('Помилка', 'Не вдалося зберегти налаштування');
     }
   };
 
-  const toggleSetting = (key) => {
+  const requestNotificationPermission = async () => {
+    try {
+      const hasPermission = await NotificationService.requestPermissions();
+      setPermissionStatus(hasPermission);
+      if (hasPermission) {
+        Alert.alert(
+          'Дозвіл надано!',
+          'Тепер ви будете отримувати пуш-повідомлення.',
+          [{ text: 'OK' }]
+        );
+        // Перезапускаємо ініціалізацію для отримання токену
+        await initializeNotifications();
+      } else {
+        Alert.alert(
+          'Дозвіл відхилено',
+          'Для отримання пуш-повідомлень потрібен дозвіл. Ви можете увімкнути його в налаштуваннях пристрою.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Помилка запиту дозволу:', error);
+      setPermissionStatus(false);
+      Alert.alert('Помилка', 'Не вдалося запитати дозвіл на сповіщення.');
+    }
+  };
+
+  const toggleSetting = async (key) => {
     const newSettings = { ...settings, [key]: !settings[key] };
+    
+    // Якщо увімкнюємо пуш-повідомлення і дозволу немає, запитуємо його
+    if (key === 'pushNotifications' && newSettings.pushNotifications && !expoPushToken) {
+      const hasPermission = await NotificationService.requestPermissions();
+      setPermissionStatus(hasPermission);
+      if (!hasPermission) {
+        // Якщо дозвіл не надано, не змінюємо налаштування
+        Alert.alert(
+          'Дозвіл потрібен',
+          'Для увімкнення пуш-повідомлень потрібен дозвіл. Ви можете надати його пізніше.',
+          [{ text: 'OK' }]
+        );
+        return;
+      } else {
+        // Якщо дозвіл надано, перезапускаємо ініціалізацію
+        await initializeNotifications();
+      }
+    }
+    
     saveSettings(newSettings);
   };
 
@@ -75,11 +173,22 @@ export default function NotificationsSettingsScreen() {
           onPress: () => {
             const defaultSettings = {
               pushNotifications: true,
-              animeUpdates: true,
-              comments: true,
-              social: true,
               sound: true,
               vibration: true,
+              animeUpdates: true,
+              commentReply: true,
+              commentMention: true,
+              commentInCollection: true,
+              commentInArticle: true,
+              commentInWork: true,
+              ratingComment: true,
+              ratingCollection: true,
+              ratingArticle: true,
+              editAccepted: true,
+              editRejected: true,
+              userSubscribe: true,
+              userLike: true,
+              systemUpdates: true,
             };
             saveSettings(defaultSettings);
           },
@@ -152,11 +261,204 @@ export default function NotificationsSettingsScreen() {
                 thumbColor={settings.vibration ? theme.colors.primary : theme.colors.textSecondary}
               />
             </SettingsItem>
+
           </Section>
 
           <Section>
-            <SectionTitle>Типи сповіщень</SectionTitle>
-            
+            <SectionTitle>Коментарі</SectionTitle>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="arrow-undo" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Відповідь на коментар</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли на ваш коментар відповіли</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.commentReply}
+                onValueChange={() => toggleSetting('commentReply')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.commentReply ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="at" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Згадка в коментарі</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли вас згадали у коментарі</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.commentMention}
+                onValueChange={() => toggleSetting('commentMention')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.commentMention ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="albums" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Коментар у колекції</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли у вашій колекції залишили коментар</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.commentInCollection}
+                onValueChange={() => toggleSetting('commentInCollection')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.commentInCollection ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="document-text" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Коментар у статті</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли у вашій статті залишили коментар</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.commentInArticle}
+                onValueChange={() => toggleSetting('commentInArticle')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.commentInArticle ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="briefcase" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Коментар у праці</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли у вашій праці залишили коментар</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.commentInWork}
+                onValueChange={() => toggleSetting('commentInWork')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.commentInWork ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+          </Section>
+
+          <Section>
+            <SectionTitle>Оцінки</SectionTitle>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="star" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Оцінка коментаря</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли ваш коментар оцінили</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.ratingComment}
+                onValueChange={() => toggleSetting('ratingComment')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.ratingComment ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="folder" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Оцінка колекції</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли вашу колекцію оцінили</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.ratingCollection}
+                onValueChange={() => toggleSetting('ratingCollection')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.ratingCollection ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="newspaper" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Оцінка статті</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли вашу статтю оцінили</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.ratingArticle}
+                onValueChange={() => toggleSetting('ratingArticle')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.ratingArticle ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+          </Section>
+
+          <Section>
+            <SectionTitle>Правки</SectionTitle>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="checkmark-done" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Прийнята правка</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли вашу правку прийнято</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.editAccepted}
+                onValueChange={() => toggleSetting('editAccepted')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.editAccepted ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="close-circle" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Відхилена правка</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли вашу правку відхилено</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.editRejected}
+                onValueChange={() => toggleSetting('editRejected')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.editRejected ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+          </Section>
+
+          <Section>
+            <SectionTitle>Аніме</SectionTitle>
+
             <SettingsItem>
               <SettingsItemLeft>
                 <SettingsIcon>
@@ -164,7 +466,7 @@ export default function NotificationsSettingsScreen() {
                 </SettingsIcon>
                 <SettingsText>
                   <SettingsTitle>Оновлення аніме</SettingsTitle>
-                  <SettingsDescription>Сповіщення про нові епізоди та оновлення розкладу</SettingsDescription>
+                  <SettingsDescription>Отримувати сповіщення про вихід нових епізодів</SettingsDescription>
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
@@ -174,40 +476,66 @@ export default function NotificationsSettingsScreen() {
                 thumbColor={settings.animeUpdates ? theme.colors.primary : theme.colors.textSecondary}
               />
             </SettingsItem>
+          </Section>
+
+          <Section>
+            <SectionTitle>Користувачі</SectionTitle>
 
             <SettingsItem>
               <SettingsItemLeft>
                 <SettingsIcon>
-                  <Ionicons name="chatbubbles" size={20} color={theme.colors.primary} />
+                  <Ionicons name="person-add" size={20} color={theme.colors.primary} />
                 </SettingsIcon>
                 <SettingsText>
-                  <SettingsTitle>Коментарі</SettingsTitle>
-                  <SettingsDescription>Сповіщення про нові коментарі та відповіді</SettingsDescription>
+                  <SettingsTitle>Підписка на користувача</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення, коли хтось підписався на вас</SettingsDescription>
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.comments}
-                onValueChange={() => toggleSetting('comments')}
+                value={settings.userSubscribe}
+                onValueChange={() => toggleSetting('userSubscribe')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.comments ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={settings.userSubscribe ? theme.colors.primary : theme.colors.textSecondary}
               />
             </SettingsItem>
 
             <SettingsItem>
               <SettingsItemLeft>
                 <SettingsIcon>
-                  <Ionicons name="people" size={20} color={theme.colors.primary} />
+                  <Ionicons name="heart" size={20} color={theme.colors.primary} />
                 </SettingsIcon>
                 <SettingsText>
-                  <SettingsTitle>Соціальні</SettingsTitle>
-                  <SettingsDescription>Сповіщення про підписки, лайки та інші соціальні дії</SettingsDescription>
+                  <SettingsTitle>Вподобання</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення про нові вподобання</SettingsDescription>
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.social}
-                onValueChange={() => toggleSetting('social')}
+                value={settings.userLike}
+                onValueChange={() => toggleSetting('userLike')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.social ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={settings.userLike ? theme.colors.primary : theme.colors.textSecondary}
+              />
+            </SettingsItem>
+          </Section>
+
+          <Section>
+            <SectionTitle>Інше</SectionTitle>
+
+            <SettingsItem>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="notifications" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Системні сповіщення</SettingsTitle>
+                  <SettingsDescription>Отримувати сповіщення про системні зміни</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Switch
+                value={settings.systemUpdates}
+                onValueChange={() => toggleSetting('systemUpdates')}
+                trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
+                thumbColor={settings.systemUpdates ? theme.colors.primary : theme.colors.textSecondary}
               />
             </SettingsItem>
           </Section>
@@ -228,6 +556,23 @@ export default function NotificationsSettingsScreen() {
               <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
             </SettingsItem>
 
+            <SettingsItem onPress={requestNotificationPermission}>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="shield-checkmark" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Запитати дозвіл на сповіщення</SettingsTitle>
+                  <SettingsDescription>
+                    {permissionStatus === true ? '✅ Дозвіл надано' : 
+                     permissionStatus === false ? '❌ Потрібен дозвіл для пуш-повідомлень' : 
+                     '⏳ Перевірка статусу...'}
+                  </SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+            </SettingsItem>
+
             <SettingsItem onPress={() => navigation.navigate('Notifications')}>
               <SettingsItemLeft>
                 <SettingsIcon>
@@ -240,12 +585,32 @@ export default function NotificationsSettingsScreen() {
               </SettingsItemLeft>
               <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
             </SettingsItem>
+
+            <SettingsItem onPress={checkNotificationsManually}>
+              <SettingsItemLeft>
+                <SettingsIcon>
+                  <Ionicons name="refresh" size={20} color={theme.colors.primary} />
+                </SettingsIcon>
+                <SettingsText>
+                  <SettingsTitle>Перевірити зараз</SettingsTitle>
+                  <SettingsDescription>Миттєва перевірка нових сповіщень</SettingsDescription>
+                </SettingsText>
+              </SettingsItemLeft>
+              <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+            </SettingsItem>
+
           </Section>
 
           <InfoContainer>
             <InfoText>
-              💡 Налаштування сповіщень зберігаються локально на вашому пристрої. 
-              Для повноцінних push-сповіщень потрібен development build.
+              💡 Налаштування сповіщень зберігаються локально на вашому пристрої.
+              {'\n\n'}🔔 Для отримання пуш-повідомлень потрібен дозвіл від системи.
+              {'\n\n'}📱 Натисніть "Запитати дозвіл на сповіщення" щоб увімкнути пуш-повідомлення.
+              {'\n\n'}📶 Оптимізовані інтервали:
+              {'\n'}• WiFi: перевірка кожні 20 секунд
+              {'\n'}• Мобільний: перевірка кожні 45 секунд
+              {'\n'}• Неактивний: перевірка кожні 3 хвилини
+              {permissionStatus === true && '\n\n✅ Push-повідомлення налаштовані та готові до роботи!'}
             </InfoText>
           </InfoContainer>
         </ContentScroll>

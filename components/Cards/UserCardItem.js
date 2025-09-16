@@ -3,10 +3,17 @@ import styled from 'styled-components/native';
 import { TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useTheme } from '../../context/ThemeContext';
 
 const Card = styled.View`
   flex-direction: row;
   margin-bottom: 20px;
+`;
+
+const AvatarWrapper = styled.View`
+  position: relative;
+  overflow: visible;
 `;
 
 const UserImage = styled.Image`
@@ -16,15 +23,39 @@ const UserImage = styled.Image`
   background-color: ${({ theme }) => theme.colors.card};
 `;
 
+const StatusCircle = styled.View`
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background-color: ${({ active }) => (active ? '#16a34a' : '#94a3b8')};
+  border-width: 3px;
+  border-color: ${({ theme }) => theme.colors.background};
+`;
+
 const Info = styled.View`
   padding-left: 12px;
   width: 78%;
+`;
+
+const UsernameContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 `;
 
 const Username = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ fontSize }) => fontSize || '16px'};
   font-weight: bold;
+`;
+
+const UserBadge = styled.View`
+  background-color: ${({ theme }) => `${theme.colors.primary}20`};
+  padding: 4px 8px;
+  border-radius: 12px;
 `;
 
 const Description = styled.Text`
@@ -50,6 +81,28 @@ const StyledDot = styled(FontAwesome)`
   font-size: 4px;
 `;
 
+// Function to render role icon
+const getRoleIcon = (role, theme) => {
+  switch (role?.toLowerCase()) {
+    case 'admin':
+    case 'адмін':
+    case 'administrator':
+      return <MaterialIcons name="admin-panel-settings" size={16} color={theme.colors.primary} />;
+    case 'moderator':
+    case 'модератор':
+    case 'mod':
+      return <MaterialIcons name="verified-user" size={16} color="#ffffff" />;
+    default:
+      return null; // Для звичайних користувачів нічого не показуємо
+  }
+};
+
+// Function to check if user should have badge
+const shouldShowRoleBadge = (role) => {
+  const validRoles = ['admin', 'адмін', 'administrator', 'moderator', 'модератор', 'mod'];
+  return validRoles.includes(role?.toLowerCase());
+};
+
 const UserCardItem = ({ 
   user, 
   imageBorderRadius = 16,
@@ -59,6 +112,7 @@ const UserCardItem = ({
   descriptionFontSize = '14px'
 }) => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
 
   return (
     <TouchableOpacity
@@ -69,28 +123,29 @@ const UserCardItem = ({
       }
     >
       <Card>
-        <UserImage
-          source={{ uri: user.avatar || 'https://i.imgur.com/R8uKmI0.png' }}
-          imageBorderRadius={imageBorderRadius}
-          imageWidth={imageWidth}
-          imageHeight={imageHeight}
-        />
+        <AvatarWrapper>
+          <UserImage
+            source={{ uri: user.avatar }}
+            imageBorderRadius={imageBorderRadius}
+            imageWidth={imageWidth}
+            imageHeight={imageHeight}
+          />
+          <StatusCircle active={user.active} />
+        </AvatarWrapper>
         <Info>
-          <Username fontSize={usernameFontSize} numberOfLines={1}>
-            {user.username}
-          </Username>
-          <Description fontSize={descriptionFontSize} numberOfLines={1}>
-            {user.description || 'Без опису'}
-          </Description>
-          <RowInfo>
-            <Role>{user.role || 'Користувач'}</Role>
-            {user.active && (
-              <>
-                <StyledDot name="circle" />
-                <Role>Активний</Role>
-              </>
+          <UsernameContainer>
+            <Username fontSize={usernameFontSize} numberOfLines={1}>
+              {user.username}
+            </Username>
+            {shouldShowRoleBadge(user.role) && (
+              <UserBadge>
+                {getRoleIcon(user.role, theme)}
+              </UserBadge>
             )}
-          </RowInfo>
+          </UsernameContainer>
+          <Description fontSize={descriptionFontSize} numberOfLines={2}>
+            {user.description}
+          </Description>
         </Info>
       </Card>
     </TouchableOpacity>

@@ -251,7 +251,7 @@ export default function SearchScreen() {
                 />
               );
             } else if (type === 'users') {
-              return <UserCardItem user={item} imageBorderRadius={16} imageWidth={90} imageHeight={120} />;
+              return <UserCardItem user={item} imageBorderRadius={999} imageWidth={90} imageHeight={90} />;
             } else if (type === 'companies') {
               return <CompanyCardItem company={item} imageBorderRadius={16} imageWidth={90} imageHeight={120} />;
             } else {

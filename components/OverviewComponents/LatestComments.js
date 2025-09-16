@@ -26,9 +26,9 @@ const LatestComments = React.memo(({ onRefresh }) => {
       setError(null);
       
       const response = await axios.get('https://api.hikka.io/comments/list');
-      // Фільтруємо коментарі, виключаючи manga, novel та edit, і обмежуємо до 5
+      // Фільтруємо коментарі, показуючи тільки аніме, персонажів, статті, авторів та колекції, і обмежуємо до 5
       const filteredComments = response.data.list.filter(comment => 
-        comment.content_type !== 'manga' && comment.content_type !== 'novel' && comment.content_type !== 'edit'
+        ['anime', 'character', 'article', 'person', 'collection'].includes(comment.content_type) && comment.content_type !== 'edit'
       ).slice(0, 5);
       setComments(filteredComments);
     } catch (error) {

@@ -6,8 +6,18 @@ import { useTheme } from '../../context/ThemeContext';
 const ColorSelector = () => {
   const { changePrimaryColor, theme, isDark, primaryColorIndex } = useTheme();
 
-  const lightColors = ['#E63946', '#ff6666', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0'];
-  const darkColors = ['#C084E4', '#00E5FF', '#81C784', '#FFD54F', '#BA68C8', '#F06292'];
+  const lightColors = [
+    '#E53935', '#D81B60', '#8E24AA', '#5E35B1', '#3949AB', '#1E88E5',
+    '#039BE5', '#00ACC1', '#00897B', '#43A047', '#7CB342', '#C0CA33',
+    '#FDD835', '#FFB300', '#FB8C00', '#F4511E', '#6D4C41', '#9B5571',
+    '#000000'
+  ];
+  const darkColors = [
+    '#FF6F6F', '#FF66A3', '#C084E4', '#9F8CFF', '#7C8CFF', '#66B2FF',
+    '#33CCFF', '#26DAD1', '#4DD0AE', '#81C784', '#AED581', '#DCE775',
+    '#FFE066', '#FFCA66', '#FF9E66', '#FF7A66', '#BCAAA4', '#FF6FA5',
+    '#FFFFFF'
+  ];
 
   const colors = isDark ? darkColors : lightColors;
   const currentColor = colors[primaryColorIndex];

@@ -44,42 +44,19 @@ const Content = styled.ScrollView`
 `;
 
 const CharacterImageWrapper = styled.View`
+  position: relative;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 210px;
+  margin: 0 auto;
   margin-bottom: 12px;
 `;
 
 const CharacterImage = styled.Image`
   width: 210px;
   height: 300px;
-  border-radius: 36px;
+  border-radius: 32px;
   background-color: ${({ theme }) => theme.colors.card};
-`;
-
-const Name = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 4px;
-`;
-
-const SubName = styled.Text`
-  color: ${({ theme }) => theme.colors.placeholder};
-  font-size: 16px;
-`;
-
-const Stat = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 14px;
-  margin-top: 12px;
-`;
-
-const TitleLine = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 5px;
 `;
 
 const TitleRow = styled.View`
@@ -122,6 +99,8 @@ const SpoilerToggle = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   gap: 4px;
+  margin-top: 12px;
+  margin-bottom: 12px;
 `;
 
 const SpoilerText = styled.Text`
@@ -136,7 +115,7 @@ const SpoilerContentWrapper = styled.View`
   border-color: ${({ theme }) => theme.colors.borderInput};
   padding: 10px;
   border-radius: 16px;
-  margin-top: 6px;
+  margin-bottom: 12px;
 `;
 
 const StyledIcon = styled(Entypo)`
@@ -147,6 +126,39 @@ const StyledIcon = styled(Entypo)`
 const StyledIconRole = styled(MaterialIcons)`
   color: ${({ theme }) => theme.colors.success};
   font-size: 12px;
+`;
+
+const RowBetween = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+`;
+
+const RowLeft = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+`;
+
+const Label = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 15px;
+  font-weight: bold;
+`;
+
+const Value = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 15px;
+  text-align: right;
+  font-weight: 600;
+  flex: 1;
+`;
+
+const GrayIcon = styled(Ionicons)`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 16px;
 `;
 
 const Column = styled.View`
@@ -194,8 +206,29 @@ const AnimeScore = styled.Text`
   margin-top: 2px;
 `;
 
+const LikeButtonOnPoster = styled.TouchableOpacity`
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  padding: 6px;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ theme }) => `${theme.colors.background}70`};
+  border-radius: 999px;
+`;
 
-
+const CommentButtonOnPoster = styled.TouchableOpacity`
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  padding: 6px 10px;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ theme }) => `${theme.colors.background}70`};
+  border-radius: 999px;
+  flex-direction: row;
+  gap: 4px;
+`;
 
 // --- Функція для розбору тексту з спойлерами ---
 function parseDescriptionWithSpoilers(text) {
@@ -416,36 +449,79 @@ const AnimeCharacterDetailsScreen = () => {
       >
         <CharacterImageWrapper>
           <CharacterImage 
-  source={
-    character?.image?.trim()
-      ? { uri: character.image }
-      : avatarFallback
-  }
+            source={
+
+              character?.image?.trim()
+                ? { uri: character.image }
+                : avatarFallback
+            }
           />
+          {/* Кнопка коментаря зліва */}
+          <CommentButtonOnPoster
+            onPress={() =>
+              navigation.navigate('CommentsDetailsScreen', {
+                slug: character.slug,
+                title: character.name_ua || character.name_en || character.name_ja || '?',
+                commentsCount: character.comments_count || 0,
+                contentType: 'character'
+              })
+            }
+          >
+            <Ionicons name="chatbubble-ellipses" size={24} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: 'bold' }}>{character.comments_count}</Text>
+          </CommentButtonOnPoster>
+          {/* Кнопка вподобання справа */}
+          <LikeButtonOnPoster 
+            onPress={isUpdatingLike ? null : toggleFavourite}
+            disabled={isUpdatingLike}
+          >
+            {isUpdatingLike ? (
+              <ActivityIndicator size={24} color="#fff" />
+            ) : (
+              <Ionicons
+                name={liked === true ? 'heart' : 'heart-outline'}
+                size={24}
+                color={liked === true ? theme.colors.favourite : '#fff'}
+              />
+            )}
+          </LikeButtonOnPoster>
         </CharacterImageWrapper>
 
         <BlockBorder>
-          <Name>{character.name_ua}</Name>
-          {character.name_en && <SubName>{character.name_en}</SubName>}
-          {character.name_ja && <SubName>{character.name_ja}</SubName>}
+          <RowBetween>
+            <RowLeft>
+              <GrayIcon name="text" />
+              <Label>Ім'я укр.</Label>
+            </RowLeft>
+            <Value numberOfLines={1}>{character.name_ua || '?'}</Value>
+          </RowBetween>
+          {character.name_en ? (
+            <RowBetween>
+              <RowLeft>
+                <GrayIcon name="globe-outline" />
+                <Label>Ім'я англ.</Label>
+              </RowLeft>
+              <Value numberOfLines={1}>{character.name_en}</Value>
+            </RowBetween>
+          ) : null}
+          {character.name_ja ? (
+            <RowBetween>
+              <RowLeft>
+                <GrayIcon name="language" />
+                <Label>Ім'я оригіналу.</Label>
+              </RowLeft>
+              <Value numberOfLines={1}>{character.name_ja}</Value>
+            </RowBetween>
+          ) : null}
           {character.synonyms?.length > 0 && (
-            <SubName>Синоніми: {character.synonyms.join(', ')}</SubName>
+            <RowBetween>
+              <RowLeft>
+                <GrayIcon name="list" />
+                <Label>Синоніми</Label>
+              </RowLeft>
+              <Value numberOfLines={1}>{character.synonyms.join(', ')}</Value>
+            </RowBetween>
           )}
-              <LikeButtonInline 
-      onPress={isUpdatingLike ? null : toggleFavourite}
-      liked={liked}
-      disabled={isUpdatingLike}
-    >
-      {isUpdatingLike ? (
-        <ActivityIndicator size="small" color={theme.colors.textSecondary || '#fff'} />
-      ) : (
-        <Ionicons
-          name={liked === true ? 'heart' : 'heart-outline'}
-          size={24}
-          color={liked === true ? theme.colors.favourite : theme.colors.gray}
-        />
-      )}
-    </LikeButtonInline>
         </BlockBorder>
 
         <BlockBorder>
@@ -525,11 +601,41 @@ const AnimeCharacterDetailsScreen = () => {
     })
   )}
 
-  <Stat>🎙️ Озвучувань: {character.voices_count}</Stat>
-  <Stat>📺 Аніме: {character.anime_count}</Stat>
-  <Stat>📚 Манґа: {character.manga_count}</Stat>
-  <Stat>📖 Ранобе: {character.novel_count}</Stat>
-</BlockBorder>
+        </BlockBorder>
+
+        <BlockBorder>
+          <TitleRow>
+            <TitleLineWithLike>Інформація</TitleLineWithLike>
+          </TitleRow>
+          <RowBetween>
+            <RowLeft>
+              <GrayIcon name="mic-outline" />
+              <Label>Озвучувань:</Label>
+            </RowLeft>
+            <Value>{character.voices_count}</Value>
+          </RowBetween>
+          <RowBetween>
+            <RowLeft>
+              <GrayIcon name="play-circle" />
+              <Label>Аніме:</Label>
+            </RowLeft>
+            <Value>{character.anime_count}</Value>
+          </RowBetween>
+          <RowBetween>
+            <RowLeft>
+              <GrayIcon name="book" />
+              <Label>Манґа:</Label>
+            </RowLeft>
+            <Value>{character.manga_count}</Value>
+          </RowBetween>
+          <RowBetween>
+            <RowLeft>
+              <GrayIcon name="library" />
+              <Label>Ранобе:</Label>
+            </RowLeft>
+            <Value>{character.novel_count}</Value>
+          </RowBetween>
+        </BlockBorder>
 
 
 
@@ -697,3 +803,59 @@ const AnimeCharacterDetailsScreen = () => {
 };
 
 export default AnimeCharacterDetailsScreen;
+
+const InfoTitle = styled.Text`
+  font-size: 18px;
+  font-weight: bold;
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 12px;
+  margin-top: 15px;
+`;
+
+const InfoRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+`;
+
+const InfoText = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 15px;
+  text-align: right;
+  font-weight: 600;
+  flex: 1;
+`;
+
+const InfoBold = styled.Text`
+  font-weight: bold;
+  color: ${({ theme }) => theme.colors.gray};
+`;
+
+const InfoIcon = styled(Ionicons)`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 16px;
+  margin-right: 4px;
+`;
+
+const NameContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 8px;
+  justify-content: space-between;
+`;
+
+const NameType = styled.View`
+  min-width: 100px;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+`;
+
+const NameTypeText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 15px;
+  font-weight: bold;
+`;
+

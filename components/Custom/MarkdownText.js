@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as WebBrowser from 'expo-web-browser';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
@@ -7,7 +8,8 @@ const MarkdownText = ({
   children, 
   style = {}, 
   numberOfLines, // @deprecated - Use maxHeight on container instead for better markdown support
-  ellipsizeMode 
+  ellipsizeMode, 
+  disableLinks = false
 }) => {
   const { theme } = useTheme();
   const navigation = useNavigation();
@@ -37,11 +39,54 @@ const MarkdownText = ({
     ...style.code
   };
 
+  // Обробник посилань: відкриваємо внутрішні екрани для посилань Хікки на персонажів
+  const handleLinkPress = async (url, text) => {
+    if (!url) return;
+
+    try {
+      // Уніфікований розбір URL
+      const isAbsolute = /^https?:\/\//i.test(url);
+      const normalized = isAbsolute ? url : `https://hikka.io${url.startsWith('/') ? '' : '/'}${url}`;
+
+      // Витягуємо шлях без параметрів
+      const path = normalized.replace(/^https?:\/\/(?:www\.)?hikka\.io/i, '');
+      // Підтримка /characters/ та /character/
+      const charMatch = path.match(/^\/char(?:acter|acters)\/([^/?#]+)\/?/i);
+      if (charMatch && charMatch[1]) {
+        const slug = decodeURIComponent(charMatch[1]);
+        navigation.navigate('AnimeCharacterDetailsScreen', { slug, name_ua: text });
+        return;
+      }
+
+      // Додатково: люди, аніме — відкриваємо відповідні екрани, якщо потрібно
+      const peopleMatch = path.match(/^\/(people|person)\/([^/?#]+)\/?/i);
+      if (peopleMatch && peopleMatch[2]) {
+        const slug = decodeURIComponent(peopleMatch[2]);
+        navigation.navigate('AnimePeopleDetailsScreen', { slug });
+        return;
+      }
+      const animeMatch = path.match(/^\/anime\/([^/?#]+)\/?/i);
+      if (animeMatch && animeMatch[1]) {
+        const slug = decodeURIComponent(animeMatch[1]);
+        navigation.navigate('AnimeDetails', { slug });
+        return;
+      }
+    } catch (e) {}
+
+    // Фолбек: відкриваємо у зовнішньому браузері, щоб уникати зависань у WebView
+    try {
+      await WebBrowser.openBrowserAsync(url);
+    } catch (e) {
+      // Якщо зовнішній браузер недоступний — запасний варіант у вбудованому WebView
+      navigation.navigate('WebView', { url, title: text });
+    }
+  };
+
   // Функція для рендерингу тексту з маркдауном
   const renderMarkdownText = (text) => {
     if (!text) return null;
 
-    // Очищаємо зайві відступи після спойлерів
+    // Очищаємо зайві відступи після спойлерів та дублікати порожніх рядків
     let cleanedText = text;
     
     // Видаляємо зайві переноси рядків та пробіли після спойлерів
@@ -50,7 +95,14 @@ const MarkdownText = ({
       return `:::spoiler\n${content.trim()}\n:::`;
     });
     
-    // Видаляємо зайві переноси рядків на початку та в кінці тексту
+    // Нормалізуємо переноси рядків (CRLF -> LF)
+    cleanedText = cleanedText.replace(/\r\n/g, '\n');
+    // Повністю прибираємо порожні рядки (рядки з одними пробілами/табами)
+    cleanedText = cleanedText
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+      .join('\n');
+    // Обрізаємо краї
     cleanedText = cleanedText.trim();
 
     const parts = [];
@@ -73,8 +125,8 @@ const MarkdownText = ({
       });
     }
 
-    // Обробка посилань [текст](url)
-    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    // Обробка посилань [текст](url "title") — титл необов'язковий
+    const linkRegex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)/g;
     let linkMatch;
     const linkMatches = [];
     
@@ -88,8 +140,8 @@ const MarkdownText = ({
       });
     }
 
-    // Обробка жирного тексту **текст**
-    const boldRegex = /\*\*([^*]+)\*\*/g;
+    // Обробка жирного тексту **текст** (спочатку обробляємо жирний, щоб уникнути конфліктів)
+    const boldRegex = /\*\*([^*]+?)\*\*/g;
     let boldMatch;
     const boldMatches = [];
     
@@ -102,18 +154,29 @@ const MarkdownText = ({
       });
     }
 
-    // Обробка курсиву *текст*
-    const italicRegex = /\*([^*]+)\*/g;
+    // Обробка курсиву *текст* (виключаємо ділянки, які вже є жирним текстом)
+    const italicRegex = /(?<!\*)\*([^*]+?)\*(?!\*)/g;
     let italicMatch;
     const italicMatches = [];
     
     while ((italicMatch = italicRegex.exec(cleanedText)) !== null) {
-      italicMatches.push({
-        type: 'italic',
-        text: italicMatch[1],
-        start: italicMatch.index,
-        end: italicMatch.index + italicMatch[0].length
-      });
+      // Перевіряємо, чи не перекривається з жирним текстом
+      let isInsideBold = false;
+      for (const bold of boldMatches) {
+        if (italicMatch.index >= bold.start && (italicMatch.index + italicMatch[0].length) <= bold.end) {
+          isInsideBold = true;
+          break;
+        }
+      }
+      
+      if (!isInsideBold) {
+        italicMatches.push({
+          type: 'italic',
+          text: italicMatch[1],
+          start: italicMatch.index,
+          end: italicMatch.index + italicMatch[0].length
+        });
+      }
     }
 
     // Обробка коду `код`
@@ -175,30 +238,40 @@ const MarkdownText = ({
              // Рендеримо матч
        switch (match.type) {
          case 'spoiler':
-           parts.push({
+            parts.push({
              type: 'spoiler',
              element: (
               <InlineSpoiler
                 key={`spoiler-${match.start}`}
                 text={match.text}
                 textStyle={textStyle}
+                disableLinks={disableLinks}
+                handleLinkPress={handleLinkPress}
               />
             )
            });
             break;
         case 'link':
-          parts.push(
-            <Text
-              key={`link-${match.start}`}
-              style={[textStyle, linkStyle]}
-              onPress={() => navigation.navigate('WebView', { 
-                url: match.url, 
-                title: match.text 
-              })}
-            >
-              {match.text}
-            </Text>
-          );
+          if (disableLinks) {
+            parts.push(
+              <Text
+                key={`link-${match.start}`}
+                style={textStyle}
+              >
+                {match.text}
+              </Text>
+            );
+          } else {
+            parts.push(
+              <Text
+                key={`link-${match.start}`}
+                style={[textStyle, linkStyle]}
+                onPress={() => handleLinkPress(match.url, match.text)}
+              >
+                {match.text}
+              </Text>
+            );
+          }
           break;
         case 'bold':
           parts.push(
@@ -319,7 +392,7 @@ const MarkdownText = ({
 };
 
 // Inline Spoiler Component to avoid circular dependency
-const InlineSpoiler = ({ text, textStyle }) => {
+const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress }) => {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const [revealed, setRevealed] = useState(false);
@@ -350,8 +423,8 @@ const InlineSpoiler = ({ text, textStyle }) => {
       });
     }
 
-    // Обробка жирного тексту **текст**
-    const boldRegex = /\*\*([^*]+)\*\*/g;
+    // Обробка жирного тексту **текст** (спочатку обробляємо жирний, щоб уникнути конфліктів)
+    const boldRegex = /\*\*([^*]+?)\*\*/g;
     let boldMatch;
     const boldMatches = [];
     
@@ -364,18 +437,29 @@ const InlineSpoiler = ({ text, textStyle }) => {
       });
     }
 
-    // Обробка курсиву *текст*
-    const italicRegex = /\*([^*]+)\*/g;
+    // Обробка курсиву *текст* (виключаємо ділянки, які вже є жирним текстом)
+    const italicRegex = /(?<!\*)\*([^*]+?)\*(?!\*)/g;
     let italicMatch;
     const italicMatches = [];
     
     while ((italicMatch = italicRegex.exec(text)) !== null) {
-      italicMatches.push({
-        type: 'italic',
-        text: italicMatch[1],
-        start: italicMatch.index,
-        end: italicMatch.index + italicMatch[0].length
-      });
+      // Перевіряємо, чи не перекривається з жирним текстом
+      let isInsideBold = false;
+      for (const bold of boldMatches) {
+        if (italicMatch.index >= bold.start && (italicMatch.index + italicMatch[0].length) <= bold.end) {
+          isInsideBold = true;
+          break;
+        }
+      }
+      
+      if (!isInsideBold) {
+        italicMatches.push({
+          type: 'italic',
+          text: italicMatch[1],
+          start: italicMatch.index,
+          end: italicMatch.index + italicMatch[0].length
+        });
+      }
     }
 
     // Обробка коду `код`
@@ -413,18 +497,26 @@ const InlineSpoiler = ({ text, textStyle }) => {
       // Рендеримо матч
       switch (match.type) {
         case 'link':
-          parts.push(
-            <Text
-              key={`link-${match.start}`}
-              style={[textStyle, { color: theme.colors.primary, textDecorationLine: 'underline' }]}
-              onPress={() => navigation.navigate('WebView', { 
-                url: match.url, 
-                title: match.text 
-              })}
-            >
-              {match.text}
-            </Text>
-          );
+          if (disableLinks) {
+            parts.push(
+              <Text
+                key={`link-${match.start}`}
+                style={textStyle}
+              >
+                {match.text}
+              </Text>
+            );
+          } else {
+            parts.push(
+              <Text
+                key={`link-${match.start}`}
+                style={[textStyle, { color: theme.colors.primary, textDecorationLine: 'underline' }]}
+                onPress={() => handleLinkPress(match.url, match.text)}
+              >
+                {match.text}
+              </Text>
+            );
+          }
           break;
         case 'bold':
           parts.push(

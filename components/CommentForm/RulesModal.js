@@ -12,7 +12,7 @@ const ModalBackdrop = styled.View`
 const ModalCard = styled.View`
   width: 90%;
   background-color: ${({ theme }) => theme.colors.card};
-  border-radius: 36px;
+  border-radius: 32px;
   padding: 18px;
 `;
 

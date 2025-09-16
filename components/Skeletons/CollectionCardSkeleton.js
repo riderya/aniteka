@@ -133,7 +133,7 @@ const CardInner = styled.View`
 `;
 
 const RowInner = styled.View`
-  background-color: ${({ theme }) => theme.colors.transparentBackground70};
+  background-color: ${({ theme }) => theme.colors.card};
   border: 1px;
   border-color: ${({ theme }) => theme.colors.borderInput};
   padding: 6px 12px;

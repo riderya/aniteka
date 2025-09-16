@@ -68,7 +68,7 @@ const SocialLinks = React.memo(({ telegramUrl, discordUrl }) => {
 SocialLinks.displayName = 'SocialLinks';
 
 SocialLinks.defaultProps = {
-  telegramUrl: 'https://t.me/YummyAnimeList',
+  telegramUrl: 'https://t.me/anitekalib',
   discordUrl: 'https://discord.gg/5truHDdzEq',
 };
 

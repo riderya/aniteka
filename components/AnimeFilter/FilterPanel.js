@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import styled from 'styled-components/native';
 import { useTheme } from '../../context/ThemeContext';
 import { PlatformBlurView } from '../Custom/PlatformBlurView';
@@ -43,7 +43,7 @@ const sourceOptions = [
 const statusOptions = [
   { slug: 'announced', label: 'Анонсовано' },
   { slug: 'finished', label: 'Завершено' },
-  { slug: 'ongoing', label: 'Триває' },
+  { slug: 'ongoing', label: 'Онґоінґ' },
 ];
 
 const seasonOptions = [
@@ -108,6 +108,38 @@ const ModalTitle = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: 18px;
   margin-bottom: 10px;
+`;
+
+const ModalHeader = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+`;
+
+const ModalHeaderTitle = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 18px;
+  font-weight: 700;
+`;
+
+const ModalHeaderActions = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+`;
+
+const HeaderActionButton = styled.TouchableOpacity`
+  padding: 10px 14px;
+  border-radius: 999px;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.borderInput};
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const HeaderActionText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-weight: 600;
 `;
 
 const ModalOption = styled.TouchableOpacity`
@@ -220,8 +252,8 @@ const Checkbox = styled.View`
   height: 20px;
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.borderInput};
-background-color: ${({ selected, theme }) =>
-  selected ? theme.colors.primary : theme.colors.card};
+  background-color: ${({ selected, theme }) =>
+    selected ? theme.colors.primary : theme.colors.card};
   border-radius: 6px;
   margin-right: 12px;
   align-items: center;
@@ -241,6 +273,23 @@ const SelectedValuesContainer = styled.View`
   gap: 8px;
 `;
 
+const SearchContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.borderInput};
+  background-color: ${({ theme }) => theme.colors.background};
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+`;
+
+const SearchInput = styled.TextInput`
+  flex: 1;
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 14px;
+`;
+
 
 const FilterModal = ({
   visible,
@@ -251,55 +300,89 @@ const FilterModal = ({
   labelKey = 'label',
   maxHeight = 350,
   title,
-}) => (
-<Modal visible={visible} transparent animationType="fade">
-  <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }}>
-    
-    {/* Клік по фону */}
-    <TouchableOpacity
-      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      activeOpacity={1}
-      onPress={onClose}
-    />
+  onClear,
+  searchable = true,
+}) => {
+  const [query, setQuery] = useState('');
 
-    {/* НЕ обгортай ScrollView в TouchableWithoutFeedback */}
-    <View style={{ overflow: 'hidden', borderRadius: 32 }}>
-      <ModalContainer maxHeight={maxHeight}>
-        {title && <ModalTitle>{title}</ModalTitle>}
-        <ScrollView
-          style={{ maxHeight: maxHeight - 50 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={true}
-          nestedScrollEnabled={true}
-          bounces={false}
-        >
-          {options.map((option) => {
-            const slug = option.slug;
-            const isSelected = selected.includes(slug);
-            const label = option[labelKey] || slug;
+  const filteredOptions = useMemo(() => {
+    if (!searchable || !query.trim()) return options;
+    const q = query.toLowerCase();
+    return options.filter((o) => String(o[labelKey] || o.slug).toLowerCase().includes(q));
+  }, [options, labelKey, query, searchable]);
 
-            return (
-              <ModalOption
-                key={slug}
-                onPress={() => toggleOption(slug)}
-                selected={isSelected}
-                row
-                center
-              >
-                <Checkbox selected={isSelected}>
-                  <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
-                </Checkbox>
-                <ModalOptionText selected={isSelected}>{label}</ModalOptionText>
-              </ModalOption>
-            );
-          })}
-        </ScrollView>
-      </ModalContainer>
-    </View>
-  </View>
-</Modal>
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }}>
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          activeOpacity={1}
+          onPress={onClose}
+        />
 
-);
+        <View style={{ overflow: 'hidden', borderRadius: 32 }}>
+          <ModalContainer maxHeight={maxHeight}>
+            {(title || onClear) && (
+              <ModalHeader>
+                {title ? <ModalHeaderTitle>{title}</ModalHeaderTitle> : <View />}
+                <ModalHeaderActions>
+                  {onClear ? (
+                    <HeaderActionButton onPress={onClear}>
+                      <HeaderActionText>Скинути</HeaderActionText>
+                    </HeaderActionButton>
+                  ) : null}
+                  <HeaderActionButton onPress={onClose}>
+                    <HeaderActionText>Закрити</HeaderActionText>
+                  </HeaderActionButton>
+                </ModalHeaderActions>
+              </ModalHeader>
+            )}
+
+            {searchable && (
+              <SearchContainer>
+                <SearchInput
+                  placeholder="Пошук..."
+                  placeholderTextColor="#8A8A8A"
+                  value={query}
+                  onChangeText={setQuery}
+                />
+              </SearchContainer>
+            )}
+
+            <ScrollView
+              style={{ maxHeight: maxHeight - 50 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              bounces={false}
+            >
+              {filteredOptions.map((option) => {
+                const slug = option.slug;
+                const isSelected = selected.includes(slug);
+                const label = option[labelKey] || slug;
+
+                return (
+                  <ModalOption
+                    key={slug}
+                    onPress={() => toggleOption(slug)}
+                    selected={isSelected}
+                    row
+                    center
+                  >
+                    <Checkbox selected={isSelected}>
+                      <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
+                    </Checkbox>
+                    <ModalOptionText selected={isSelected}>{label}</ModalOptionText>
+                  </ModalOption>
+                );
+              })}
+            </ScrollView>
+          </ModalContainer>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 
 const YearFilterModal = ({
@@ -310,49 +393,77 @@ const YearFilterModal = ({
   onSelectYear,
   title,
   maxHeight = 300,
-}) => (
-  <Modal visible={visible} transparent animationType="fade">
-    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }}>
-      
-      <TouchableOpacity
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        activeOpacity={1}
-        onPress={onClose}
-      />
+}) => {
+  const [query, setQuery] = useState('');
+  const filteredYears = useMemo(() => {
+    if (!query.trim()) return options;
+    const q = query.toLowerCase();
+    return options.filter((y) => String(y).toLowerCase().includes(q));
+  }, [options, query]);
 
-      <View style={{ overflow: 'hidden', borderRadius: 32 }}>
-        <ModalYearContainer maxHeight={maxHeight}>
-          {title && <ModalTitle>{title}</ModalTitle>}
-          <ScrollView
-            style={{ maxHeight: maxHeight - 50 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={true}
-            nestedScrollEnabled={true}
-            bounces={false}
-          >
-            {options.map((year) => {
-              const isSelected = selectedYear === year;
-              return (
-                <ModalOption
-                  key={year}
-                  onPress={() => onSelectYear(year)}
-                  selected={isSelected}
-                  row
-                  center
-                >
-                  <Checkbox selected={isSelected}>
-                    <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
-                  </Checkbox>
-                  <ModalOptionText selected={isSelected}>{year}</ModalOptionText>
-                </ModalOption>
-              );
-            })}
-          </ScrollView>
-        </ModalYearContainer>
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }}>
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+
+        <View style={{ overflow: 'hidden', borderRadius: 32 }}>
+          <ModalYearContainer maxHeight={maxHeight}>
+            {title && (
+              <ModalHeader>
+                <ModalHeaderTitle>{title}</ModalHeaderTitle>
+                <ModalHeaderActions>
+                  <HeaderActionButton onPress={onClose}>
+                    <HeaderActionText>Закрити</HeaderActionText>
+                  </HeaderActionButton>
+                </ModalHeaderActions>
+              </ModalHeader>
+            )}
+
+            <SearchContainer>
+              <SearchInput
+                placeholder="Пошук року..."
+                placeholderTextColor="#8A8A8A"
+                keyboardType="numeric"
+                value={query}
+                onChangeText={setQuery}
+              />
+            </SearchContainer>
+
+            <ScrollView
+              style={{ maxHeight: maxHeight - 50 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              bounces={false}
+            >
+              {filteredYears.map((year) => {
+                const isSelected = selectedYear === year;
+                return (
+                  <ModalOption
+                    key={year}
+                    onPress={() => onSelectYear(year)}
+                    selected={isSelected}
+                    row
+                    center
+                  >
+                    <Checkbox selected={isSelected}>
+                      <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
+                    </Checkbox>
+                    <ModalOptionText selected={isSelected}>{year}</ModalOptionText>
+                  </ModalOption>
+                );
+              })}
+            </ScrollView>
+          </ModalYearContainer>
+        </View>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 
 const SingleSelectModal = ({
@@ -363,52 +474,79 @@ const SingleSelectModal = ({
   onSelect,
   maxHeight = 300,
   title,
-}) => (
-  <Modal visible={visible} transparent animationType="fade">
-    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }}>
-      
-      <TouchableOpacity
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        activeOpacity={1}
-        onPress={onClose}
-      />
+}) => {
+  const [query, setQuery] = useState('');
+  const filtered = useMemo(() => {
+    if (!query.trim()) return options;
+    const q = query.toLowerCase();
+    return options.filter(({ label, slug }) => String(label || slug).toLowerCase().includes(q));
+  }, [options, query]);
 
-      <View style={{ overflow: 'hidden', borderRadius: 32 }}>
-        <ModalContainer maxHeight={maxHeight}>
-          {title && <ModalTitle>{title}</ModalTitle>}
-          <ScrollView
-            style={{ maxHeight: maxHeight - 50 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={true}
-            nestedScrollEnabled={true}
-            bounces={false}
-          >
-            {options.map(({ slug, label }) => {
-              const isSelected = selected === slug;
-              return (
-                <ModalOption
-                  key={slug}
-                  onPress={() => {
-                    onSelect(slug);
-                    onClose();
-                  }}
-                  selected={isSelected}
-                  row
-                  center
-                >
-                  <Checkbox selected={isSelected}>
-                    <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
-                  </Checkbox>
-                  <ModalOptionText selected={isSelected}>{label}</ModalOptionText>
-                </ModalOption>
-              );
-            })}
-          </ScrollView>
-        </ModalContainer>
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }}>
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+
+        <View style={{ overflow: 'hidden', borderRadius: 32 }}>
+          <ModalContainer maxHeight={maxHeight}>
+            {title && (
+              <ModalHeader>
+                <ModalHeaderTitle>{title}</ModalHeaderTitle>
+                <ModalHeaderActions>
+                  <HeaderActionButton onPress={onClose}>
+                    <HeaderActionText>Закрити</HeaderActionText>
+                  </HeaderActionButton>
+                </ModalHeaderActions>
+              </ModalHeader>
+            )}
+
+            <SearchContainer>
+              <SearchInput
+                placeholder="Пошук..."
+                placeholderTextColor="#8A8A8A"
+                value={query}
+                onChangeText={setQuery}
+              />
+            </SearchContainer>
+
+            <ScrollView
+              style={{ maxHeight: maxHeight - 50 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              bounces={false}
+            >
+              {filtered.map(({ slug, label }) => {
+                const isSelected = selected === slug;
+                return (
+                  <ModalOption
+                    key={slug}
+                    onPress={() => {
+                      onSelect(slug);
+                      onClose();
+                    }}
+                    selected={isSelected}
+                    row
+                    center
+                  >
+                    <Checkbox selected={isSelected}>
+                      <CheckmarkText>{isSelected ? '✓' : ''}</CheckmarkText>
+                    </Checkbox>
+                    <ModalOptionText selected={isSelected}>{label}</ModalOptionText>
+                  </ModalOption>
+                );
+              })}
+            </ScrollView>
+          </ModalContainer>
+        </View>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 
 const renderSelectedLabelsAsTags = (selectedSlugs, options, labelKey = 'label', allGenres = []) => {
@@ -656,6 +794,10 @@ export default function AnimeFilters({
   toggleOption={toggleGenre}
   labelKey="name_ua"
   title="Жанри"
+  onClear={() => {
+    selectedGenres.forEach((slug) => toggleGenre(slug));
+  }}
+  searchable
 />
 
 <FilterModal
@@ -665,6 +807,9 @@ export default function AnimeFilters({
   selected={selectedMediaTypes}
   toggleOption={toggleMediaType}
   title="Категорії"
+  onClear={() => {
+    selectedMediaTypes.forEach((slug) => toggleMediaType(slug));
+  }}
 />
 
 <FilterModal
@@ -674,6 +819,10 @@ export default function AnimeFilters({
   selected={selectedStudios}
   toggleOption={toggleStudio}
   title="Студії"
+  onClear={() => {
+    selectedStudios.forEach((slug) => toggleStudio(slug));
+  }}
+  searchable
 />
 
 {/* <FilterModal
@@ -692,6 +841,9 @@ export default function AnimeFilters({
   selected={selectedStatuses}
   toggleOption={toggleStatus}
   title="Статус"
+  onClear={() => {
+    selectedStatuses.forEach((slug) => toggleStatus(slug));
+  }}
 />
 
 <FilterModal
@@ -701,6 +853,9 @@ export default function AnimeFilters({
   selected={selectedSeasons}
   toggleOption={toggleSeason}
   title="Сезон"
+  onClear={() => {
+    selectedSeasons.forEach((slug) => toggleSeason(slug));
+  }}
 />
 
 <FilterModal
@@ -710,6 +865,9 @@ export default function AnimeFilters({
   selected={selectedRatings}
   toggleOption={toggleRating}
   title="Рейтинг"
+  onClear={() => {
+    selectedRatings.forEach((slug) => toggleRating(slug));
+  }}
 />
 
 <YearFilterModal

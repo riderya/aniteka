@@ -130,7 +130,8 @@ const AnimeColumnCard = React.memo(({
   // Create styles based on props and orientation
   const styles = useMemo(() => {
     const adaptiveCardWidth = orientation === 'landscape' ? responsiveDims.cardWidth : cardWidth;
-    const adaptiveImageHeight = orientation === 'landscape' ? responsiveDims.imageHeight : imageHeight;
+    // Висоту зображення завжди беремо з пропса, щоб батьківський компонент міг керувати нею динамічно
+    const adaptiveImageHeight = imageHeight;
     const adaptiveTitleFontSize = orientation === 'landscape' ? responsiveDims.fontSize.medium : titleFontSize;
     const adaptiveFooterFontSize = orientation === 'landscape' ? responsiveDims.fontSize.small : footerFontSize;
     

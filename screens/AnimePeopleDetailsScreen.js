@@ -19,8 +19,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import avatarFallback from '../assets/image/image404.png';
 import BackButton from '../components/DetailsAnime/BackButton';
+import { Ionicons } from '@expo/vector-icons';
 
-/* ---------- styles ---------- */
 const Container = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
@@ -57,7 +57,7 @@ const PeopleImageWrapper = styled.View`
 const PeopleImage = styled.Image`
   width: 210px;
   height: 300px;
-  border-radius: 36px;
+  border-radius: 32px;
   background-color: ${({ theme }) => theme.colors.card};
 `;
 
@@ -171,6 +171,39 @@ const StyledIconDot = styled(FontAwesome)`
   font-size: 6px;
 `;
 
+const RowBetween = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+`;
+
+const RowLeft = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+`;
+
+const Label = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 15px;
+  font-weight: bold;
+`;
+
+const Value = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 15px;
+  text-align: right;
+  font-weight: 600;
+  flex: 1;
+`;
+
+const GrayIcon = styled(Ionicons)`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 16px;
+`;
+
 /* ---------- utils ---------- */
 function parseDescriptionWithSpoilers(text) {
   const regex = /:::spoiler\s*([\s\S]*?)\s*:::/gi;
@@ -251,11 +284,42 @@ const AnimePeopleDetailsScreen = () => {
         </PeopleImageWrapper>
 
         <BlockBorder>
-          <Name>{people.name_ua || '?'}</Name>
-          {people.name_en && <SubName>{people.name_en || '?'}</SubName>}
-          {people.name_native && <SubName>{people.name_native || '?'}</SubName>}
+          <RowBetween>
+            <RowLeft>
+              <GrayIcon name="text" />
+              <Label>Ім'я укр.</Label>
+            </RowLeft>
+            <Value numberOfLines={1}>{people.name_ua || '?'}</Value>
+          </RowBetween>
+
+          {people.name_en ? (
+            <RowBetween>
+              <RowLeft>
+                <GrayIcon name="globe-outline" />
+                <Label>Ім'я англ.</Label>
+              </RowLeft>
+              <Value numberOfLines={1}>{people.name_en}</Value>
+            </RowBetween>
+          ) : null}
+
+          {people.name_native ? (
+            <RowBetween>
+              <RowLeft>
+                <GrayIcon name="language" />
+                <Label>Ім'я оригіналу.</Label>
+              </RowLeft>
+              <Value numberOfLines={1}>{people.name_native}</Value>
+            </RowBetween>
+          ) : null}
+
           {people.synonyms?.length > 0 && (
-            <SubName>Синоніми: {people.synonyms.join(', ')}</SubName>
+            <RowBetween>
+              <RowLeft>
+                <GrayIcon name="list" />
+                <Label>Синоніми</Label>
+              </RowLeft>
+              <Value numberOfLines={1}>{people.synonyms.join(', ')}</Value>
+            </RowBetween>
           )}
         </BlockBorder>
 
@@ -334,11 +398,42 @@ const AnimePeopleDetailsScreen = () => {
     })
   )}
 
-  <Stat>👥 Персонажів: {people.characters_count}</Stat>
-  <Stat>📺 Аніме: {people.anime_count}</Stat>
-  <Stat>📚 Манґа: {people.manga_count}</Stat>
-  <Stat>📖 Ранобе: {people.novel_count}</Stat>
-</BlockBorder>
+  </BlockBorder>
+
+  <BlockBorder>
+    <TitleLine>Інформація</TitleLine>
+    <RowBetween>
+      <RowLeft>
+        <GrayIcon name="mic-outline" />
+        <Label>Озвучувань:</Label>
+      </RowLeft>
+      <Value>{people.characters_count}</Value>
+    </RowBetween>
+
+    <RowBetween>
+      <RowLeft>
+        <GrayIcon name="play-circle" />
+        <Label>Аніме:</Label>
+      </RowLeft>
+      <Value>{people.anime_count}</Value>
+    </RowBetween>
+
+    <RowBetween>
+      <RowLeft>
+        <GrayIcon name="book" />
+        <Label>Манґа:</Label>
+      </RowLeft>
+      <Value>{people.manga_count}</Value>
+    </RowBetween>
+
+    <RowBetween>
+      <RowLeft>
+        <GrayIcon name="library" />
+        <Label>Ранобе:</Label>
+      </RowLeft>
+      <Value>{people.novel_count}</Value>
+    </RowBetween>
+  </BlockBorder>
 
 
         <Column>

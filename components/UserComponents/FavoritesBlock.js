@@ -3,7 +3,6 @@ import {
   ActivityIndicator, 
   TouchableOpacity, 
   FlatList, 
-  Dimensions,
   View,
   Text,
   StyleSheet
@@ -16,8 +15,7 @@ import AnimeColumnCard from '../Cards/AnimeColumnCard';
 import AnimeRowCard from '../Cards/AnimeRowCard';
 import CharacterColumnCard from '../Cards/CharacterColumnCard';
 import CollectionCard from '../Cards/CollectionCard';
-
-const { width: screenWidth } = Dimensions.get('window');
+import { useDimensions } from '../../hooks/useOrientation';
 // Grid layout constants
 const GRID_NUM_COLUMNS = 3;
 const CONTAINER_HORIZONTAL_PADDING = 12; // styles.container padding
@@ -215,6 +213,7 @@ const createStyles = (theme) => StyleSheet.create({
 const FavoritesBlock = ({ username }) => {
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const { width: windowWidth } = useDimensions();
   const styles = createStyles(theme);
   
   const [favorites, setFavorites] = useState([]);
@@ -239,7 +238,6 @@ const FavoritesBlock = ({ username }) => {
 const fetchFavorites = async (contentType = selectedContentType, page = 1, append = false) => {
   try {
     if (page === 1) setLoading(true);
-    else setLoadingMore(true);
 
     setError(null);
 
@@ -327,6 +325,7 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
 
   const loadMoreFavorites = useCallback(() => {
     if (!loadingMore && hasMore && !loading) {
+      setLoadingMore(true); // Встановлюємо лоадер одразу
       const nextPage = currentPage + 1;
       fetchFavorites(selectedContentType, nextPage, true);
     }
@@ -352,51 +351,98 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
     fetchFavorites();
   }, []);
 
-  const renderGridItem = useCallback(({ item }) => (
-    <View style={{ 
-      width: selectedContentType === 'collection' 
-        ? '100%'
-        : ((screenWidth - (CONTAINER_HORIZONTAL_PADDING * 2) - (CONTENT_HORIZONTAL_PADDING * 2)) - (GRID_NUM_COLUMNS * GRID_ITEM_MARGIN_HORIZONTAL * 2)) / GRID_NUM_COLUMNS,
-      marginHorizontal: selectedContentType === 'collection' ? 0 : GRID_ITEM_MARGIN_HORIZONTAL,
-      marginBottom: 8
-    }}>
-      {selectedContentType === 'anime' && (
-        <AnimeColumnCard
-          anime={item}
-          cardWidth="100%"
-          imageWidth="100%"
-          imageHeight={155}
-          titleFontSize={13}
-          footerFontSize={11}
-          badgeFontSize={12}
-          badgeBottom={5}
-          badgeLeft={5}
-          badgeRight={5}
-          onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
-        />
-      )}
-      {selectedContentType === 'character' && (
-        <CharacterColumnCard 
-          character={item}
-          width="100%"
-          height="140px"
-          fontSize="13px"
-          cardWidth="100%"
-          onPress={() => navigation.navigate('CharacterDetails', { slug: item.slug })}
-        />
-      )}
-      {selectedContentType === 'collection' && (
-        <CollectionCard 
-          item={item}
-          compact={false}
-          cardWidth={screenWidth - 48}
-          onPress={() => navigation.navigate('CollectionDetails', { slug: item.slug })}
-        />
-      )}
-    </View>
-  ), [selectedContentType, navigation]);
+  const renderGridItem = useCallback(({ item }) => {
+    if (item.isLoader) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <Text style={styles.loadingMoreText}>Завантаження...</Text>
+        </View>
+      );
+    }
+
+    if (item.isEndMessage) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <Text style={styles.loadingMoreText}>Всі {getContentTypeLabel(selectedContentType).toLowerCase()} завантажені</Text>
+        </View>
+      );
+    }
+
+    if (selectedContentType === 'collection') {
+      return (
+        <View style={{ 
+          width: '100%',
+          marginHorizontal: 0,
+          marginBottom: 8
+        }}>
+          <CollectionCard 
+            item={item}
+            compact={false}
+            cardWidth={windowWidth - 48}
+            onPress={() => navigation.navigate('CollectionDetails', { slug: item.slug })}
+          />
+        </View>
+      );
+    }
+
+    const cardWidth = ((windowWidth - (CONTAINER_HORIZONTAL_PADDING * 2) - (CONTENT_HORIZONTAL_PADDING * 2)) - (computedNumColumns * GRID_ITEM_MARGIN_HORIZONTAL * 2)) / computedNumColumns;
+    const posterAspect = 1.4; // трохи нижчий за 2:3
+    const imageHeight = Math.round(cardWidth * posterAspect);
+
+    return (
+      <View style={{ 
+        width: cardWidth,
+        marginHorizontal: GRID_ITEM_MARGIN_HORIZONTAL,
+        marginBottom: 8
+      }}>
+        {selectedContentType === 'anime' && (
+          <AnimeColumnCard
+            anime={item}
+            cardWidth="100%"
+            imageWidth="100%"
+            imageHeight={imageHeight}
+            titleFontSize={13}
+            footerFontSize={11}
+            badgeFontSize={12}
+            badgeBottom={5}
+            badgeLeft={5}
+            badgeRight={5}
+            onPress={() => navigation.navigate('AnimeDetails', { slug: item.slug })}
+          />
+        )}
+        {selectedContentType === 'character' && (
+          <CharacterColumnCard 
+            character={item}
+            width="100%"
+            height="140px"
+            fontSize="13px"
+            cardWidth="100%"
+            onPress={() => navigation.navigate('CharacterDetails', { slug: item.slug })}
+          />
+        )}
+      </View>
+    );
+  }, [selectedContentType, navigation, windowWidth, computedNumColumns]);
 
   const renderListItem = useCallback(({ item }) => {
+    if (item.isLoader) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <Text style={styles.loadingMoreText}>Завантаження...</Text>
+        </View>
+      );
+    }
+
+    if (item.isEndMessage) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <Text style={styles.loadingMoreText}>Всі {getContentTypeLabel(selectedContentType).toLowerCase()} завантажені</Text>
+        </View>
+      );
+    }
+
     switch (selectedContentType) {
       case 'anime':
         return (
@@ -434,16 +480,17 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
     }
   }, [selectedContentType, navigation]);
 
-  const renderFooter = useCallback(() => {
-    if (loadingMore) {
-      return (
-        <View style={styles.loadingMoreContainer}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text style={styles.loadingMoreText}>Завантаження...</Text>
-        </View>
-      );
+  // Функція для створення масиву з лоадером або повідомленням про завершення
+  const getDataWithLoader = useCallback(() => {
+    if (hasMore && favorites.length > 0) {
+      return [...favorites, { isLoader: true, slug: 'loader' }];
+    } else if (!hasMore && favorites.length > 0) {
+      return [...favorites, { isEndMessage: true, slug: 'end-message' }];
     }
-    
+    return favorites;
+  }, [favorites, hasMore]);
+
+  const renderFooter = useCallback(() => {
     if (!hasMore && favorites.length > 0) {
       return (
         <View style={styles.loadingMoreContainer}>
@@ -453,29 +500,34 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
     }
     
     return null;
-  }, [loadingMore, hasMore, favorites.length, getContentTypeLabel, selectedContentType, styles, theme.colors.primary]);
+  }, [hasMore, favorites.length, getContentTypeLabel, selectedContentType, styles]);
 
   const keyExtractor = useCallback((item, index) => `${item.slug || item.id || 'item'}-${index}`, []);
   
   const flatListKey = useMemo(() => 
-    `${isGridView ? 'grid' : 'list'}-${selectedContentType}-${isGridView ? (selectedContentType === 'collection' ? 1 : 3) : 1}`, 
-    [isGridView, selectedContentType]
+    `${isGridView ? 'grid' : 'list'}-${selectedContentType}-${windowWidth}`,
+    [isGridView, selectedContentType, windowWidth]
   );
 
-  const numColumns = useMemo(() => 
-    isGridView ? (selectedContentType === 'collection' ? 1 : 3) : 1, 
-    [isGridView, selectedContentType]
-  );
+  const computedNumColumns = useMemo(() => {
+    if (!isGridView) return 1;
+    if (selectedContentType === 'collection') return 1;
+    if (windowWidth >= 1000) return 6;
+    if (windowWidth >= 800) return 5;
+    if (windowWidth >= 600) return 4;
+    return 3;
+  }, [windowWidth, isGridView, selectedContentType]);
 
-  const columnWrapperStyle = useMemo(() => 
-    isGridView && selectedContentType !== 'collection' ? styles.gridContainer : undefined, 
-    [isGridView, selectedContentType, styles.gridContainer]
-  );
+  const numColumns = useMemo(() => computedNumColumns, [computedNumColumns]);
+
+  const columnWrapperStyle = useMemo(() => (
+    isGridView ? styles.gridContainer : undefined
+  ), [isGridView, styles.gridContainer]);
 
   const contentContainerStyle = useMemo(() => ({
     paddingVertical: 8,
-    paddingHorizontal: isGridView && selectedContentType !== 'collection' ? 8 : 0
-  }), [isGridView, selectedContentType]);
+    paddingHorizontal: isGridView ? CONTENT_HORIZONTAL_PADDING : 0
+  }), [isGridView]);
 
   // Оптимізація для різних типів контенту
   const flatListProps = useMemo(() => {
@@ -613,8 +665,8 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
         </View>
       ) : (
         <FlatList
-          data={favorites}
-          keyExtractor={keyExtractor}
+          data={getDataWithLoader()}
+          keyExtractor={(item, index) => item.isLoader ? 'loader' : item.isEndMessage ? 'end-message' : keyExtractor(item, index)}
           renderItem={isGridView ? renderGridItem : renderListItem}
           key={flatListKey}
           numColumns={numColumns}

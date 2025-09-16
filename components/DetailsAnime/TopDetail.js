@@ -47,6 +47,17 @@ const TopDetail = ({ anime, isLoading = false }) => {
   const [bannerUrls, setBannerUrls] = useState([]);
   const previousImagesRef = useRef([]);
 
+  // Скидаємо стани банерів при зміні аніме (напр. швидкий перехід між сезонами)
+  useEffect(() => {
+    setTmdbBannerLoaded(null);
+    setAnilistBannerLoaded(null);
+    setKitsuBannerLoaded(null);
+    setBannerUrls([]);
+    setGalleryImages([]);
+    previousImagesRef.current = [];
+    setGalleryVisible(false);
+  }, [anime?.slug]);
+
   // Паралельне завантаження статусу та вподобаного при монтуванні
   useEffect(() => {
     if (!isAuthChecked || !authToken || !anime?.slug) return;
@@ -160,14 +171,19 @@ const TopDetail = ({ anime, isLoading = false }) => {
     }}
     activeOpacity={0.9}
   >
+    {/* Показуємо у фоні лише перший доступний банер, але завантажуємо всі для галереї */}
     <TMDBBanner
+      key={`${anime.slug}-tmdb`}
       tmdbId={anime.tmdb_id}
       title={anime.title_en || anime.title_ua || anime.title_ja}
+      titles={[anime.title_en, anime.title_ua, anime.title_ja].filter(Boolean)}
+      expectedYear={anime.year}
       mediaType={anime.media_type === 'tv' ? 'tv' : 'movie'}
+      height={tmdbBannerLoaded ? 350 : 0}
       onLoaded={(url) => {
         if (url) {
+          setTmdbBannerLoaded(true);
           setBannerUrls(prev => {
-            // Перевіряємо, чи URL вже не додано
             if (!prev.includes(url)) {
               return [...prev, url];
             }
@@ -178,43 +194,45 @@ const TopDetail = ({ anime, isLoading = false }) => {
         }
       }}
     />
-    
-    {tmdbBannerLoaded === false && (
-      <AnilistBanner
-        mal_id={anime.mal_id}
-        type="ANIME"
-        onLoaded={(url) => {
-          if (url) {
-            setBannerUrls(prev => {
-              // Перевіряємо, чи URL вже не додано
-              if (!prev.includes(url)) {
-                return [...prev, url];
-              }
-              return prev;
-            });
-          } else {
-            setAnilistBannerLoaded(false);
-          }
-        }}
-      />
-    )}
-    
-    {tmdbBannerLoaded === false && anilistBannerLoaded === false && (
-      <KitsuBanner
-        slug={anime.slug}
-        onLoaded={(url) => {
-          if (url) {
-            setBannerUrls(prev => {
-              // Перевіряємо, чи URL вже не додано
-              if (!prev.includes(url)) {
-                return [...prev, url];
-              }
-              return prev;
-            });
-          }
-        }}
-      />
-    )}
+
+    <AnilistBanner
+      key={`${anime.slug}-anilist`}
+      mal_id={anime.mal_id}
+      type="ANIME"
+      height={tmdbBannerLoaded === false && anilistBannerLoaded ? 350 : 0}
+      onLoaded={(url) => {
+        if (url) {
+          setAnilistBannerLoaded(true);
+          setBannerUrls(prev => {
+            if (!prev.includes(url)) {
+              return [...prev, url];
+            }
+            return prev;
+          });
+        } else {
+          setAnilistBannerLoaded(false);
+        }
+      }}
+    />
+
+    <KitsuBanner
+      key={`${anime.slug}-kitsu`}
+      slug={anime.slug}
+      height={tmdbBannerLoaded === false && anilistBannerLoaded === false && kitsuBannerLoaded ? 350 : 0}
+      onLoaded={(url) => {
+        if (url) {
+          setKitsuBannerLoaded(true);
+          setBannerUrls(prev => {
+            if (!prev.includes(url)) {
+              return [...prev, url];
+            }
+            return prev;
+          });
+        } else {
+          setKitsuBannerLoaded(false);
+        }
+      }}
+    />
   </TouchableOpacity>
   <GradientBlock />
 </BackgroundWrapper>
@@ -280,35 +298,43 @@ const TopDetail = ({ anime, isLoading = false }) => {
             <InfoTitle>Інформація</InfoTitle>
             <Score>{`${anime.score}`}<StyledStar name="star" /></Score>
             <InfoRow>
+              <InfoIcon name="tv" />
               <InfoBold>Тип:</InfoBold>
               <InfoText>{media_Type[anime.media_type]}</InfoText>
             </InfoRow>
             <InfoRow>
+              <InfoIcon name="checkmark-circle" />
               <InfoBold>Статус:</InfoBold>
               <InfoText>{status[anime.status]}</InfoText>
             </InfoRow>
             <InfoRow>
+              <InfoIcon name="list" />
               <InfoBold>Серій:</InfoBold>
               <InfoText>{anime.episodes_released || '?'}/{anime.episodes_total || '?'}</InfoText>
             </InfoRow>
             <InfoRow>
+              <InfoIcon name="time" />
               <InfoBold>Тривалість епізоду:</InfoBold>
               <InfoText>{anime.duration} хв.</InfoText>
             </InfoRow>
             <InfoRow>
+              <InfoIcon name="shield-checkmark" />
               <InfoBold>Рейтинг:</InfoBold>
               <InfoText>{rating[anime.rating]}</InfoText>
             </InfoRow>
             <InfoRow>
+              <InfoIcon name="calendar" />
               <InfoBold>Рік:</InfoBold>
               <InfoText>{`${anime.year}`}</InfoText>
             </InfoRow>
             <InfoRow>
+              <InfoIcon name="leaf" />
               <InfoBold>Сезон:</InfoBold>
               <InfoText>{season[anime.season]}</InfoText>
             </InfoRow>
             {studios.length > 0 && (
   <InfoRow>
+    <InfoIcon name="business" />
     <InfoBold>Студія:</InfoBold>
 
     <TouchableOpacity
@@ -340,6 +366,7 @@ const TopDetail = ({ anime, isLoading = false }) => {
 )}
 
 <InfoRow>
+  <InfoIcon name="pricetag" />
   <InfoBold>Жанри:</InfoBold>
   {anime.genres.map((genre) => (
     <TouchableOpacity
@@ -394,51 +421,43 @@ const TopDetail = ({ anime, isLoading = false }) => {
 
       {/* Модалка інформації */}
       <AnimatedModal visible={isInfoModalVisible} onClose={() => setInfoModalVisible(false)} title="Інформація про аніме">
-        <SheetColumn>
-          <SheetLabel>Назва 🇺🇦</SheetLabel>
-          {anime.title_ua ? (
+        {anime.title_ua ? (
+          <SheetColumn>
+            <SheetLabel>Назва 🇺🇦</SheetLabel>
             <TouchableOpacity onPress={() => copyToClipboard(anime.title_ua)}>
               <SheetText>{anime.title_ua} <StyledIcon name="copy" /></SheetText>
             </TouchableOpacity>
-          ) : (
-            <SheetText>Немає</SheetText>
-          )}
-        </SheetColumn>
+          </SheetColumn>
+        ) : null}
 
-        <SheetColumn>
-          <SheetLabel>Англійська назва 🇬🇧</SheetLabel>
-          {anime.title_en ? (
+        {anime.title_en ? (
+          <SheetColumn>
+            <SheetLabel>Англійська назва 🇬🇧</SheetLabel>
             <TouchableOpacity onPress={() => copyToClipboard(anime.title_en)}>
               <SheetText>{anime.title_en} <StyledIcon name="copy" /></SheetText>
             </TouchableOpacity>
-          ) : (
-            <SheetText>Немає</SheetText>
-          )}
-        </SheetColumn>
+          </SheetColumn>
+        ) : null}
 
-        <SheetColumn>
-          <SheetLabel>Оригінальна 🇯🇵</SheetLabel>
-          {anime.title_ja ? (
+        {anime.title_ja ? (
+          <SheetColumn>
+            <SheetLabel>Оригінальна 🇯🇵</SheetLabel>
             <TouchableOpacity onPress={() => copyToClipboard(anime.title_ja)}>
               <SheetText>{anime.title_ja} <StyledIcon name="copy" /></SheetText>
             </TouchableOpacity>
-          ) : (
-            <SheetText>Немає</SheetText>
-          )}
-        </SheetColumn>
+          </SheetColumn>
+        ) : null}
 
-        <SheetColumn>
-          <SheetLabel>Альтернативні назви</SheetLabel>
-          {Array.isArray(anime.synonyms) && anime.synonyms.length > 0 ? (
-            anime.synonyms.map((syn, i) => (
+        {Array.isArray(anime.synonyms) && anime.synonyms.length > 0 ? (
+          <SheetColumn>
+            <SheetLabel>Альтернативні назви</SheetLabel>
+            {anime.synonyms.map((syn, i) => (
               <TouchableOpacity key={i} onPress={() => copyToClipboard(syn)}>
                 <SheetText>{syn} <StyledIcon name="copy" /></SheetText>
               </TouchableOpacity>
-            ))
-          ) : (
-            <SheetText>Немає</SheetText>
-          )}
-        </SheetColumn>
+            ))}
+          </SheetColumn>
+        ) : null}
       </AnimatedModal>
 
       {/* Модалка студій */}
@@ -724,3 +743,9 @@ const ToggleText = styled.Text`
 `;
 
 const ToggleButtonStudio = styled.TouchableOpacity``;
+
+const InfoIcon = styled(Ionicons)`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 16px;
+  margin-right: 4px;
+`;

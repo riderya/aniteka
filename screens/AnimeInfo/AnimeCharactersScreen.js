@@ -95,9 +95,6 @@ const AnimeCharactersScreen = () => {
 
   const fetchCharacters = useCallback(async (page = 1, isLoadMore = false) => {
     try {
-      if (isLoadMore) {
-        setLoadingMore(true);
-      }
       
       const { data } = await axios.get(
         `https://api.hikka.io/anime/${slug}/characters?page=${page}&size=${CHARACTERS_PER_PAGE}`
@@ -134,23 +131,22 @@ const AnimeCharactersScreen = () => {
 
   const handleLoadMore = useCallback(() => {
     if (!loadingMore && hasMoreData) {
+      setLoadingMore(true); // Встановлюємо лоадер одразу
       fetchCharacters(currentPage + 1, true);
     }
   }, [loadingMore, hasMoreData, currentPage, fetchCharacters]);
 
-  const renderFooter = useCallback(() => {
-    // Показуємо лоадер тільки при завантаженні додаткових даних
-    if (loadingMore) {
-      return (
-        <LoadingFooter>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <LoadingText theme={theme}>
-            Завантаження персонажів...
-          </LoadingText>
-        </LoadingFooter>
-      );
+  // Функція для створення масиву з лоадером або повідомленням про завершення
+  const getDataWithLoader = useCallback(() => {
+    if (hasMoreData && characters.length > 0) {
+      return [...characters, { isLoader: true, character: { slug: 'loader' } }];
+    } else if (!hasMoreData && characters.length > 0) {
+      return [...characters, { isEndMessage: true, character: { slug: 'end-message' } }];
     }
-    
+    return characters;
+  }, [characters, hasMoreData]);
+
+  const renderFooter = useCallback(() => {
     if (!hasMoreData && characters.length > 0) {
       return (
         <EndMessage theme={theme}>
@@ -160,7 +156,7 @@ const AnimeCharactersScreen = () => {
     }
     
     return null;
-  }, [loadingMore, hasMoreData, characters.length, theme]);
+  }, [hasMoreData, characters.length, theme]);
 
   // Видаляємо лоадер при переході на екран
   // if (loading) {
@@ -181,24 +177,45 @@ const AnimeCharactersScreen = () => {
       </BlurOverlay>
 
       <FlatList
-        data={characters}
-        keyExtractor={(item, index) => `character-${item.character.slug}-${index}`}
+        data={getDataWithLoader()}
+        keyExtractor={(item, index) => item.isLoader ? 'loader' : item.isEndMessage ? 'end-message' : `character-${item.character.slug}-${index}`}
         contentContainerStyle={{
           paddingTop: headerHeight,
           paddingBottom: 20 + insets.bottom,
           flexGrow: 1, // Дозволяє контенту розтягуватися
           paddingHorizontal: 12,
         }}
-        renderItem={({ item }) => (
-          <CharacterCardItem 
-          character={item.character}
-          imageWidth={90}
-          imageHeight={120}
-          nameFontSize={16}
-          altNameFontSize={13}
-          imageBorderRadius={24}
-          />
-        )}
+        renderItem={({ item }) => {
+          if (item.isLoader) {
+            return (
+              <LoadingFooter>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <LoadingText theme={theme}>
+                  Завантаження персонажів...
+                </LoadingText>
+              </LoadingFooter>
+            );
+          }
+          if (item.isEndMessage) {
+            return (
+              <LoadingFooter>
+                <LoadingText theme={theme}>
+                  Всі персонажі завантажені
+                </LoadingText>
+              </LoadingFooter>
+            );
+          }
+          return (
+            <CharacterCardItem 
+            character={item.character}
+            imageWidth={90}
+            imageHeight={120}
+            nameFontSize={16}
+            altNameFontSize={13}
+            imageBorderRadius={24}
+            />
+          );
+        }}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}

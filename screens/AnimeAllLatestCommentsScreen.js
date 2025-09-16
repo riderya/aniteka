@@ -27,9 +27,9 @@ const AnimeAllLatestComments = () => {
         const response = await axios.get(`https://api.hikka.io/comments/list?page=${page}&size=20`);
         const newComments = response.data.list || [];
         
-        // Фільтруємо коментарі, щоб показувати тільки аніме (не новел, манги та правки)
+        // Фільтруємо коментарі, щоб показувати аніме, персонажів, статті, авторів та колекції (не новел, манги та правки)
         const filteredComments = newComments.filter(
-          comment => comment.content_type === 'anime' && comment.content_type !== 'edit'
+          comment => ['anime', 'character', 'article', 'person', 'collection'].includes(comment.content_type) && comment.content_type !== 'edit'
         );
         
         if (page === 1) {

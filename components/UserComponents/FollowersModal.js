@@ -14,7 +14,7 @@ const ModalOverlay = styled.View`
 
 const ModalContent = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
-  border-radius: 24px;
+  border-radius: 32px;
   width: 90%;
   max-height: 70%;
   overflow: hidden;
@@ -54,14 +54,16 @@ const UserItemTouchable = styled.TouchableOpacity`
 `;
 
 const FollowButton = styled.TouchableOpacity`
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: ${({ theme }) => `${theme.colors.primary}20`};
   padding: 6px 12px;
   border-radius: 16px;
   margin-left: 8px;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.primary};
 `;
 
 const FollowButtonText = styled.Text`
-  color: #ffffff;
+  color: ${({ theme }) => theme.colors.primary};
   font-size: 12px;
   font-weight: 500;
 `;
@@ -148,8 +150,6 @@ export default function FollowersModal({
   const fetchUsers = async (page = 1, append = false) => {
     if (page === 1) {
       setLoading(true);
-    } else {
-      setLoadingMore(true);
     }
     setError(null);
     
@@ -202,31 +202,63 @@ export default function FollowersModal({
 
   const loadMoreUsers = () => {
     if (loadingMore || pagination.page >= pagination.pages) return;
+    setLoadingMore(true); // Встановлюємо лоадер одразу
     fetchUsers(pagination.page + 1, true);
+  };
+
+  // Функція для створення масиву з лоадером або повідомленням про завершення
+  const getDataWithLoader = () => {
+    const hasMore = pagination.page < pagination.pages;
+    if (hasMore && users.length > 0) {
+      return [...users, { isLoader: true, username: 'loader' }];
+    } else if (!hasMore && users.length > 0) {
+      return [...users, { isEndMessage: true, username: 'end-message' }];
+    }
+    return users;
   };
 
 
 
-  const renderUser = ({ item }) => (
-    <UserItem>
-      <UserItemTouchable onPress={() => handleUserPress(item)}>
-        <UserAvatar 
-          source={
-            item.avatar 
-              ? { uri: item.avatar }
-              : require('../../assets/image/image404.png')
-          }
-        />
-        <UserInfo>
-          <Username>{item.username}</Username>
-          {item.description && <UserStatus numberOfLines={1}>{item.description}</UserStatus>}
-        </UserInfo>
-      </UserItemTouchable>
-             <FollowButton onPress={() => handleUserPress(item)}>
-         <FollowButtonText>Профіль</FollowButtonText>
-       </FollowButton>
-    </UserItem>
-  );
+  const renderUser = ({ item }) => {
+    // Якщо це лоадер-елемент
+    if (item.isLoader) {
+      return (
+        <LoadingContainer>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+        </LoadingContainer>
+      );
+    }
+
+    // Якщо це повідомлення про завершення
+    if (item.isEndMessage) {
+      return (
+        <LoadingContainer>
+          <EmptyText>Всі {type === 'followers' ? 'підписники' : 'підписки'} завантажені</EmptyText>
+        </LoadingContainer>
+      );
+    }
+
+    return (
+      <UserItem>
+        <UserItemTouchable onPress={() => handleUserPress(item)}>
+          <UserAvatar 
+            source={
+              item.avatar 
+                ? { uri: item.avatar }
+                : require('../../assets/image/image404.png')
+            }
+          />
+          <UserInfo>
+            <Username>{item.username}</Username>
+            {item.description && <UserStatus numberOfLines={1}>{item.description}</UserStatus>}
+          </UserInfo>
+        </UserItemTouchable>
+               <FollowButton onPress={() => handleUserPress(item)}>
+           <FollowButtonText>Профіль</FollowButtonText>
+         </FollowButton>
+      </UserItem>
+    );
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -269,19 +301,12 @@ export default function FollowersModal({
 
     return (
       <FlatList
-        data={users}
-        keyExtractor={(item) => item.username}
+        data={getDataWithLoader()}
+        keyExtractor={(item) => item.isLoader ? 'loader' : item.isEndMessage ? 'end-message' : item.username}
         renderItem={renderUser}
         showsVerticalScrollIndicator={false}
         onEndReached={loadMoreUsers}
         onEndReachedThreshold={0.1}
-        ListFooterComponent={
-          loadingMore ? (
-            <LoadingContainer>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-            </LoadingContainer>
-          ) : null
-        }
       />
     );
   };

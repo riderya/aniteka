@@ -50,10 +50,10 @@ const FollowButton = styled.TouchableOpacity`
   border-radius: 999px;
   background-color: ${({ isFollowed, theme, disabled }) => 
     disabled ? theme.colors.card : 
-    isFollowed ? theme.colors.card : theme.colors.primary};
+    isFollowed ? theme.colors.card : `${theme.colors.primary}20`};
   border: 1px solid ${({ isFollowed, theme, disabled }) => 
     disabled ? 'rgba(128, 128, 128, 0.3)' :
-    isFollowed ? theme.colors.border : 'transparent'};
+    isFollowed ? theme.colors.border : theme.colors.primary};
   opacity: ${({ disabled }) => disabled ? 0.6 : 1};
   width: 100%;
   flex-direction: row;
@@ -64,7 +64,7 @@ const FollowButton = styled.TouchableOpacity`
 const FollowButtonText = styled.Text`
   color: ${({ isFollowed, theme, disabled }) => 
     disabled ? theme.colors.gray : 
-    isFollowed ? theme.colors.text : '#ffffff'};
+    isFollowed ? theme.colors.text : `${theme.colors.primary}`};
   font-weight: 600;
   font-size: 16px;
 `;
@@ -78,8 +78,6 @@ const UserInfoContainer = styled.View`
   padding: 0px 12px;
   align-items: center;
 `;
-
-
 
 const LoadingContainer = styled.View`
   flex: 1;
@@ -115,44 +113,6 @@ const RetryButtonText = styled.Text`
   font-size: 16px;
 `;
 
-const RoleBadge = styled.View`
-  background-color: ${({ theme }) => theme.colors.primary};
-  padding: 4px 12px;
-  border-radius: 12px;
-  margin-top: 8px;
-`;
-
-const RoleText = styled.Text`
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
-`;
-
-const ProfileInfoContainer = styled.View`
-  margin-top: 16px;
-  padding: 16px;
-  background-color: ${({ theme }) => theme.colors.card};
-  border-radius: 12px;
-  gap: 8px;
-`;
-
-const ProfileInfoRow = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const ProfileInfoLabel = styled.Text`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 14px;
-`;
-
-const ProfileInfoValue = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 14px;
-  font-weight: 500;
-`;
-
 const ProfileActionButtonsContainer = styled.View`
   margin-top: 20px;
   padding: 0px;
@@ -168,7 +128,7 @@ const ActionButtonsScrollView = styled.ScrollView.attrs({
 
 const ActionButton = styled.TouchableOpacity`
   background-color: ${({ theme, isActive }) => 
-    isActive ? theme.colors.primary : theme.colors.card};
+    isActive ? `${theme.colors.primary}20` : theme.colors.card};
   padding: 12px 20px;
   border-radius: 25px;
   margin-right: 12px;
@@ -182,7 +142,7 @@ const ActionButton = styled.TouchableOpacity`
 
 const ActionButtonText = styled.Text`
   color: ${({ theme, isActive }) => 
-    isActive ? '#ffffff' : theme.colors.text};
+    isActive ? `${theme.colors.primary}` : theme.colors.text};
   font-size: 14px;
   font-weight: 600;
 `;
@@ -552,7 +512,7 @@ const UserProfile = () => {
                  <Ionicons 
                    name="stats-chart" 
                    size={16} 
-                   color={activeTab === 'statistics' ? '#ffffff' : theme.colors.text} 
+                   color={activeTab === 'statistics' ? `${theme.colors.primary}` : theme.colors.text} 
                  />
                  <ActionButtonText isActive={activeTab === 'statistics'}>
                    Статистика
@@ -566,7 +526,7 @@ const UserProfile = () => {
                  <Ionicons 
                    name="list" 
                    size={16} 
-                   color={activeTab === 'animeList' ? '#ffffff' : theme.colors.text} 
+                   color={activeTab === 'animeList' ? `${theme.colors.primary}` : theme.colors.text} 
                  />
                  <ActionButtonText isActive={activeTab === 'animeList'}>
                    Список аніме
@@ -580,7 +540,7 @@ const UserProfile = () => {
                  <Ionicons 
                    name="heart" 
                    size={16} 
-                   color={activeTab === 'favorites' ? '#ffffff' : theme.colors.text} 
+                   color={activeTab === 'favorites' ? `${theme.colors.primary}` : theme.colors.text} 
                  />
                  <ActionButtonText isActive={activeTab === 'favorites'}>
                    Улюблені
@@ -594,7 +554,7 @@ const UserProfile = () => {
                  <Ionicons 
                    name="folder" 
                    size={16} 
-                   color={activeTab === 'collections' ? '#ffffff' : theme.colors.text} 
+                   color={activeTab === 'collections' ? `${theme.colors.primary}` : theme.colors.text} 
                  />
                  <ActionButtonText isActive={activeTab === 'collections'}>
                    Колекції
@@ -608,7 +568,7 @@ const UserProfile = () => {
                  <Ionicons 
                    name="time" 
                    size={16} 
-                   color={activeTab === 'history' ? '#ffffff' : theme.colors.text} 
+                   color={activeTab === 'history' ? `${theme.colors.primary}` : theme.colors.text} 
                  />
                  <ActionButtonText isActive={activeTab === 'history'}>
                    Історія
@@ -641,7 +601,7 @@ const UserProfile = () => {
                      {isOwnProfile ? (
                        <Ionicons name="person" size={20} color={theme.colors.gray} />
                      ) : !isFollowed ? (
-                       <Ionicons name="person-add-outline" size={20} color="#ffffff"  />
+                       <Ionicons name="person-add-outline" size={20} color={theme.colors.primary}  />
                      ) : (
                        <Ionicons name="person-remove-outline" size={20} color={theme.colors.text} />
                      )}

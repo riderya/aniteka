@@ -166,7 +166,7 @@ const ColorSelectorContainer = styled.View`
 
 const CustomizationScreen = () => {
   const navigation = useNavigation();
-  const { theme, isDark } = useTheme();
+  const { theme, isDark, themeMode } = useTheme();
   const { isAuthenticated } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -299,9 +299,9 @@ const CustomizationScreen = () => {
                   />
                 </SettingsIcon>
                 <SettingsText>
-                  <SettingsTitle>Темна/Світла тема</SettingsTitle>
+                  <SettingsTitle>Темна/Світла/Системна тема</SettingsTitle>
                   <SettingsDescription>
-                    {isDark ? 'Поточна тема: Темна' : 'Поточна тема: Світла'}
+                    {themeMode === 'system' ? 'Поточна тема: Системна' : (isDark ? 'Поточна тема: Темна' : 'Поточна тема: Світла')}
                   </SettingsDescription>
                 </SettingsText>
               </SettingsItemLeft>

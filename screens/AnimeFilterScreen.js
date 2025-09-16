@@ -71,6 +71,8 @@ export default function AnimeFilterScreen() {
     selectedSort: 'score:desc',
   });
 
+  const [shouldAutoApply, setShouldAutoApply] = useState(false);
+
   const [dropdownStates, setDropdownStates] = useState({
     dropdownGenresVisible: false,
     dropdownMediaVisible: false,
@@ -130,14 +132,30 @@ export default function AnimeFilterScreen() {
         selectedGenres: initialFilters.genres || prev.selectedGenres,
         selectedMediaTypes: initialFilters.media_type || prev.selectedMediaTypes,
         selectedStatuses: initialFilters.status || prev.selectedStatuses,
-        selectedSeasons: initialFilters.airing_season || prev.selectedSeasons,
+        selectedSeasons: initialFilters.season || initialFilters.airing_season || prev.selectedSeasons,
         selectedRatings: initialFilters.rating || prev.selectedRatings,
         yearFrom: initialFilters.years?.[0] || prev.yearFrom,
         yearTo: initialFilters.years?.[1] || prev.yearTo,
         selectedSort: initialFilters.sort?.[0] || prev.selectedSort,
       }));
+      // Одразу показуємо результати, щоб уникнути миготіння панелі фільтрів
+      setShowResults(true);
+      setShouldAutoApply(true);
     }
   }, [route.params?.initialFilters]);
+
+  // Автозастосування, якщо прийшли з жанром
+  useEffect(() => {
+    if (route.params?.initialGenre) {
+      const genreSlug = route.params.initialGenre;
+      setFilters(prev => ({
+        ...prev,
+        selectedGenres: [genreSlug],
+      }));
+      setShowResults(true);
+      setShouldAutoApply(true);
+    }
+  }, [route.params?.initialGenre]);
 
 
 
@@ -278,6 +296,13 @@ export default function AnimeFilterScreen() {
     resetPage();
     fetchAnimeByFilters(true);
   }, [tokenReady, authToken, fetchAnimeByFilters]);
+
+  useEffect(() => {
+    if (shouldAutoApply && tokenReady && authToken) {
+      setShouldAutoApply(false);
+      applyFilters();
+    }
+  }, [shouldAutoApply, tokenReady, authToken, applyFilters]);
 
   const loadMore = () => {
     if (loadingAnime || !hasMore) return;

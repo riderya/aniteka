@@ -3,7 +3,6 @@ import {
   ActivityIndicator, 
   TouchableOpacity, 
   FlatList, 
-  Dimensions,
   View,
   Text,
   StyleSheet
@@ -14,8 +13,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import AnimeColumnCard from '../Cards/AnimeColumnCard';
 import AnimeRowCard from '../Cards/AnimeRowCard';
+import { useDimensions } from '../../hooks/useOrientation';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 // Grid layout constants
 const GRID_NUM_COLUMNS = 3;
 const CONTAINER_HORIZONTAL_PADDING = 12; // styles.container padding
@@ -75,7 +74,7 @@ const createStyles = (theme) => StyleSheet.create({
     justifyContent: 'center',
   },
   gridContainer: {
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
   loadingContainer: {
@@ -121,7 +120,7 @@ const createStyles = (theme) => StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
     zIndex: 1000,
-    width: screenWidth - 32 - 110, // Віднімаємо відступы та ширину кнопок справа
+    // ширина буде встановлюватись динамічно під час рендеру
   },
   dropdownOption: {
     flexDirection: 'row',
@@ -173,6 +172,7 @@ const createStyles = (theme) => StyleSheet.create({
 const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStatusChange }) => {
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const { width: windowWidth } = useDimensions();
   
   // Memoize styles to prevent recreation on every render
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -201,8 +201,6 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
     try {
       if (page === 1) {
         setLoading(true);
-      } else {
-        setLoadingMore(true);
       }
       setError(null);
 
@@ -370,9 +368,20 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
 
   const loadMoreAnime = useCallback(() => {
     if (!loadingMore && hasMore && !loading) {
+      setLoadingMore(true); // Встановлюємо лоадер одразу
       fetchWatchList(currentPage + 1, true);
     }
   }, [loadingMore, hasMore, loading, currentPage]);
+
+  // Функція для створення масиву з лоадером або повідомленням про завершення
+  const getDataWithLoader = useCallback(() => {
+    if (hasMore && animeList.length > 0) {
+      return [...animeList, { isLoader: true, anime: { slug: 'loader' } }];
+    } else if (!hasMore && animeList.length > 0) {
+      return [...animeList, { isEndMessage: true, anime: { slug: 'end-message' } }];
+    }
+    return animeList;
+  }, [animeList, hasMore]);
 
 
 
@@ -380,52 +389,94 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
     fetchWatchList();
   }, [fetchWatchList]);
 
-  const renderGridItem = useCallback(({ item }) => (
-    <View style={{ 
-      width: ((screenWidth - (CONTAINER_HORIZONTAL_PADDING * 2) - (CONTENT_HORIZONTAL_PADDING * 2)) - (GRID_NUM_COLUMNS * GRID_ITEM_MARGIN_HORIZONTAL * 2)) / GRID_NUM_COLUMNS,
-      marginHorizontal: GRID_ITEM_MARGIN_HORIZONTAL,
-      marginBottom: 8
-    }}>
-      <AnimeColumnCard
+  const renderGridItem = useCallback(({ item }) => {
+    if (item.isLoader) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <Text style={styles.loadingMoreText}>Завантаження...</Text>
+        </View>
+      );
+    }
+
+    if (item.isEndMessage) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <Text style={styles.loadingMoreText}>Всі аніме завантажені</Text>
+        </View>
+      );
+    }
+
+    const cardWidth = ((windowWidth - (CONTAINER_HORIZONTAL_PADDING * 2) - (CONTENT_HORIZONTAL_PADDING * 2)) - (computedNumColumns * GRID_ITEM_MARGIN_HORIZONTAL * 2)) / computedNumColumns;
+    const posterAspect = 1.4; // трохи нижчий за 2:3
+    const imageHeight = Math.round(cardWidth * posterAspect);
+
+    return (
+      <View style={{ 
+        width: cardWidth,
+        marginHorizontal: GRID_ITEM_MARGIN_HORIZONTAL,
+        marginBottom: 8
+      }}>
+        <AnimeColumnCard
+          anime={{
+            ...item.anime,
+            score: item.score,
+            episodes_released: item.episodes,
+            episodes_total: item.anime.episodes_total
+          }}
+          cardWidth="100%"
+          imageWidth="100%"
+          imageHeight={imageHeight}
+          titleFontSize={13}
+          footerFontSize={11}
+          badgeFontSize={12}
+          badgeBottom={5}
+          badgeLeft={5}
+          badgeRight={5}
+          onPress={() => navigation.navigate('AnimeDetails', { slug: item.anime.slug })}
+        />
+      </View>
+    );
+  }, [navigation, windowWidth, computedNumColumns]);
+
+  const renderListItem = useCallback(({ item }) => {
+    if (item.isLoader) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <Text style={styles.loadingMoreText}>Завантаження...</Text>
+        </View>
+      );
+    }
+
+    if (item.isEndMessage) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <Text style={styles.loadingMoreText}>Всі аніме завантажені</Text>
+        </View>
+      );
+    }
+
+    return (
+      <AnimeRowCard
         anime={{
           ...item.anime,
           score: item.score,
           episodes_released: item.episodes,
           episodes_total: item.anime.episodes_total
         }}
-        cardWidth="100%"
-        imageWidth="100%"
-        imageHeight={155}
-        titleFontSize={13}
-        footerFontSize={11}
-        badgeFontSize={12}
-        badgeBottom={5}
-        badgeLeft={5}
-        badgeRight={5}
+        imageWidth={90}
+        imageHeight={120}
+        titleFontSize={16}
+        episodesFontSize={15}
+        scoreFontSize={15}
+        descriptionFontSize={13}
+        statusFontSize={11}
+        marginBottom={16}
         onPress={() => navigation.navigate('AnimeDetails', { slug: item.anime.slug })}
       />
-    </View>
-  ), [navigation]);
-
-  const renderListItem = useCallback(({ item }) => (
-    <AnimeRowCard
-      anime={{
-        ...item.anime,
-        score: item.score,
-        episodes_released: item.episodes,
-        episodes_total: item.anime.episodes_total
-      }}
-      imageWidth={90}
-      imageHeight={120}
-      titleFontSize={16}
-      episodesFontSize={15}
-      scoreFontSize={15}
-      descriptionFontSize={13}
-      statusFontSize={11}
-      marginBottom={16}
-      onPress={() => navigation.navigate('AnimeDetails', { slug: item.anime.slug })}
-    />
-  ), [navigation]);
+    );
+  }, [navigation, styles, theme.colors.primary]);
 
   const renderFooter = useCallback(() => {
     if (loadingMore) {
@@ -450,23 +501,25 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
 
   // Оптимізація для FlatList
   const flatListKey = useMemo(() => 
-    `${isGridView ? 'grid' : 'list'}-${currentStatus}`, 
-    [isGridView, currentStatus]
+    `${isGridView ? 'grid' : 'list'}-${currentStatus}-${windowWidth}`,
+    [isGridView, currentStatus, windowWidth]
   );
 
-  const numColumns = useMemo(() => 
-    isGridView ? 3 : 1, 
-    [isGridView]
-  );
+  const computedNumColumns = useMemo(() => {
+    if (!isGridView) return 1;
+    if (windowWidth >= 1000) return 6;
+    if (windowWidth >= 800) return 5;
+    if (windowWidth >= 600) return 4;
+    return 3;
+  }, [windowWidth, isGridView]);
 
-  const columnWrapperStyle = useMemo(() => 
-    isGridView ? styles.gridContainer : undefined, 
-    [isGridView, styles.gridContainer]
-  );
+  const columnWrapperStyle = useMemo(() => (
+    isGridView ? styles.gridContainer : undefined
+  ), [isGridView, styles.gridContainer]);
 
   const contentContainerStyle = useMemo(() => ({
     paddingVertical: 8,
-    paddingHorizontal: isGridView ? 8 : 0
+    paddingHorizontal: isGridView ? CONTENT_HORIZONTAL_PADDING : 0
   }), [isGridView]);
 
   const keyExtractor = useCallback((item) => item.reference, []);
@@ -587,7 +640,7 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
       </View>
 
       {isDropdownOpen && (
-        <View style={styles.dropdownContainer}>
+        <View style={[styles.dropdownContainer, { width: windowWidth - 32 - 110 }]}>
           {statusOptions.map((option, index) => (
             <TouchableOpacity
               key={option.key}
@@ -614,20 +667,20 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
         </View>
       )}
 
-      <FlatList
-        data={animeList}
-        keyExtractor={keyExtractor}
-        renderItem={isGridView ? renderGridItem : renderListItem}
-        key={flatListKey}
-        numColumns={numColumns}
-        columnWrapperStyle={columnWrapperStyle}
-        contentContainerStyle={contentContainerStyle}
-        showsVerticalScrollIndicator={false}
-        onEndReached={loadMoreAnime}
-        onEndReachedThreshold={0.1}
-        ListFooterComponent={renderFooter}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
+        <FlatList
+          data={getDataWithLoader()}
+          keyExtractor={(item, index) => item.isLoader ? 'loader' : item.isEndMessage ? 'end-message' : keyExtractor(item, index)}
+          renderItem={isGridView ? renderGridItem : renderListItem}
+          key={flatListKey}
+          numColumns={computedNumColumns}
+          columnWrapperStyle={columnWrapperStyle}
+          contentContainerStyle={contentContainerStyle}
+          showsVerticalScrollIndicator={false}
+          onEndReached={loadMoreAnime}
+          onEndReachedThreshold={0.1}
+          ListFooterComponent={renderFooter}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
         windowSize={10}
         initialNumToRender={limit}
       />

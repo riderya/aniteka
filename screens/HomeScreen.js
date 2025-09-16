@@ -90,10 +90,8 @@ export default function HomeScreen() {
       descriptionText: "Найкращі аніме з високим рейтингом та великою кількістю оцінок.",
       onPress: () => navigation.navigate('AnimeFilterScreen', {
         initialFilters: {
-          status: ['finished'],
           years: [currentYear, currentYear],
           score: [8, 10],
-          season: [currentSeason],
           sort: ['score:desc', 'scored_by:desc'],
         }
       })

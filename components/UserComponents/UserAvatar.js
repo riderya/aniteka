@@ -58,16 +58,10 @@ const UsernameContainer = styled.View`
 `;
 
 const UserBadge = styled.TouchableOpacity`
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: ${({ theme }) => `${theme.colors.primary}20`};
   padding: 4px 8px;
   border-radius: 12px;
   position: relative;
-`;
-
-const UserBadgeText = styled.Text`
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
 `;
 
 const TooltipContainer = styled.View`
@@ -135,7 +129,7 @@ const getRoleIcon = (role, theme) => {
     case 'admin':
     case 'адмін':
     case 'administrator':
-      return <MaterialIcons name="admin-panel-settings" size={16} color="#ffffff" />;
+      return <MaterialIcons name="admin-panel-settings" size={16} color={theme.colors.primary} />;
     case 'moderator':
     case 'модератор':
     case 'mod':

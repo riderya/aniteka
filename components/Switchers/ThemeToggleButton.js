@@ -29,19 +29,19 @@ const ThemeIcon = styled.View`
 `;
 
 export const ThemeToggleButton = () => {
-  const { isDark, toggleTheme, theme } = useTheme();
+  const { isDark, toggleTheme, theme, themeMode } = useTheme();
 
   return (
     <ToggleButton onPress={toggleTheme} activeOpacity={0.8}>
       <ThemeIcon>
         <Ionicons 
-          name={isDark ? 'sunny' : 'moon'} 
+          name={themeMode === 'system' ? 'contrast' : (isDark ? 'moon' : 'sunny')} 
           size={14} 
           color={theme.colors.primary} 
         />
       </ThemeIcon>
       <ToggleButtonText>
-        {isDark ? 'Світла' : 'Темна'}
+        {themeMode === 'system' ? 'Системна' : (isDark ? 'Темна' : 'Світла')}
       </ToggleButtonText>
     </ToggleButton>
   );

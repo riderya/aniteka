@@ -3,7 +3,7 @@
     "name": "Aniteka",
     "slug": "aniteka",
     "version": "1.0.1",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -46,12 +46,18 @@
         }
       ],
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK"
       ],
       "runtimeVersion": "1.0.1",
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
-      "buildToolsVersion": "35.0.0"
+      "buildToolsVersion": "35.0.0",
+      "notification": {
+        "icon": "./assets/icon.png",
+        "color": "#FF231F7C"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -68,7 +74,15 @@
       "expo-asset",
       "expo-secure-store",
       "expo-image-picker",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#FF231F7C",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "owner": "osu_tenef",
     "extra": {

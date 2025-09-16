@@ -13,6 +13,7 @@ const AnilistBanner = ({ mal_id, type, height = 350, onLoaded }) => {
       return;
     }
 
+    let isActive = true;
     const fetchBanner = async () => {
       const query = `
         query ($mal_id: Int, $type: MediaType) {
@@ -41,6 +42,7 @@ const AnilistBanner = ({ mal_id, type, height = 350, onLoaded }) => {
         const json = await res.json();
         const url = json?.data?.Media?.bannerImage;
 
+        if (!isActive) return;
         if (url) {
           setBannerUrl(url);
           onLoaded?.(url); // Передаємо URL банеру
@@ -48,8 +50,10 @@ const AnilistBanner = ({ mal_id, type, height = 350, onLoaded }) => {
           onLoaded?.(false);
         }
       } catch (error) {
+        if (!isActive) return;
         onLoaded?.(false);
       } finally {
+        if (!isActive) return;
         setLoading(false);
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -60,6 +64,9 @@ const AnilistBanner = ({ mal_id, type, height = 350, onLoaded }) => {
     };
 
     fetchBanner();
+    return () => {
+      isActive = false;
+    };
   }, [mal_id, type]);
 
   if (!bannerUrl) return null;

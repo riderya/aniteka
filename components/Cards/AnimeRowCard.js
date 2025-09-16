@@ -368,7 +368,7 @@ const AnimeRowCard = React.memo(({
           {anime.year && anime.season && (
             <View style={styles.tag}>
               <Text style={styles.tagText}>
-                {formatSeason(anime.season)} {anime.year} г.
+                {formatSeason(anime.season)} {anime.year}р.
               </Text>
             </View>
           )}

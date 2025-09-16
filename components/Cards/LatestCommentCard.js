@@ -142,7 +142,7 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
       {showIndex && <CommentIndex>#{index + 1}</CommentIndex>}
       <CommentCard>
         <Row>
-          <TouchableOpacity onPress={handleUserPress} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+          <TouchableOpacity onPress={handleUserPress} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
             <Avatar source={{ uri: avatar }} />
             <View>
               <Username>{username}</Username>

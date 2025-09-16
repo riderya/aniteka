@@ -25,7 +25,7 @@ const Avatar = styled.Image`
   background-color: ${({ theme }) => theme.colors.card};
 `;
 const CommentBody = styled.View`flex: 1;`;
-const RowInfoTitle = styled.View`flex-direction: row; gap: 12px; margin-bottom: 4px;`;
+const RowInfoTitle = styled.View`flex-direction: row; gap: 12px; margin-bottom: 8px;`;
 const Username = styled.Text`
   font-weight: bold; color: ${({ theme }) => theme.colors.text}; font-size: 14px;
 `;
@@ -102,7 +102,7 @@ const ModalBackdrop = styled.Pressable`
 `;
 const ModalContainer = styled.View`
   background-color: ${({ theme }) => theme.colors.card};
-  padding: 25px; border-radius: 36px; width: 90%;
+  padding: 25px; border-radius: 32px; width: 90%;
 `;
 const ModalButton = styled.TouchableOpacity`
   flex-direction: row; align-items: center; padding: 6px 0px;
@@ -477,6 +477,7 @@ const CommentCard = ({
                 marginVertical: 0,
               },
             }}
+            disableLinks
           >
             {displayText}
           </Markdown>

@@ -19,6 +19,7 @@ import { useNotifications } from '../context/NotificationsContext';
 import { Ionicons } from '@expo/vector-icons';
 import LoginComponent from '../components/Auth/LoginComponent';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
+import NotificationService from '../services/NotificationService';
 
 const PAGE_SIZE = 15;
 
@@ -39,10 +40,46 @@ export default function NotificationsScreen({ navigation }) {
 
   const canLoadMore = page < pages && !isLoading && !isLoadingMore;
   const keyExtractor = useCallback(
-    (item) => item.reference || `${item.notification_type}:${item.created}`,
+    (item) => {
+      // Використовуємо reference як основний ключ, якщо він є
+      if (item.reference) {
+        return item.reference;
+      }
+      
+      // Для schedule_anime використовуємо комбінацію anime_id + episode для унікальності
+      if (item.notification_type === 'schedule_anime') {
+        const animeData = item.data?.list?.[0] || item.data;
+        const animeId = animeData?.anime_id || animeData?.id || '';
+        const episode = animeData?.after?.episodes_released || animeData?.episodes_released || '';
+        return `anime_${animeId}_ep_${episode}`;
+      }
+      
+      // Для інших типів використовуємо комбінацію тип + ID користувача + час
+      const userId = item.initiator_user?.id || '';
+      const timestamp = Math.floor(item.created / 60) * 60; // Округлюємо до хвилини для групування
+      return `${item.notification_type}_${userId}_${timestamp}`;
+    },
     []
   );
   const loadMoreLockRef = useRef(false);
+
+  // Функція для дедуплікації сповіщень
+  const deduplicateNotifications = useCallback((notifications) => {
+    const seen = new Set();
+    const deduplicated = [];
+    
+    for (const notification of notifications) {
+      const key = keyExtractor(notification);
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduplicated.push(notification);
+      }
+    }
+    
+    return deduplicated;
+  }, [keyExtractor]);
+
+  // Пуш-повідомлення тепер обробляються в NotificationsContext
 
   const loadPage = useCallback(
     async (targetPage = 1, replace = false) => {
@@ -66,9 +103,22 @@ export default function NotificationsScreen({ navigation }) {
         const newList = Array.isArray(data.list) ? data.list : [];
         const totalPages = Number(data?.pagination?.pages) || 1;
 
+        // Пуш-повідомлення тепер обробляються в NotificationsContext
+        // Тут тільки завантажуємо дані для відображення
+        
+        // Дедуплікуємо нові сповіщення
+        const deduplicatedNewList = deduplicateNotifications(newList);
+
         setPages(totalPages);
         setPage(targetPage);
-        setList((prev) => (replace || targetPage === 1 ? newList : [...prev, ...newList]));
+        setList((prev) => {
+          if (replace || targetPage === 1) {
+            return deduplicatedNewList;
+          }
+          // Дедуплікуємо весь список при додаванні нових елементів
+          const combinedList = [...prev, ...deduplicatedNewList];
+          return deduplicateNotifications(combinedList);
+        });
         
         if (targetPage === 1) {
           setIsInitialLoadComplete(true);
@@ -86,7 +136,7 @@ export default function NotificationsScreen({ navigation }) {
         setIsLoadingMore(false);
       }
     },
-    [token]
+    [token, deduplicateNotifications]
   );
 
   const refresh = useCallback(async () => {
@@ -170,6 +220,25 @@ export default function NotificationsScreen({ navigation }) {
         if (username) {
           navigation.navigate('UserProfileScreen', { username });
         }
+      } else if (type === 'comment_reply') {
+        const slug = item?.data?.slug;
+        const commentReference = item?.data?.comment_reference;
+        if (slug && commentReference) {
+          // Навігуємо до сторінки аніме з відкритим коментарем
+          navigation.navigate('AnimeDetails', { 
+            slug,
+            openComments: true,
+            commentReference: commentReference
+          });
+        } else if (slug) {
+          // Якщо немає посилання на коментар, просто відкриваємо аніме
+          navigation.navigate('AnimeDetails', { slug });
+        }
+      } else if (type === 'vote_increase' || type === 'comment_vote') {
+        const slug = item?.data?.slug;
+        if (slug) {
+          navigation.navigate('AnimeDetails', { slug });
+        }
       }
     },
     [markAsSeen, navigation]
@@ -190,6 +259,9 @@ export default function NotificationsScreen({ navigation }) {
       // Загружаем сразу без задержки для быстрого отклика
       loadPage(1, true);
     }
+
+    // Пуш-повідомлення тепер обробляються в NotificationsContext
+    // Тут тільки завантажуємо дані для відображення
   }, [token, loadPage, isInitialLoadComplete]);
 
   const EmptyState = useMemo(() => (
@@ -492,6 +564,12 @@ function getNotificationRightImageUri(item) {
     const d = getScheduleAnimeData(item);
     return d?.image || d?.poster || d?.cover || null;
   }
+  // Для comment_reply, vote_increase, comment_vote показуємо аватар користувача
+  if (type === 'comment_reply' || type === 'vote_increase' || type === 'comment_vote' || type === 'follow' || type === 'like') {
+    return item?.initiator_user?.avatar && item.initiator_user.avatar !== 'string'
+      ? item.initiator_user.avatar
+      : null;
+  }
   return item?.initiator_user?.avatar && item.initiator_user.avatar !== 'string'
     ? item.initiator_user.avatar
     : null;
@@ -520,7 +598,11 @@ function getScheduleAnimeData(item) {
 }
 
 function isAnimePoster(item) {
-  return item?.notification_type === 'schedule_anime';
+  const type = item?.notification_type;
+  // Для schedule_anime показуємо постер аніме
+  if (type === 'schedule_anime') return true;
+  // Для всіх інших типів показуємо круглий аватар
+  return false;
 }
 
 function formatTimeAgo(timestamp) {

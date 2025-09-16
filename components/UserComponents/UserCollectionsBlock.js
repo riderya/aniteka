@@ -67,8 +67,6 @@ const UserCollectionsBlock = ({ username, reference }) => {
         setRefreshing(true);
       } else if (page === 1) {
         setLoading(true);
-      } else {
-        setLoadingMore(true);
       }
       setError(null);
 
@@ -153,9 +151,20 @@ const UserCollectionsBlock = ({ username, reference }) => {
 
   const loadMoreCollections = () => {
     if (!loadingMore && hasMore && !loading) {
+      setLoadingMore(true); // Встановлюємо лоадер одразу
       const nextPage = currentPage + 1;
       fetchUserCollections(false, nextPage, true);
     }
+  };
+
+  // Функція для створення масиву з лоадером або повідомленням про завершення
+  const getDataWithLoader = () => {
+    if (hasMore && collections && collections.length > 0) {
+      return [...collections, { isLoader: true, slug: 'loader' }];
+    } else if (!hasMore && collections && collections.length > 0) {
+      return [...collections, { isEndMessage: true, slug: 'end-message' }];
+    }
+    return collections || [];
   };
 
   useEffect(() => {
@@ -194,15 +203,34 @@ const UserCollectionsBlock = ({ username, reference }) => {
     return null;
   };
 
-  const renderCollectionItem = ({ item }) => (
-    <View style={{ marginBottom: 24, width: '100%', alignItems: 'center' }}>
-      <CollectionCard 
-        item={item} 
-        compact={false}
-        cardWidth={Dimensions.get('window').width - 48} // Ширина з відступами
-      />
-    </View>
-  );
+  const renderCollectionItem = ({ item }) => {
+    if (item.isLoader) {
+      return (
+        <View style={{ padding: 20, alignItems: 'center' }}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <Text style={{ color: theme.colors.gray, marginTop: 8 }}>Завантаження...</Text>
+        </View>
+      );
+    }
+
+    if (item.isEndMessage) {
+      return (
+        <View style={{ padding: 20, alignItems: 'center' }}>
+          <Text style={{ color: theme.colors.gray }}>Всі колекції завантажені</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={{ marginBottom: 24, width: '100%', alignItems: 'center' }}>
+        <CollectionCard 
+          item={item} 
+          compact={false}
+          cardWidth={Dimensions.get('window').width - 48} // Ширина з відступами
+        />
+      </View>
+    );
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -231,8 +259,8 @@ const UserCollectionsBlock = ({ username, reference }) => {
 
     return (
       <FlatList
-        data={collections}
-        keyExtractor={(item) => `collection-${item.reference}`}
+        data={getDataWithLoader()}
+        keyExtractor={(item) => item.isLoader ? 'loader' : item.isEndMessage ? 'end-message' : `collection-${item.reference}`}
         vertical
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ 

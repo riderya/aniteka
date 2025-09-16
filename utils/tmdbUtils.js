@@ -38,6 +38,100 @@ export const getTMDBDetails = async (tmdbId, mediaType = 'tv') => {
   }
 };
 
+// Нормалізація рядків для порівняння назв
+const normalizeTitle = (str) => {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // діакритика
+    .replace(/[^a-z0-9\p{sc=Cyrl}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Han}\s]/giu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const extractYear = (dateStr) => {
+  if (!dateStr) return null;
+  const y = parseInt(String(dateStr).slice(0, 4), 10);
+  return Number.isFinite(y) ? y : null;
+};
+
+const titleMatches = (tmdbItem, titles = []) => {
+  const candidates = [
+    tmdbItem?.name,
+    tmdbItem?.original_name,
+    tmdbItem?.title,
+    tmdbItem?.original_title,
+  ].filter(Boolean);
+  if (candidates.length === 0 || titles.length === 0) return false;
+  const normCandidates = candidates.map(normalizeTitle);
+  const normTitles = titles.map(normalizeTitle).filter(Boolean);
+  return normTitles.some((t) => normCandidates.some((c) => c === t || c.includes(t) || t.includes(c)));
+};
+
+const yearMatches = (tmdbItem, expectedYear) => {
+  if (!expectedYear) return false;
+  const year = extractYear(tmdbItem?.first_air_date || tmdbItem?.release_date);
+  if (!year) return false;
+  return year === expectedYear; // строгий збіг року
+};
+
+export const findBestTMDBMatch = async (titles = [], expectedYear = null, mediaType = 'tv') => {
+  try {
+    const primaryTitle = titles.find(Boolean) || '';
+    const results = await searchTMDB(primaryTitle, mediaType);
+    if (!Array.isArray(results) || results.length === 0) return null;
+
+    // Оцінка: 2 бали за збіг року + назви, 1 бал за збіг назви, 1 бал за збіг року
+    const scored = results.slice(0, 10).map((item) => {
+      const matchTitle = titleMatches(item, titles);
+      const matchYear = yearMatches(item, expectedYear);
+      const score = (matchTitle && matchYear) ? 3 : (matchTitle ? 2 : (matchYear ? 1 : 0));
+      return { item, score, matchTitle, matchYear };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    const best = scored[0];
+    if (!best || best.score === 0) return null;
+    return best.item;
+  } catch (e) {
+    console.error('Error finding best TMDB match:', e);
+    return null;
+  }
+};
+
+export const getTMDBBannerValidatedById = async (tmdbId, titles = [], expectedYear = null, mediaType = 'tv') => {
+  try {
+    const details = await getTMDBDetails(tmdbId, mediaType);
+    if (!details) return null;
+    const validTitle = titles.length === 0 ? true : titleMatches(details, titles);
+    const validYear = expectedYear ? yearMatches(details, expectedYear) : true;
+    if (!(validTitle && validYear)) return null;
+    if (details?.backdrop_path) {
+      return `https://image.tmdb.org/t/p/original${details.backdrop_path}`;
+    }
+    return null;
+  } catch (e) {
+    console.error('Error validating TMDB by id:', e);
+    return null;
+  }
+};
+
+export const getTMDBBannerByMeta = async (titles = [], expectedYear = null, mediaType = 'tv') => {
+  try {
+    const match = await findBestTMDBMatch(titles, expectedYear, mediaType);
+    if (!match) return null;
+    const details = await getTMDBDetails(match.id, mediaType);
+    if (details?.backdrop_path) {
+      return `https://image.tmdb.org/t/p/original${details.backdrop_path}`;
+    }
+    return null;
+  } catch (e) {
+    console.error('Error fetching TMDB banner by meta:', e);
+    return null;
+  }
+};
+
 /**
  * Отримання банеру аніме з TMDB
  * @param {number} tmdbId - TMDB ID

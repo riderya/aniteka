@@ -17,6 +17,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import CollectionCard from '../components/Cards/CollectionCard';
+import CollectionCardSkeleton from '../components/Skeletons/CollectionCardSkeleton';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -81,7 +82,15 @@ const AnimeCollectionsScreen = () => {
 
   const renderHeader = () => (
     <FilterContainer>
-      <DropdownButton onPress={() => setIsSortModalVisible(true)}>
+      <DropdownButton
+        onPress={() => {
+          const currentIndex = sortOptions.findIndex((opt) => opt.value === sort);
+          const nextIndex = (currentIndex + 1) % sortOptions.length;
+          setSort(sortOptions[nextIndex].value);
+        }}
+        onLongPress={() => setIsSortModalVisible(true)}
+        delayLongPress={250}
+      >
         <DropdownText>
           {sortOptions.find((opt) => opt.value === sort)?.label || 'Сортування'}
         </DropdownText>
@@ -97,33 +106,37 @@ const AnimeCollectionsScreen = () => {
       </BlurOverlay>
 
       <Wrapper>
-        {loading ? (
-          <ActivityIndicator size="large" style={{ marginTop: 32 }} />
-        ) : (
-          <FlatList
-            data={collections}
-            keyExtractor={(item, index) => item.reference + index}
-            renderItem={({ item }) => <CollectionCard item={item} />}
-            contentContainerStyle={{
-              paddingTop: insets.top + 56 + 20,
-              paddingBottom: 20 + insets.bottom,
-              paddingHorizontal: 12,
-            }}
-            ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
-            ListHeaderComponent={renderHeader}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[theme.colors.text]}
-                tintColor={theme.colors.text}
-                progressViewOffset={insets.top + 56}
-                progressBackgroundColor={isDark ? theme.colors.card : undefined}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-          />
-        )}
+        <FlatList
+          data={loading ? Array.from({ length: 6 }).map((_, i) => ({ __skeleton: i })) : collections}
+          keyExtractor={(item, index) =>
+            loading ? `skeleton-${index}` : (item.reference ? item.reference + index : String(index))
+          }
+          renderItem={({ item }) =>
+            loading ? (
+              <CollectionCardSkeleton />
+            ) : (
+              <CollectionCard item={item} />
+            )
+          }
+          contentContainerStyle={{
+            paddingTop: insets.top + 56 + 20,
+            paddingBottom: 20 + insets.bottom,
+            paddingHorizontal: 12,
+          }}
+          ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
+          ListHeaderComponent={renderHeader}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[theme.colors.text]}
+              tintColor={theme.colors.text}
+              progressViewOffset={insets.top + 56}
+              progressBackgroundColor={isDark ? theme.colors.card : undefined}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
       </Wrapper>
 
       {/* Модальне вікно сортування */}

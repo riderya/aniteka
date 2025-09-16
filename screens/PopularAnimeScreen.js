@@ -17,6 +17,28 @@ const Container = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
+const RankWrapper = styled.View`
+  flex-direction: row;
+  align-items: center;
+`;
+
+const RankBadge = styled.View`
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.primary};
+  background-color: ${({ theme }) => `${theme.colors.primary}22`};
+`;
+
+const RankText = styled.Text`
+  color: ${({ theme }) => theme.colors.primary};
+  font-weight: 700;
+`;
+
 const BlurOverlay = styled(PlatformBlurView)`
   position: absolute;
   top: 0;
@@ -113,14 +135,7 @@ const PopularAnimeScreen = () => {
   const [authToken, setAuthToken] = useState(null);
   const [tokenReady, setTokenReady] = useState(false);
   
-  // Фільтри для популярного аніме
-  const [selectedFilter, setSelectedFilter] = useState('popular');
-  const filters = [
-    { key: 'popular', label: 'Популярне', sort: ['scored_by:desc', 'score:desc'] },
-    { key: 'top_rated', label: 'Топ рейтинг', sort: ['score:desc', 'scored_by:desc'] },
-    { key: 'recent', label: 'Недавні', sort: ['start_date:desc'] },
-    { key: 'trending', label: 'В тренді', sort: ['scored_by:desc'] },
-  ];
+  // Відображаємо тільки популярне
 
   // Завантаження токена
   useEffect(() => {
@@ -152,8 +167,8 @@ const PopularAnimeScreen = () => {
         setLoadingMore(true);
       }
 
-      const currentFilter = filters.find(f => f.key === selectedFilter);
-      const sortParams = currentFilter?.sort || ['scored_by:desc', 'score:desc'];
+      // Сортування тільки для популярного
+      const sortParams = ['scored_by:desc', 'score:desc'];
 
       const requestBody = {
         years: [null, null],
@@ -216,16 +231,16 @@ const PopularAnimeScreen = () => {
       setRefreshing(false);
       setLoadingMore(false);
     }
-  }, [tokenReady, authToken, selectedFilter, filters]);
+  }, [tokenReady, authToken]);
 
-  // Завантаження при зміні фільтра
+  // Початкове завантаження
   useEffect(() => {
     if (tokenReady) {
       setPage(1);
       setHasMore(true);
       fetchAnime(1);
     }
-  }, [selectedFilter, tokenReady, fetchAnime]);
+  }, [tokenReady, fetchAnime]);
 
   // Обробка оновлення
   const handleRefresh = useCallback(() => {
@@ -250,14 +265,41 @@ const PopularAnimeScreen = () => {
   }, [fetchAnime]);
 
   // Рендер елемента списку
-  const renderAnimeItem = useCallback(({ item }) => (
-    <AnimeRowCard
-      anime={item}
-      imageWidth={95}
-      imageHeight={125}
-      marginBottom={20}
-    />
-  ), []);
+  const renderAnimeItem = useCallback(({ item, index }) => {
+    const rank = index + 1;
+    const goldShades = [
+      { bg: '#FFD70022', border: '#FFD700', text: '#B8860B' }, // 1
+      { bg: '#E6C20022', border: '#E6C200', text: '#9C7A00' }, // 2
+      { bg: '#CCA30022', border: '#CCA300', text: '#8C6D00' }, // 3
+      { bg: '#B38F0022', border: '#B38F00', text: '#735A00' }, // 4
+      { bg: '#997A0022', border: '#997A00', text: '#5C4700' }, // 5
+    ];
+    const shade = rank <= 5 ? goldShades[rank - 1] : null;
+    const badgeStyle = shade ? {
+      backgroundColor: shade.bg,
+      borderColor: shade.border,
+      shadowColor: shade.border,
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
+    } : null;
+    const textStyle = shade ? { color: shade.text } : null;
+
+    return (
+      <RankWrapper>
+        <RankBadge style={badgeStyle}>
+          <RankText style={textStyle}>{rank}</RankText>
+        </RankBadge>
+        <AnimeRowCard
+          anime={item}
+          imageWidth={95}
+          imageHeight={125}
+          marginBottom={20}
+        />
+      </RankWrapper>
+    );
+  }, []);
 
   // Рендер футера для завантаження
   const renderFooter = useCallback(() => {
@@ -321,20 +363,7 @@ const PopularAnimeScreen = () => {
       </BlurOverlay>
       
       <ContentContainer style={{ paddingTop: insets.top + 56 }}>
-        {/* Фільтри */}
-        <FilterContainer>
-          {filters.map((filter) => (
-            <FilterButton
-              key={filter.key}
-              selected={selectedFilter === filter.key}
-              onPress={() => setSelectedFilter(filter.key)}
-            >
-              <FilterButtonText selected={selectedFilter === filter.key}>
-                {filter.label}
-              </FilterButtonText>
-            </FilterButton>
-          ))}
-        </FilterContainer>
+        {/* Фільтри прибрано: показуємо лише популярне */}
 
         {/* Список аніме */}
         <FlatList
