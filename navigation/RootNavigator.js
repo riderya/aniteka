@@ -12,6 +12,7 @@ import ProfileEditScreen from '../screens/ProfileEditScreen';
 import CustomizationScreen from '../screens/CustomizationScreen';
 import ListImportScreen from '../screens/ListImportScreen';
 import NotificationsSettingsScreen from '../screens/NotificationsSettingsScreen';
+import LoginHistoryScreen from '../screens/LoginHistoryScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AnimeDetailsScreen from '../screens/AnimeDetailsScreen';
 import AnimeVideosScreen from '../screens/AnimeInfo/AnimeVideosScreen';
@@ -29,6 +30,10 @@ import AnimeAllArticlesScreen from '../screens/AnimeAllArticlesScreen';
 import ArticleDetailScreen from '../screens/ArticleDetailScreen';
 import CollectionDetailScreen from '../screens/CollectionDetailScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
+import CopyrightHoldersScreen from '../screens/CopyrightHoldersScreen';
+import CommunityRulesScreen from '../screens/CommunityRulesScreen';
+import HelpScreen from '../screens/HelpScreen';
+import CheckUpdatesScreen from '../screens/CheckUpdatesScreen';
 
 
 import CommentRepliesScreen from '../screens/CommentRepliesScreen';
@@ -98,6 +103,7 @@ export default function RootNavigator() {
       <RootStack.Screen name="Customization" component={CustomizationScreen} />
       <RootStack.Screen name="ListImport" component={ListImportScreen} />
       <RootStack.Screen name="NotificationsSettings" component={NotificationsSettingsScreen} />
+      <RootStack.Screen name="LoginHistory" component={LoginHistoryScreen} />
       <RootStack.Screen name="Notifications" component={NotificationsScreen} />
       <RootStack.Screen name="AnimeDetails" component={AnimeDetailsScreen} />
       <RootStack.Screen name="AnimeVideosScreen" component={AnimeVideosScreen} />
@@ -115,6 +121,10 @@ export default function RootNavigator() {
       <RootStack.Screen name="ArticleDetailScreen" component={ArticleDetailScreen} />
       <RootStack.Screen name="CollectionDetailScreen" component={CollectionDetailScreen} />
       <RootStack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+      <RootStack.Screen name="CopyrightHolders" component={CopyrightHoldersScreen} />
+      <RootStack.Screen name="CommunityRules" component={CommunityRulesScreen} />
+      <RootStack.Screen name="Help" component={HelpScreen} />
+      <RootStack.Screen name="CheckUpdates" component={CheckUpdatesScreen} />
 
 
        <RootStack.Screen name="CommentRepliesScreen" component={CommentRepliesScreen} />

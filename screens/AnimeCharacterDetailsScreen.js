@@ -519,7 +519,7 @@ const AnimeCharacterDetailsScreen = () => {
                 <GrayIcon name="list" />
                 <Label>Синоніми</Label>
               </RowLeft>
-              <Value numberOfLines={1}>{character.synonyms.join(', ')}</Value>
+              <Value>{character.synonyms.join(', ')}</Value>
             </RowBetween>
           )}
         </BlockBorder>

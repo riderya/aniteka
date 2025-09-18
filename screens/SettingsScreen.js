@@ -55,6 +55,7 @@ const ContentContainer = styled.View`
 
 const TabListContainer = styled.View`
   flex: 1;
+  padding: 0px 12px;
 `;
 
 const TabListTitle = styled.Text`
@@ -73,20 +74,19 @@ const TabListSubtitle = styled.Text`
 `;
 
 const TabListGrid = styled.View`
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  flex-direction: column;
 `;
 
 const TabCard = styled.TouchableOpacity`
-  width: 48%;
+  width: 100%;
   background-color: ${({ theme }) => theme.colors.card};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 16px;
   padding: 24px 16px;
   margin-bottom: 16px;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 `;
 
 const TabCardIcon = styled.View`
@@ -96,39 +96,34 @@ const TabCardIcon = styled.View`
   background-color: ${({ theme }) => theme.colors.primary}20;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-right: 12px;
+`;
+
+const TabCardText = styled.View`
+  flex: 1;
 `;
 
 const TabCardTitle = styled.Text`
   font-size: 16px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text};
-  text-align: center;
+  text-align: left;
   margin-bottom: 4px;
 `;
 
 const TabCardDescription = styled.Text`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
-  text-align: center;
+  text-align: left;
 `;
-
-
 
 const ContentScroll = styled.ScrollView.attrs(({ insets }) => ({
   contentContainerStyle: {
-    padding: 12,
     paddingTop: 120,
     paddingBottom: insets.bottom + 20,
   },
 }))`
   flex: 1;
-`;
-
-
-
-const Section = styled.View`
-  margin-bottom: 30px;
 `;
 
 const SectionTitle = styled.Text`
@@ -137,54 +132,6 @@ const SectionTitle = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   margin-bottom: 15px;
 `;
-
-const SettingsItem = styled.TouchableOpacity`
-  background-color: ${({ theme }) => theme.colors.card};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const SettingsItemLeft = styled.View`
-  flex-direction: row;
-  align-items: center;
-  flex: 1;
-`;
-
-const SettingsIcon = styled.View`
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
-  background-color: ${({ theme }) => theme.colors.primary}20;
-  align-items: center;
-  justify-content: center;
-  margin-right: 12px;
-`;
-
-const SettingsText = styled.View`
-  flex: 1;
-`;
-
-const SettingsTitle = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-weight: 600;
-  font-size: 16px;
-  margin-bottom: 4px;
-`;
-
-const SettingsDescription = styled.Text`
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 14px;
-`;
-
-const ArrowIcon = styled.View`
-  margin-left: 8px;
-`;
-
 
 const SettingsScreen = () => {
   const navigation = useNavigation();
@@ -225,6 +172,30 @@ const SettingsScreen = () => {
       icon: 'color-palette-outline',
       description: 'Тема та кольори додатку'
     },
+    { 
+      id: 'copyright', 
+      title: 'Правовласникам', 
+      icon: 'document-text-outline',
+      description: 'Інформація для правовласників контенту'
+    },
+    { 
+      id: 'community-rules', 
+      title: 'Правила спільноти', 
+      icon: 'people-outline',
+      description: 'Правила поведінки та використання додатку'
+    },
+    { 
+      id: 'help', 
+      title: 'Допомога', 
+      icon: 'help-circle-outline',
+      description: 'Питання та відповіді'
+    },
+    { 
+      id: 'check-updates', 
+      title: 'Перевірити оновлення', 
+      icon: 'download-outline',
+      description: 'Перевірка наявності нових версій'
+    },
   ];
 
   const handleTabPress = (tabId) => {
@@ -244,6 +215,18 @@ const SettingsScreen = () => {
       case 'customization':
         navigation.navigate('Customization');
         break;
+      case 'copyright':
+        navigation.navigate('CopyrightHolders');
+        break;
+      case 'community-rules':
+        navigation.navigate('CommunityRules');
+        break;
+      case 'help':
+        navigation.navigate('Help');
+        break;
+      case 'check-updates':
+        navigation.navigate('CheckUpdates');
+        break;
       default:
         break;
     }
@@ -253,11 +236,6 @@ const SettingsScreen = () => {
 
   const renderTabList = () => (
     <TabListContainer>
-      <TabListTitle>Налаштування</TabListTitle>
-      <TabListSubtitle>
-        Оберіть розділ налаштувань, який хочете змінити
-      </TabListSubtitle>
-      
       <TabListGrid>
         {availableTabs.map((tab) => (
           <TabCard
@@ -271,8 +249,10 @@ const SettingsScreen = () => {
                 color={theme.colors.primary} 
               />
             </TabCardIcon>
-            <TabCardTitle>{tab.title}</TabCardTitle>
-            <TabCardDescription>{tab.description}</TabCardDescription>
+            <TabCardText>
+              <TabCardTitle>{tab.title}</TabCardTitle>
+              <TabCardDescription>{tab.description}</TabCardDescription>
+            </TabCardText>
           </TabCard>
         ))}
       </TabListGrid>

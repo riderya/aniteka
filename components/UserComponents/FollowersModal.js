@@ -4,6 +4,7 @@ import { Modal, FlatList, ActivityIndicator, TouchableOpacity, Image } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
+import MarkdownText from '../Custom/MarkdownText';
 
 const ModalOverlay = styled.View`
   flex: 1;
@@ -85,9 +86,7 @@ const Username = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const UserStatus = styled.Text`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.gray};
+const UserStatus = styled.View`
   margin-top: 2px;
 `;
 
@@ -250,7 +249,19 @@ export default function FollowersModal({
           />
           <UserInfo>
             <Username>{item.username}</Username>
-            {item.description && <UserStatus numberOfLines={1}>{item.description}</UserStatus>}
+            {item.description && (
+              <UserStatus>
+                <MarkdownText 
+                  disableLinks={true}
+                  numberOfLines={1}
+                  style={{
+                    body: { color: theme.colors.gray, fontSize: 14, lineHeight: 18 }
+                  }}
+                >
+                  {item.description}
+                </MarkdownText>
+              </UserStatus>
+            )}
           </UserInfo>
         </UserItemTouchable>
                <FollowButton onPress={() => handleUserPress(item)}>

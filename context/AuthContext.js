@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { saveUserToSupabaseWithFallback, getUserFromSupabase, updateLastLogin, updateHikkaUpdatedAt, testSupabaseConnection, getUserCoins } from '../utils/supabase';
+import { initLoginHistoryDB, addLoginRecord } from '../utils/loginHistoryDB';
 
 const AuthContext = createContext();
 
@@ -17,6 +19,8 @@ export function AuthProvider({ children }) {
     checkAuthStatus();
     // Ініціалізуємо Supabase при запуску
     testSupabaseConnection();
+    // Ініціалізуємо базу даних для історії входів
+    initLoginHistoryDB().catch(console.error);
   }, []); // Видаляємо checkAuthStatus з залежностей
 
   const checkAuthStatus = useCallback(async () => {
@@ -123,6 +127,19 @@ export function AuthProvider({ children }) {
       // Оновлюємо час останнього входу в Supabase
       if (userDataResult?.reference) {
         await updateLastLogin(userDataResult.reference);
+      }
+
+      // Записуємо подію входу в SQLite базу даних
+      try {
+        await addLoginRecord({
+          timestamp: new Date().toISOString(),
+          userId: userDataResult?.reference || null,
+          username: userDataResult?.username || null,
+          platform: Platform?.OS || 'unknown',
+        });
+      } catch (e) {
+        // ignore history write errors
+        console.error('Failed to record login history:', e);
       }
     } catch (error) {
       console.error('AuthContext: Login error:', error);

@@ -25,7 +25,7 @@ export default function NotificationsSettingsScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { expoPushToken, initializeNotifications, checkNotificationsManually, isWifiConnected } = useNotifications();
+  const { expoPushToken, initializeNotifications } = useNotifications();
   
   const [settings, setSettings] = useState({
     // Загальні
@@ -60,6 +60,7 @@ export default function NotificationsSettingsScreen() {
     systemUpdates: true,
   });
   const [permissionStatus, setPermissionStatus] = useState(null);
+  const isPermissionGranted = permissionStatus === true;
 
   useEffect(() => {
     loadSettings();
@@ -77,8 +78,6 @@ export default function NotificationsSettingsScreen() {
       const hasPermission = await NotificationService.checkPermissions();
       setPermissionStatus(hasPermission);
       if (!hasPermission && settings.pushNotifications) {
-        // Якщо пуш-повідомлення увімкнені але дозволу немає, показуємо попередження
-        console.log('Пуш-повідомлення увімкнені, але дозволу немає');
       }
     } catch (error) {
       console.error('Помилка перевірки дозволу:', error);
@@ -219,10 +218,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.pushNotifications}
+                value={isPermissionGranted ? settings.pushNotifications : false}
                 onValueChange={() => toggleSetting('pushNotifications')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.pushNotifications ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.pushNotifications : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -237,10 +237,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.sound}
+                value={isPermissionGranted ? settings.sound : false}
                 onValueChange={() => toggleSetting('sound')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.sound ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.sound : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -255,10 +256,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.vibration}
+                value={isPermissionGranted ? settings.vibration : false}
                 onValueChange={() => toggleSetting('vibration')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.vibration ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.vibration : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -278,10 +280,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.commentReply}
+                value={isPermissionGranted ? settings.commentReply : false}
                 onValueChange={() => toggleSetting('commentReply')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.commentReply ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.commentReply : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -296,10 +299,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.commentMention}
+                value={isPermissionGranted ? settings.commentMention : false}
                 onValueChange={() => toggleSetting('commentMention')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.commentMention ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.commentMention : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -314,10 +318,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.commentInCollection}
+                value={isPermissionGranted ? settings.commentInCollection : false}
                 onValueChange={() => toggleSetting('commentInCollection')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.commentInCollection ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.commentInCollection : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -332,10 +337,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.commentInArticle}
+                value={isPermissionGranted ? settings.commentInArticle : false}
                 onValueChange={() => toggleSetting('commentInArticle')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.commentInArticle ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.commentInArticle : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -350,10 +356,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.commentInWork}
+                value={isPermissionGranted ? settings.commentInWork : false}
                 onValueChange={() => toggleSetting('commentInWork')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.commentInWork ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.commentInWork : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
           </Section>
@@ -372,10 +379,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.ratingComment}
+                value={isPermissionGranted ? settings.ratingComment : false}
                 onValueChange={() => toggleSetting('ratingComment')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.ratingComment ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.ratingComment : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -390,10 +398,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.ratingCollection}
+                value={isPermissionGranted ? settings.ratingCollection : false}
                 onValueChange={() => toggleSetting('ratingCollection')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.ratingCollection ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.ratingCollection : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -408,10 +417,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.ratingArticle}
+                value={isPermissionGranted ? settings.ratingArticle : false}
                 onValueChange={() => toggleSetting('ratingArticle')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.ratingArticle ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.ratingArticle : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
           </Section>
@@ -430,10 +440,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.editAccepted}
+                value={isPermissionGranted ? settings.editAccepted : false}
                 onValueChange={() => toggleSetting('editAccepted')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.editAccepted ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.editAccepted : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -448,10 +459,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.editRejected}
+                value={isPermissionGranted ? settings.editRejected : false}
                 onValueChange={() => toggleSetting('editRejected')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.editRejected ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.editRejected : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
           </Section>
@@ -470,10 +482,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.animeUpdates}
+                value={isPermissionGranted ? settings.animeUpdates : false}
                 onValueChange={() => toggleSetting('animeUpdates')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.animeUpdates ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.animeUpdates : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
           </Section>
@@ -492,10 +505,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.userSubscribe}
+                value={isPermissionGranted ? settings.userSubscribe : false}
                 onValueChange={() => toggleSetting('userSubscribe')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.userSubscribe ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.userSubscribe : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
 
@@ -510,10 +524,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.userLike}
+                value={isPermissionGranted ? settings.userLike : false}
                 onValueChange={() => toggleSetting('userLike')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.userLike ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.userLike : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
           </Section>
@@ -532,10 +547,11 @@ export default function NotificationsSettingsScreen() {
                 </SettingsText>
               </SettingsItemLeft>
               <Switch
-                value={settings.systemUpdates}
+                value={isPermissionGranted ? settings.systemUpdates : false}
                 onValueChange={() => toggleSetting('systemUpdates')}
                 trackColor={{ false: theme.colors.border, true: theme.colors.primary + '40' }}
-                thumbColor={settings.systemUpdates ? theme.colors.primary : theme.colors.textSecondary}
+                thumbColor={(isPermissionGranted ? settings.systemUpdates : false) ? theme.colors.primary : theme.colors.textSecondary}
+                disabled={!isPermissionGranted}
               />
             </SettingsItem>
           </Section>
@@ -563,11 +579,32 @@ export default function NotificationsSettingsScreen() {
                 </SettingsIcon>
                 <SettingsText>
                   <SettingsTitle>Запитати дозвіл на сповіщення</SettingsTitle>
-                  <SettingsDescription>
-                    {permissionStatus === true ? '✅ Дозвіл надано' : 
-                     permissionStatus === false ? '❌ Потрібен дозвіл для пуш-повідомлень' : 
-                     '⏳ Перевірка статусу...'}
-                  </SettingsDescription>
+                  <StatusRow>
+                    <Ionicons
+                      name={
+                        permissionStatus === true
+                          ? 'checkmark-circle'
+                          : permissionStatus === false
+                          ? 'close-circle'
+                          : 'time-outline'
+                      }
+                      size={16}
+                      color={
+                        permissionStatus === true
+                          ? theme.colors.primary
+                          : permissionStatus === false
+                          ? theme.colors.textSecondary
+                          : theme.colors.textSecondary
+                      }
+                    />
+                    <StatusText>
+                      {permissionStatus === true
+                        ? 'Дозвіл надано'
+                        : permissionStatus === false
+                        ? 'Потрібен дозвіл для пуш-повідомлень'
+                        : 'Перевірка статусу...'}
+                    </StatusText>
+                  </StatusRow>
                 </SettingsText>
               </SettingsItemLeft>
               <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
@@ -586,33 +623,11 @@ export default function NotificationsSettingsScreen() {
               <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
             </SettingsItem>
 
-            <SettingsItem onPress={checkNotificationsManually}>
-              <SettingsItemLeft>
-                <SettingsIcon>
-                  <Ionicons name="refresh" size={20} color={theme.colors.primary} />
-                </SettingsIcon>
-                <SettingsText>
-                  <SettingsTitle>Перевірити зараз</SettingsTitle>
-                  <SettingsDescription>Миттєва перевірка нових сповіщень</SettingsDescription>
-                </SettingsText>
-              </SettingsItemLeft>
-              <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
-            </SettingsItem>
+            
 
           </Section>
 
-          <InfoContainer>
-            <InfoText>
-              💡 Налаштування сповіщень зберігаються локально на вашому пристрої.
-              {'\n\n'}🔔 Для отримання пуш-повідомлень потрібен дозвіл від системи.
-              {'\n\n'}📱 Натисніть "Запитати дозвіл на сповіщення" щоб увімкнути пуш-повідомлення.
-              {'\n\n'}📶 Оптимізовані інтервали:
-              {'\n'}• WiFi: перевірка кожні 20 секунд
-              {'\n'}• Мобільний: перевірка кожні 45 секунд
-              {'\n'}• Неактивний: перевірка кожні 3 хвилини
-              {permissionStatus === true && '\n\n✅ Push-повідомлення налаштовані та готові до роботи!'}
-            </InfoText>
-          </InfoContainer>
+          {/* Info banner removed per request */}
         </ContentScroll>
       </ContentContainer>
     </Container>
@@ -703,6 +718,17 @@ const SettingsDescription = styled.Text`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
   line-height: 18px;
+`;
+
+const StatusRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+`;
+
+const StatusText = styled.Text`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  margin-left: 6px;
 `;
 
 const InfoContainer = styled.View`

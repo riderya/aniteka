@@ -2,7 +2,7 @@
 import { TouchableOpacity } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
 import { Alert, View, StyleSheet, Modal, Text } from 'react-native';
-import ImageViewing from 'react-native-image-viewing';
+import CustomImageViewer from '../Custom/CustomImageViewer';
 import styled from 'styled-components/native';
 import * as Clipboard from 'expo-clipboard';
 import Markdown from '../Custom/MarkdownText';
@@ -138,6 +138,8 @@ const TopDetail = ({ anime, isLoading = false }) => {
 
   // Оновлюємо галерею зображень при зміні bannerUrls та студій
   React.useEffect(() => {
+    if (!anime) return;
+    
     const studioImages = studios.map(studio => studio.company.image).filter(Boolean);
     const imageUris = [anime.image, ...bannerUrls, ...studioImages];
     const uniqueImageUris = [...new Set(imageUris.filter(Boolean))];
@@ -147,7 +149,7 @@ const TopDetail = ({ anime, isLoading = false }) => {
     const currentImagesString = JSON.stringify(images.map(img => img.uri).sort());
     const previousImagesString = JSON.stringify(previousImagesRef.current.map(img => img.uri).sort());
     
-    if (currentImagesString !== previousImagesString) {
+    if (currentImagesString !== previousImagesString && images.length > 0) {
       setGalleryImages(images);
       previousImagesRef.current = images;
     }
@@ -164,7 +166,7 @@ const TopDetail = ({ anime, isLoading = false }) => {
 <BackgroundWrapper>
   <TouchableOpacity 
     onPress={() => {
-      if (bannerUrls.length > 0) {
+      if (bannerUrls.length > 0 && bannerUrls[0]) {
         setGalleryIndex(1); // Починаємо з першого банеру
         setGalleryVisible(true);
       }
@@ -491,12 +493,11 @@ const TopDetail = ({ anime, isLoading = false }) => {
         </Column>
       </AnimatedModal>
 
-      <ImageViewing
+      <CustomImageViewer
+        isVisible={galleryVisible}
         images={galleryImages}
-        imageIndex={galleryIndex}
-        visible={galleryVisible}
-        onRequestClose={() => setGalleryVisible(false)}
-        presentationStyle="overFullScreen"
+        initialIndex={galleryIndex}
+        onClose={() => setGalleryVisible(false)}
       />
 
 

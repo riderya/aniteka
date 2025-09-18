@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../context/ThemeContext';
+import MarkdownText from '../Custom/MarkdownText';
 
 const Card = styled.View`
   flex-direction: row;
@@ -113,6 +114,10 @@ const UserCardItem = ({
 }) => {
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const parsedDescFont = typeof descriptionFontSize === 'string' 
+    ? parseInt(descriptionFontSize, 10) 
+    : descriptionFontSize;
+  const lineHeight = Math.round((parsedDescFont || 14) * 1.35);
 
   return (
     <TouchableOpacity
@@ -143,8 +148,21 @@ const UserCardItem = ({
               </UserBadge>
             )}
           </UsernameContainer>
-          <Description fontSize={descriptionFontSize} numberOfLines={2}>
-            {user.description}
+          <Description fontSize={descriptionFontSize}>
+            <React.Fragment>
+              <MarkdownText 
+                disableLinks={true}
+                style={{
+                  body: {
+                    color: theme.colors.gray,
+                    fontSize: parsedDescFont || 14,
+                    lineHeight,
+                  }
+                }}
+              >
+                {user.description || ''}
+              </MarkdownText>
+            </React.Fragment>
           </Description>
         </Info>
       </Card>

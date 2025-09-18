@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
-import { TouchableOpacity, Image, View, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Image, View, Text, StyleSheet, Animated } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useWatchStatus } from '../../context/WatchStatusContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -111,6 +111,12 @@ const AnimeColumnCard = React.memo(({
   const { theme } = useTheme();
   const [userStatus, setUserStatus] = useState(null);
   const { getAnimeStatus, getAnimeFavourite, fetchAnimeFavourite } = useWatchStatus();
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const scaleAnim = React.useRef(new Animated.Value(0.8)).current;
+  
+  // Анимация для иконки избранного
+  const favouriteScaleAnim = React.useRef(new Animated.Value(0)).current;
+  const favouriteFadeAnim = React.useRef(new Animated.Value(0)).current;
   const orientation = useOrientation();
   const responsiveDims = getResponsiveDimensions();
   
@@ -156,6 +162,50 @@ const AnimeColumnCard = React.memo(({
 
   // Форматуємо дію історії
   const historyAction = useMemo(() => formatHistoryAction(historyData), [historyData]);
+
+  // Animation effect when status changes
+  useEffect(() => {
+    if (userStatus) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      fadeAnim.setValue(0);
+      scaleAnim.setValue(0.8);
+    }
+  }, [userStatus, fadeAnim, scaleAnim]);
+
+  // Анимация иконки избранного
+  useEffect(() => {
+    if (isLiked === true) {
+      Animated.parallel([
+        Animated.timing(favouriteFadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(favouriteScaleAnim, {
+          toValue: 1,
+          friction: 6,
+          tension: 50,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      favouriteFadeAnim.setValue(0);
+      favouriteScaleAnim.setValue(0);
+    }
+  }, [isLiked, favouriteFadeAnim, favouriteScaleAnim]);
 
   // Fetch user status from API like AnimeRowCard does
   useEffect(() => {
@@ -217,16 +267,33 @@ const AnimeColumnCard = React.memo(({
             resizeMode="cover"
           />
           {userStatus && (
-            <View style={[styles.statusBadge, { backgroundColor: statusColors[userStatus] || '#666' }]}>
+            <Animated.View 
+              style={[
+                styles.statusBadge, 
+                { 
+                  backgroundColor: statusColors[userStatus] || '#666',
+                  opacity: fadeAnim,
+                  transform: [{ scale: scaleAnim }]
+                }
+              ]}
+            >
               <Text style={styles.statusText}>
                 {statusLabels[userStatus] || userStatus}
               </Text>
-            </View>
+            </Animated.View>
           )}
           {isLiked === true && (
-            <View style={styles.heartIcon}>
+            <Animated.View 
+              style={[
+                styles.heartIcon,
+                {
+                  opacity: favouriteFadeAnim,
+                  transform: [{ scale: favouriteScaleAnim }]
+                }
+              ]}
+            >
               <Ionicons name="heart" size={20} color={theme.colors.favourite} />
-            </View>
+            </Animated.View>
           )}
         </View>
 

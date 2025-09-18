@@ -318,7 +318,7 @@ const AnimePeopleDetailsScreen = () => {
                 <GrayIcon name="list" />
                 <Label>Синоніми</Label>
               </RowLeft>
-              <Value numberOfLines={1}>{people.synonyms.join(', ')}</Value>
+              <Value>{people.synonyms.join(', ')}</Value>
             </RowBetween>
           )}
         </BlockBorder>

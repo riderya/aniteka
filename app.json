@@ -2,10 +2,10 @@
   "expo": {
     "name": "Aniteka",
     "slug": "aniteka",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "default",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "scheme": "aniteka",
     "splash": {
@@ -50,7 +50,7 @@
         "android.permission.VIBRATE",
         "android.permission.WAKE_LOCK"
       ],
-      "runtimeVersion": "1.0.1",
+      "runtimeVersion": "1.0.2",
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
       "buildToolsVersion": "35.0.0",
@@ -82,7 +82,8 @@
           "color": "#FF231F7C",
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "owner": "osu_tenef",
     "extra": {

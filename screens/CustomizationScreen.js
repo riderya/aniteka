@@ -195,11 +195,7 @@ const CustomizationScreen = () => {
   };
 
   const handleNotifications = () => {
-    Toast.show({
-      type: 'info',
-      text1: 'Розробляється',
-      text2: 'Налаштування сповіщень будуть доступні найближчим часом'
-    });
+    navigation.navigate('NotificationsSettings');
   };
 
   // Перевіряємо чи користувач авторизований

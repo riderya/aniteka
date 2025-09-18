@@ -173,6 +173,14 @@ const AnimeRowCard = React.memo(({
   // Анимация для скелетона
   const animatedValue = useMemo(() => new Animated.Value(0), []);
   
+  // Анимация для статуса
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const scaleAnim = React.useRef(new Animated.Value(0.8)).current;
+  
+  // Анимация для иконки избранного
+  const favouriteScaleAnim = React.useRef(new Animated.Value(0)).current;
+  const favouriteFadeAnim = React.useRef(new Animated.Value(0)).current;
+  
   // Memoize status colors to prevent recalculation
   const statusColors = useMemo(() => getStatusColors(theme), [theme]);
 
@@ -193,6 +201,50 @@ const AnimeRowCard = React.memo(({
 
   // Форматуємо дію історії
   const historyAction = useMemo(() => formatHistoryAction(historyData), [historyData]);
+
+  // Анимация статуса
+  useEffect(() => {
+    if (userStatus) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      fadeAnim.setValue(0);
+      scaleAnim.setValue(0.8);
+    }
+  }, [userStatus, fadeAnim, scaleAnim]);
+
+  // Анимация иконки избранного
+  useEffect(() => {
+    if (isFavourite) {
+      Animated.parallel([
+        Animated.timing(favouriteFadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(favouriteScaleAnim, {
+          toValue: 1,
+          friction: 6,
+          tension: 50,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      favouriteFadeAnim.setValue(0);
+      favouriteScaleAnim.setValue(0);
+    }
+  }, [isFavourite, favouriteFadeAnim, favouriteScaleAnim]);
 
   // Анимация скелетона
   useEffect(() => {
@@ -332,11 +384,20 @@ const AnimeRowCard = React.memo(({
           resizeMode="cover"
         />
         {userStatus && (
-          <View style={[styles.statusBadge, { backgroundColor: statusColors[userStatus] || 'rgba(51, 51, 51, 0.7)' }]}>
+          <Animated.View 
+            style={[
+              styles.statusBadge, 
+              { 
+                backgroundColor: statusColors[userStatus] || 'rgba(51, 51, 51, 0.7)',
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }]
+              }
+            ]}
+          >
             <Text style={styles.statusText}>
               {translateStatus(userStatus)}
             </Text>
-          </View>
+          </Animated.View>
         )}
       </View>
 
@@ -359,7 +420,14 @@ const AnimeRowCard = React.memo(({
             <FontAwesome name="star" size={starIconSize} color={theme.colors.gray} style={styles.starIcon} />
           </View>
           {isFavourite && (
-            <Octicons name="heart-fill" size={14} color={theme.colors.error} />
+            <Animated.View
+              style={{
+                opacity: favouriteFadeAnim,
+                transform: [{ scale: favouriteScaleAnim }]
+              }}
+            >
+              <Octicons name="heart-fill" size={14} color={theme.colors.error} />
+            </Animated.View>
           )}
         </View>
 

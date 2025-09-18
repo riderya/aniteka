@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import RootNavigator from './navigation/RootNavigator';
 import Toast from 'react-native-toast-message';
 import toastConfig from './components/CustomToast';
 import { WatchStatusProvider } from './context/WatchStatusContext';
+import UpdateService from './services/UpdateService';
 
 export default function App() {
   return (
@@ -32,6 +33,11 @@ export default function App() {
 function AppWithStatusBar() {
   const { theme } = useTheme();
   const { isLoading } = useAuth();
+
+  // Start automatic update checking when app loads
+  useEffect(() => {
+    UpdateService.startAutomaticChecking();
+  }, []);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>

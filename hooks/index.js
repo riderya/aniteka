@@ -9,7 +9,10 @@ export const useSuppressWarnings = () => {
 };
 
 // Export orientation hooks
-export { useOrientation, useDimensions }; 
+export { useOrientation, useDimensions };
+
+// Export update hooks
+export { useAppUpdates } from './useAppUpdates'; 
 
 // Хук для оптимізованого завантаження даних користувача
 export const useOptimizedUserData = (slug, authToken, isAuthChecked) => {

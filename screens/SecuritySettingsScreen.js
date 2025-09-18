@@ -327,11 +327,7 @@ const SecuritySettingsScreen = () => {
   };
 
   const handleLoginHistory = () => {
-    Toast.show({
-      type: 'info',
-      text1: 'Розробляється',
-      text2: 'Історія входів буде доступна найближчим часом'
-    });
+    navigation.navigate('LoginHistory');
   };
 
   const handleDeleteAccount = () => {
