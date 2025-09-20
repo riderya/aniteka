@@ -318,7 +318,7 @@ const AnimeColumnCard = React.memo(({
           <FontAwesome name="circle" size={4} color={theme.colors.gray} />
           <View style={styles.scoreContainer}>
             <Text style={styles.textFooter}>
-              {anime.score ?? '?'}
+              {anime.native_score ?? anime.score ?? '?'}
             </Text>
             <FontAwesome name="star" size={starIconSize} color={theme.colors.gray} style={styles.starIcon} />
           </View>

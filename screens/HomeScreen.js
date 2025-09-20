@@ -13,6 +13,7 @@ import { getResponsiveDimensions } from '../utils/orientationUtils';
 const Container = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
+  margin-bottom: -55px;
 `;
 
 // Функція для визначення поточного сезону

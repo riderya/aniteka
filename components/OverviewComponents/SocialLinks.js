@@ -69,7 +69,7 @@ SocialLinks.displayName = 'SocialLinks';
 
 SocialLinks.defaultProps = {
   telegramUrl: 'https://t.me/anitekalib',
-  discordUrl: 'https://discord.gg/5truHDdzEq',
+  discordUrl: 'https://discord.gg/BHSxd2avUn',
 };
 
 export default SocialLinks;

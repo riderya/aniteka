@@ -1,14 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components/native';
-import { FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlatList, ActivityIndicator, RefreshControl, Animated, Dimensions, View } from 'react-native';
+import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
+import { LinearGradient } from 'expo-linear-gradient';
 import HeaderTitleBar from '../components/Header/HeaderTitleBar';
 import { PlatformBlurView } from '../components/Custom/PlatformBlurView';
 import AnimeRowCard from '../components/Cards/AnimeRowCard';
 import { CONFIG } from '../utils/config';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const API_BASE = CONFIG.API.HIKKA_BASE_URL;
 
@@ -17,26 +21,33 @@ const Container = styled.View`
   background-color: ${({ theme }) => theme.colors.background};
 `;
 
-const RankWrapper = styled.View`
-  flex-direction: row;
-  align-items: center;
+const GradientBackground = styled(LinearGradient)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  opacity: 0.1;
 `;
 
 const RankBadge = styled.View`
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
-  border-width: 1px;
+  margin-right: 16px;
+  border-width: 2px;
   border-color: ${({ theme }) => theme.colors.primary};
-  background-color: ${({ theme }) => `${theme.colors.primary}22`};
+  background-color: ${({ theme }) => `${theme.colors.primary}15`};
+  align-self: center;
 `;
 
-const RankText = styled.Text`
-  color: ${({ theme }) => theme.colors.primary};
-  font-weight: 700;
+const IconContainer = styled.View`
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 `;
 
 const BlurOverlay = styled(PlatformBlurView)`
@@ -51,73 +62,126 @@ const BlurOverlay = styled(PlatformBlurView)`
 
 const ContentContainer = styled.View`
   flex: 1;
-  padding-top: 56px;
 `;
 
-const FilterContainer = styled.View`
-  flex-direction: row;
-  padding: 12px;
-  gap: 8px;
+const ListContainer = styled.View`
+  flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
-`;
-
-const FilterButton = styled.TouchableOpacity`
-  padding: 8px 16px;
-  border-width: 1px;
-  border-color: ${({ selected, theme }) => selected ? theme.colors.primary : theme.colors.border};
-  border-radius: 20px;
-  background-color: ${({ selected, theme }) => selected ? `${theme.colors.primary}20` : 'transparent'};
-`;
-
-const FilterButtonText = styled.Text`
-  color: ${({ selected, theme }) => selected ? theme.colors.primary : theme.colors.text};
-  font-weight: ${({ selected }) => selected ? '600' : '400'};
-  font-size: 14px;
+  margin-top: -24px;
 `;
 
 const EmptyContainer = styled.View`
   flex: 1;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  padding-top: 150px;
+  padding: 32px;
+  padding-top: 120px;
+`;
+
+const EmptyIconContainer = styled.View`
+  width: 120px;
+  height: 120px;
+  border-radius: 60px;
+  background-color: ${({ theme }) => `${theme.colors.primary}10`};
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  border-width: 2px;
+  border-color: ${({ theme }) => `${theme.colors.primary}20`};
 `;
 
 const EmptyImage = styled.Image`
-  width: 150px;
-  height: 150px;
-  margin-bottom: 20px;
+  width: 80px;
+  height: 80px;
+  opacity: 0.6;
 `;
 
 const EmptyText = styled.Text`
   color: ${({ theme }) => theme.colors.gray};
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 600;
   text-align: center;
+  margin-bottom: 8px;
+`;
+
+const EmptySubText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+  text-align: center;
+  opacity: 0.7;
+  line-height: 20px;
 `;
 
 const ErrorContainer = styled.View`
   flex: 1;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 32px;
+`;
+
+const ErrorIconContainer = styled.View`
+  width: 100px;
+  height: 100px;
+  border-radius: 50px;
+  background-color: ${({ theme }) => `${theme.colors.error}15`};
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  border-width: 2px;
+  border-color: ${({ theme }) => `${theme.colors.error}30`};
 `;
 
 const ErrorText = styled.Text`
   color: ${({ theme }) => theme.colors.error};
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
+`;
+
+const ErrorSubText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray};
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 24px;
+  opacity: 0.8;
+  line-height: 20px;
 `;
 
 const RetryButton = styled.TouchableOpacity`
-  padding: 12px 24px;
+  padding: 16px 32px;
   background-color: ${({ theme }) => theme.colors.primary};
-  border-radius: 8px;
+  border-radius: 25px;
+  min-width: 140px;
+  align-items: center;
 `;
 
 const RetryButtonText = styled.Text`
   color: white;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 16px;
+`;
+
+const LoadingContainer = styled.View`
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+`;
+
+const LoadingText = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 16px;
+  font-weight: 500;
+  margin-top: 16px;
+  opacity: 0.7;
+`;
+
+const AnimatedRankWrapper = styled(Animated.View)`
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  max-width: ${screenWidth - 32}px;
 `;
 
 const PopularAnimeScreen = () => {
@@ -215,7 +279,12 @@ const PopularAnimeScreen = () => {
       if (isRefresh || pageNum === 1) {
         setAnimeList(newAnimeList);
       } else {
-        setAnimeList(prev => [...prev, ...newAnimeList]);
+        // Prevent duplicates by filtering out items that already exist
+        setAnimeList(prev => {
+          const existingSlugs = new Set(prev.map(item => item.slug));
+          const uniqueNewItems = newAnimeList.filter(item => !existingSlugs.has(item.slug));
+          return [...prev, ...uniqueNewItems];
+        });
       }
 
       setHasMore(newAnimeList.length >= 20);
@@ -264,42 +333,115 @@ const PopularAnimeScreen = () => {
     fetchAnime(1);
   }, [fetchAnime]);
 
-  // Рендер елемента списку
+  // Рендер елемента списку з красивими іконками
   const renderAnimeItem = useCallback(({ item, index }) => {
     const rank = index + 1;
-    const goldShades = [
-      { bg: '#FFD70022', border: '#FFD700', text: '#B8860B' }, // 1
-      { bg: '#E6C20022', border: '#E6C200', text: '#9C7A00' }, // 2
-      { bg: '#CCA30022', border: '#CCA300', text: '#8C6D00' }, // 3
-      { bg: '#B38F0022', border: '#B38F00', text: '#735A00' }, // 4
-      { bg: '#997A0022', border: '#997A00', text: '#5C4700' }, // 5
-    ];
-    const shade = rank <= 5 ? goldShades[rank - 1] : null;
-    const badgeStyle = shade ? {
-      backgroundColor: shade.bg,
-      borderColor: shade.border,
-      shadowColor: shade.border,
-      shadowOpacity: 0.25,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 3,
-    } : null;
-    const textStyle = shade ? { color: shade.text } : null;
+    
+    // Спеціальні дизайни для топ позицій
+    const getTopRankDesign = (rank) => {
+      switch (rank) {
+        case 1:
+          return {
+            colors: ['#FFD700', '#FFA500', '#FF8C00'],
+            borderColor: '#FFD700',
+            icon: <MaterialIcons name="emoji-events" size={20} color="#FFFFFF" />,
+            shadow: '#FFD700'
+          };
+        case 2:
+          return {
+            colors: ['#C0C0C0', '#A8A8A8', '#909090'],
+            borderColor: '#C0C0C0',
+            icon: <MaterialIcons name="workspace-premium" size={18} color="#FFFFFF" />,
+            shadow: '#C0C0C0'
+          };
+        case 3:
+          return {
+            colors: ['#CD7F32', '#B87333', '#A0522D'],
+            borderColor: '#CD7F32',
+            icon: <FontAwesome5 name="medal" size={16} color="#FFFFFF" />,
+            shadow: '#CD7F32'
+          };
+        case 4:
+          return {
+            colors: ['#9370DB', '#8A2BE2', '#7B68EE'],
+            borderColor: '#9370DB',
+            icon: <Ionicons name="star" size={18} color="#FFFFFF" />,
+            shadow: '#9370DB'
+          };
+        case 5:
+          return {
+            colors: ['#FF6347', '#FF4500', '#DC143C'],
+            borderColor: '#FF6347',
+            icon: <MaterialIcons name="local-fire-department" size={18} color="#FFFFFF" />,
+            shadow: '#FF6347'
+          };
+        default:
+          return null;
+      }
+    };
 
-    return (
-      <RankWrapper>
-        <RankBadge style={badgeStyle}>
-          <RankText style={textStyle}>{rank}</RankText>
-        </RankBadge>
-        <AnimeRowCard
-          anime={item}
-          imageWidth={95}
-          imageHeight={125}
-          marginBottom={20}
-        />
-      </RankWrapper>
-    );
-  }, []);
+    const topDesign = getTopRankDesign(rank);
+    
+
+    if (topDesign) {
+      // Топ 5 позицій з прозорим фоном та кольоровими іконками
+      return (
+        <AnimatedRankWrapper>
+          <RankBadge
+            style={{
+              backgroundColor: `${topDesign.borderColor}33`, // 20% прозорості
+              borderColor: topDesign.borderColor,
+              marginBottom: 20,
+            }}
+          >
+            <IconContainer>
+              {React.cloneElement(topDesign.icon, { color: topDesign.borderColor })}
+            </IconContainer>
+          </RankBadge>
+          <View style={{ flex: 1, width: screenWidth - 60 - 100 - 32 }}>
+            <AnimeRowCard
+              anime={item}
+              imageWidth={100}
+              imageHeight={130}
+              marginBottom={20}
+              imageBorderRadius={16}
+            />
+          </View>
+        </AnimatedRankWrapper>
+      );
+    } else {
+      // Звичайні позиції з прозорим фоном та іконкою кольору теми
+return (
+  <AnimatedRankWrapper>
+    <RankBadge
+      style={{
+        backgroundColor: `${theme.colors.primary}33`,
+        borderColor: theme.colors.primary,
+        marginBottom: 20,
+      }}
+    >
+      <IconContainer>
+        <MaterialIcons name="trending-up" size={20} color={theme.colors.primary} />
+      </IconContainer>
+    </RankBadge>
+    <View style={{ 
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: screenWidth - 60 - 100 - 32
+    }}>
+      <AnimeRowCard
+        anime={item}
+        imageWidth={100}
+        imageHeight={130}
+        marginBottom={24}
+        imageBorderRadius={16}
+      />
+    </View>
+  </AnimatedRankWrapper>
+);
+    }
+  }, [theme.colors.primary]);
 
   // Рендер футера для завантаження
   const renderFooter = useCallback(() => {
@@ -313,66 +455,125 @@ const PopularAnimeScreen = () => {
     );
   }, [loadingMore, theme.colors.primary]);
 
-  // Рендер порожнього стану
-  const renderEmpty = useCallback(() => {
-    if (loading) return null;
-    
-    if (error) {
-      return (
-        <ErrorContainer>
-          <ErrorText>{error}</ErrorText>
-          <RetryButton onPress={handleRetry}>
-            <RetryButtonText>Спробувати знову</RetryButtonText>
-          </RetryButton>
-        </ErrorContainer>
-      );
-    }
 
+// Рендер порожнього стану
+const renderEmpty = useCallback(() => {
+  if (loading) return null;
+
+  if (error) {
     return (
-      <EmptyContainer>
-        <EmptyImage 
-          source={require('../assets/image/not-found.webp')} 
-          resizeMode="contain" 
-        />
-        <EmptyText>Аніме не знайдено</EmptyText>
-      </EmptyContainer>
+      <ErrorContainer>
+        <ErrorIconContainer>
+          <EmptyImage
+            source={require('../assets/image/not-found.webp')}
+            resizeMode="contain"
+          />
+        </ErrorIconContainer>
+        <ErrorText>Упс! Щось пішло не так</ErrorText>
+        <ErrorSubText>{error}</ErrorSubText>
+        <RetryButton
+          onPress={handleRetry}
+          style={{
+            shadowColor: theme.colors.primary,
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 6,
+          }}
+        >
+          <RetryButtonText>Спробувати знову</RetryButtonText>
+        </RetryButton>
+      </ErrorContainer>
     );
-  }, [loading, error, handleRetry]);
+  }
+
+  return (
+    <EmptyContainer>
+      <EmptyIconContainer>
+        <EmptyImage
+          source={require('../assets/image/not-found.webp')}
+          resizeMode="contain"
+        />
+      </EmptyIconContainer>
+      <EmptyText>Аніме не знайдено</EmptyText>
+      <EmptySubText>Спробуйте оновити сторінку або перевірте підключення до інтернету</EmptySubText>
+    </EmptyContainer>
+  );
+}, [loading, error, handleRetry, theme.colors.primary]);
 
   if (!tokenReady) {
     return (
-      <Container>
-        <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
-          <HeaderTitleBar title="Популярне аніме" />
-        </BlurOverlay>
-        <ContentContainer style={{ paddingTop: insets.top + 56 }}>
-          <ActivityIndicator 
-            size="large" 
-            color={theme.colors.primary} 
-            style={{ marginTop: 50 }}
+    <Container>
+      <GradientBackground
+        colors={isDark ? [theme.colors.primary, theme.colors.secondary] : [theme.colors.primary, theme.colors.accent]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      <BlurOverlay
+        intensity={100}
+        tint={isDark ? 'dark' : 'light'}
+        style={{
+          shadowColor: '#000',
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 3,
+        }}
+      >
+        <HeaderTitleBar title="Популярне аніме" />
+      </BlurOverlay>
+      <ContentContainer style={{ paddingTop: insets.top + 56 }}>
+        <LoadingContainer>
+          <ActivityIndicator
+            size="large"
+            color={theme.colors.primary}
           />
-        </ContentContainer>
-      </Container>
+          <LoadingText>Завантаження...</LoadingText>
+        </LoadingContainer>
+      </ContentContainer>
+    </Container>
     );
   }
 
   return (
     <Container>
-      <BlurOverlay intensity={100} tint={isDark ? 'dark' : 'light'}>
-        <HeaderTitleBar title="Популярне аніме" />
-      </BlurOverlay>
-      
-      <ContentContainer style={{ paddingTop: insets.top + 56 }}>
-        {/* Фільтри прибрано: показуємо лише популярне */}
+    <GradientBackground
+      colors={isDark ? [theme.colors.primary, theme.colors.secondary] : [theme.colors.primary, theme.colors.accent]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    />
+    <BlurOverlay
+      intensity={100}
+      tint={isDark ? 'dark' : 'light'}
+      style={{
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 3,
+      }}
+    >
+      <HeaderTitleBar title="Популярне аніме" />
+    </BlurOverlay>
 
-        {/* Список аніме */}
+    <ContentContainer>
+      <ListContainer
+        style={{
+          shadowColor: '#000',
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: -2 },
+          elevation: 5,
+        }}
+      >
         <FlatList
           data={animeList}
           renderItem={renderAnimeItem}
-          keyExtractor={(item) => item.slug}
+          keyExtractor={(item, index) => `${item.slug}-${index}`}
           contentContainerStyle={{
             paddingHorizontal: 12,
-            paddingBottom: insets.bottom + 20,
+            paddingTop: insets.top + 86 + 20,
+            paddingBottom: 20 + insets.bottom,
           }}
           refreshControl={
             <RefreshControl
@@ -380,15 +581,19 @@ const PopularAnimeScreen = () => {
               onRefresh={handleRefresh}
               tintColor={theme.colors.primary}
               colors={[theme.colors.primary]}
+              progressBackgroundColor={theme.colors.card || theme.colors.background}
+              style={{ backgroundColor: 'transparent' }}
             />
           }
           onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
+          onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
           ListEmptyComponent={renderEmpty}
           showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         />
-      </ContentContainer>
+      </ListContainer>
+    </ContentContainer>
     </Container>
   );
 };

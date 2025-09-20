@@ -174,9 +174,11 @@ const AnimeDetailsScreen = ({ route, navigation }) => {
             />
             {showCharactersDivider && <Divider />}
             <AnimeRatingStats 
-              stats={anime.stats} 
-              score={anime.score} 
-              slug={anime.slug}
+  stats={anime.stats}
+  score={anime.score}
+  native_score={anime.native_score}
+  native_scored_by={anime.native_scored_by}
+  slug={anime.slug}
             />
             <Divider />
             <AnimeStatusStats 

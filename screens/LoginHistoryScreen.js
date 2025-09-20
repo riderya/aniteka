@@ -92,16 +92,17 @@ const EmptyText = styled.Text`
 
 const ClearButton = styled.TouchableOpacity`
   background-color: ${({ theme }) => theme.colors.primary}20;
-  border: 1px solid ${({ theme }) => theme.colors.primary};
+  border: 1px solid ${({ theme }) => theme.colors.primary}40;
   border-radius: 12px;
   padding: 12px 24px;
-  margin: 16px;
+  margin: 12px;
   align-items: center;
+  border-radius: 999px;
 `;
 
 const ClearButtonText = styled.Text`
   color: ${({ theme }) => theme.colors.primary};
-  font-weight: 600;
+  font-weight: 500;
   font-size: 16px;
 `;
 

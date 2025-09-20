@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
+import ExternalLinkWarningModal from './ExternalLinkWarningModal';
 
 const MarkdownText = ({ 
   children, 
@@ -13,6 +14,12 @@ const MarkdownText = ({
 }) => {
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const [warningModal, setWarningModal] = useState({
+    visible: false,
+    url: '',
+    linkText: '',
+    onConfirm: null
+  });
   const textStyle = {
     color: style.body?.color || theme.colors.text,
     fontSize: style.body?.fontSize || 16,
@@ -50,36 +57,72 @@ const MarkdownText = ({
 
       // Витягуємо шлях без параметрів
       const path = normalized.replace(/^https?:\/\/(?:www\.)?hikka\.io/i, '');
-      // Підтримка /characters/ та /character/
-      const charMatch = path.match(/^\/char(?:acter|acters)\/([^/?#]+)\/?/i);
-      if (charMatch && charMatch[1]) {
-        const slug = decodeURIComponent(charMatch[1]);
-        navigation.navigate('AnimeCharacterDetailsScreen', { slug, name_ua: text });
-        return;
-      }
+      
+      // Перевіряємо, чи це внутрішнє посилання Hikka
+      const isHikkaLink = /^https?:\/\/(?:www\.)?hikka\.io/i.test(normalized);
+      
+      if (isHikkaLink) {
+        // Підтримка /characters/ та /character/
+        const charMatch = path.match(/^\/char(?:acter|acters)\/([^/?#]+)\/?/i);
+        if (charMatch && charMatch[1]) {
+          const slug = decodeURIComponent(charMatch[1]);
+          navigation.navigate('AnimeCharacterDetailsScreen', { slug, name_ua: text });
+          return;
+        }
 
-      // Додатково: люди, аніме — відкриваємо відповідні екрани, якщо потрібно
-      const peopleMatch = path.match(/^\/(people|person)\/([^/?#]+)\/?/i);
-      if (peopleMatch && peopleMatch[2]) {
-        const slug = decodeURIComponent(peopleMatch[2]);
-        navigation.navigate('AnimePeopleDetailsScreen', { slug });
-        return;
-      }
-      const animeMatch = path.match(/^\/anime\/([^/?#]+)\/?/i);
-      if (animeMatch && animeMatch[1]) {
-        const slug = decodeURIComponent(animeMatch[1]);
-        navigation.navigate('AnimeDetails', { slug });
-        return;
+        // Додатково: люди, аніме — відкриваємо відповідні екрани, якщо потрібно
+        const peopleMatch = path.match(/^\/(people|person)\/([^/?#]+)\/?/i);
+        if (peopleMatch && peopleMatch[2]) {
+          const slug = decodeURIComponent(peopleMatch[2]);
+          navigation.navigate('AnimePeopleDetailsScreen', { slug });
+          return;
+        }
+        const animeMatch = path.match(/^\/anime\/([^/?#]+)\/?/i);
+        if (animeMatch && animeMatch[1]) {
+          const slug = decodeURIComponent(animeMatch[1]);
+          navigation.navigate('AnimeDetails', { slug });
+          return;
+        }
       }
     } catch (e) {}
 
-    // Фолбек: відкриваємо у зовнішньому браузері, щоб уникати зависань у WebView
-    try {
-      await WebBrowser.openBrowserAsync(url);
-    } catch (e) {
-      // Якщо зовнішній браузер недоступний — запасний варіант у вбудованому WebView
-      navigation.navigate('WebView', { url, title: text });
-    }
+    // Для зовнішніх посилань показуємо модалку попередження
+    setWarningModal({
+      visible: true,
+      url: url,
+      linkText: text,
+      onConfirm: async () => {
+        // Переконуємося, що URL має правильний протокол
+        let finalUrl = url;
+        if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+          finalUrl = 'https://' + finalUrl;
+        }
+        
+        // Спочатку перевіряємо, чи можемо відкрити через Linking (більш надійний на мобільних)
+        try {
+          const supported = await Linking.canOpenURL(finalUrl);
+          
+          if (supported) {
+            await Linking.openURL(finalUrl);
+            return;
+          }
+        } catch (linkingError) {
+          // Якщо Linking не спрацював, пробуємо WebBrowser
+        }
+        
+        // Якщо Linking не спрацював, пробуємо WebBrowser
+        try {
+          await WebBrowser.openBrowserAsync(finalUrl);
+        } catch (webBrowserError) {
+          // Останній варіант - спробувати навігацію до WebView екрану
+          try {
+            navigation.navigate('WebView', { url: finalUrl, title: text });
+          } catch (navError) {
+            // Всі методи не спрацювали
+          }
+        }
+      }
+    });
   };
 
   // Функція для рендерингу тексту з маркдауном
@@ -373,21 +416,41 @@ const MarkdownText = ({
     }
     
     return (
-      <View>
-        {result}
-      </View>
+      <>
+        <View>
+          {result}
+        </View>
+        
+        <ExternalLinkWarningModal
+          visible={warningModal.visible}
+          url={warningModal.url}
+          linkText={warningModal.linkText}
+          onClose={() => setWarningModal(prev => ({ ...prev, visible: false }))}
+          onConfirm={warningModal.onConfirm}
+        />
+      </>
     );
   }
   
   // Інакше повертаємо простий текст в обгортці
   return (
-    <Text 
-      style={textStyle}
-      numberOfLines={numberOfLines}
-      ellipsizeMode={ellipsizeMode}
-    >
-      {markdownContent}
-    </Text>
+    <>
+      <Text 
+        style={textStyle}
+        numberOfLines={numberOfLines}
+        ellipsizeMode={ellipsizeMode}
+      >
+        {markdownContent}
+      </Text>
+      
+      <ExternalLinkWarningModal
+        visible={warningModal.visible}
+        url={warningModal.url}
+        linkText={warningModal.linkText}
+        onClose={() => setWarningModal(prev => ({ ...prev, visible: false }))}
+        onConfirm={warningModal.onConfirm}
+      />
+    </>
   );
 };
 

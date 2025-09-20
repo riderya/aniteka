@@ -49,7 +49,7 @@ const ContentScroll = styled.ScrollView.attrs(({ insets }) => ({
   contentContainerStyle: {
     paddingTop: 120,
     paddingBottom: insets.bottom + 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
 }))`
   flex: 1;

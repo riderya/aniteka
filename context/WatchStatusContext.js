@@ -10,6 +10,7 @@ export const WatchStatusProvider = ({ children }) => {
   
   // Глобальний стан для статусів всіх аніме
   const [animeStatuses, setAnimeStatuses] = useState({});
+  const [animeScores, setAnimeScores] = useState({});
   const [favourites, setFavourites] = useState({});
   const [characterFavourites, setCharacterFavourites] = useState({});
   
@@ -22,6 +23,7 @@ export const WatchStatusProvider = ({ children }) => {
   
   // Кеш для збереження результатів запитів
   const statusCache = useRef(new Map());
+  const scoreCache = useRef(new Map());
   const favouriteCache = useRef(new Map());
   const characterFavouriteCache = useRef(new Map());
 
@@ -60,11 +62,11 @@ export const WatchStatusProvider = ({ children }) => {
       headers: { auth: authToken },
     }).then(async (res) => {
       if (res.status === 404) {
-        return null;
+        return { status: null, score: 0 };
       }
       const data = await res.json();
-      return data.status;
-    }).catch(() => null);
+      return { status: data.status, score: data.score || 0 };
+    }).catch(() => ({ status: null, score: 0 }));
     
     // Зберігаємо активний запит
     activeRequests.current.set(slug, requestPromise);
@@ -72,13 +74,18 @@ export const WatchStatusProvider = ({ children }) => {
     try {
       const result = await requestPromise;
       // Зберігаємо в кеш
-      statusCache.current.set(slug, result);
+      statusCache.current.set(slug, result.status);
+      scoreCache.current.set(slug, result.score);
       // Оновлюємо глобальний стан
       setAnimeStatuses(prev => ({
         ...prev,
-        [slug]: result
+        [slug]: result.status
       }));
-      return result;
+      setAnimeScores(prev => ({
+        ...prev,
+        [slug]: result.score
+      }));
+      return result.status;
     } finally {
       // Видаляємо з активних запитів
       activeRequests.current.delete(slug);
@@ -192,6 +199,42 @@ export const WatchStatusProvider = ({ children }) => {
     statusCache.current.set(slug, newStatus);
   }, []);
 
+  // Функція для оновлення оцінки конкретного аніме
+  const updateAnimeScore = useCallback((slug, newScore) => {
+    setAnimeScores(prev => ({
+      ...prev,
+      [slug]: newScore
+    }));
+    // Оновлюємо кеш
+    scoreCache.current.set(slug, newScore);
+    // Також оновлюємо локальний стан score для поточного аніме
+    setScore(newScore);
+  }, []);
+
+  // Функція для повного видалення аніме з усіх станів та кешів
+  const removeAnimeFromList = useCallback((slug) => {
+    // Очищаємо стан
+    setAnimeStatuses(prev => {
+      const newState = { ...prev };
+      delete newState[slug];
+      return newState;
+    });
+    setAnimeScores(prev => {
+      const newState = { ...prev };
+      delete newState[slug];
+      return newState;
+    });
+    
+    // Очищаємо кеші
+    statusCache.current.delete(slug);
+    scoreCache.current.delete(slug);
+    
+    // Оновлюємо локальні стани
+    setStatus('Не дивлюсь');
+    setScore(0);
+    setEpisodes(null);
+  }, []);
+
   // Функція для оновлення вподобаного конкретного аніме
   const updateAnimeFavourite = useCallback((slug, isFavourite) => {
     setFavourites(prev => ({
@@ -217,6 +260,11 @@ export const WatchStatusProvider = ({ children }) => {
     return animeStatuses[slug] || null;
   }, [animeStatuses]);
 
+  // Функція для отримання оцінки конкретного аніме
+  const getAnimeScore = useCallback((slug) => {
+    return animeScores[slug] || 0;
+  }, [animeScores]);
+
   // Функція для отримання вподобаного конкретного аніме
   const getAnimeFavourite = useCallback((slug) => {
     // Якщо немає в стані, повертаємо null для позначення "не перевірено"
@@ -238,6 +286,7 @@ export const WatchStatusProvider = ({ children }) => {
   // Функція для очищення кешу
   const clearCache = useCallback(() => {
     statusCache.current.clear();
+    scoreCache.current.clear();
     favouriteCache.current.clear();
     characterFavouriteCache.current.clear();
     activeRequests.current.clear();
@@ -253,14 +302,18 @@ export const WatchStatusProvider = ({ children }) => {
         episodes, 
         setEpisodes,
         animeStatuses,
+        animeScores,
         favourites,
         characterFavourites,
         authToken,
         isAuthChecked,
         updateAnimeStatus,
+        updateAnimeScore,
+        removeAnimeFromList,
         updateAnimeFavourite,
         updateCharacterFavourite,
         getAnimeStatus,
+        getAnimeScore,
         getAnimeFavourite,
         getCharacterFavourite,
         fetchAnimeStatus,

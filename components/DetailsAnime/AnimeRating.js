@@ -24,7 +24,7 @@ const STAR_COLOR_ACTIVE = '#FFD700';
 const STAR_COLOR_INACTIVE = '#666';
 
 const AnimeRating = ({ slug }) => {
-  const { status, setStatus, score, setScore } = useWatchStatus();
+  const { status, setStatus, score, setScore, getAnimeScore, updateAnimeScore, removeAnimeFromList } = useWatchStatus();
   const { theme } = useTheme();
   const [auth, setAuth] = useState(null);
   const [loading, setLoad] = useState(true);
@@ -34,6 +34,8 @@ const AnimeRating = ({ slug }) => {
   const [showErrorAlert, setShowErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Отримуємо оцінку з глобального стану
+  const currentScore = getAnimeScore(slug);
   // Отримання токена
   useEffect(() => {
     SecureStore.getItemAsync('hikka_token').then(setAuth);
@@ -49,16 +51,19 @@ const AnimeRating = ({ slug }) => {
         const ui = Object.keys(statusApi).find((k) => statusApi[k] === data.status) || 'Не дивлюсь';
         setStatus(ui);
         setScore(data.score);
+        // Оновлюємо глобальну оцінку
+        updateAnimeScore(slug, data.score || 0);
       } catch (e) {
         if (e.response?.status === 404) {
           setStatus('Не дивлюсь');
           setScore(0);
+          updateAnimeScore(slug, 0);
         } else {}
       } finally {
         setLoad(false);
       }
     })();
-  }, [auth, slug]);
+  }, [auth, slug, updateAnimeScore]);
 
   // Завантаження профілю користувача (аватарка)
   useEffect(() => {
@@ -84,6 +89,8 @@ const AnimeRating = ({ slug }) => {
         { status: statusApi[status], score: newScore, episodes: 0, rewatches: 0, note: null },
         { headers: { auth } }
       );
+      // Оновлюємо глобальну оцінку після успішного збереження
+      updateAnimeScore(slug, newScore);
     } catch (e) {
       
     }
@@ -107,7 +114,8 @@ const AnimeRating = ({ slug }) => {
         headers: { auth },
       });
       if (response.status === 200 && response.data.success) {
-        setScore(0);
+        // Видаляємо аніме з усіх глобальних станів
+        removeAnimeFromList(slug);
       } else {
         setErrorMessage('Не вдалося видалити оцінку');
         setShowErrorAlert(true);
@@ -126,9 +134,9 @@ const AnimeRating = ({ slug }) => {
     const halfVal = fullVal - 1;
 
     let icon;
-    if (score >= fullVal) {
+    if (currentScore >= fullVal) {
       icon = <FontAwesome name="star" size={STAR_SIZE} color={STAR_COLOR_ACTIVE} />;
-    } else if (score === halfVal) {
+    } else if (currentScore === halfVal) {
       icon = <FontAwesome name="star-half-full" size={STAR_SIZE} color={STAR_COLOR_ACTIVE} />;
     } else {
       icon = <FontAwesome name="star-o" size={STAR_SIZE} color={STAR_COLOR_INACTIVE} />;
@@ -166,7 +174,7 @@ const AnimeRating = ({ slug }) => {
   if (!status || status === 'Не дивлюсь') return null;
 
   // Якщо оцінка не поставлена, розширюємо на весь екран
-  if (score === 0) {
+  if (currentScore === 0) {
     return (
       <FullScreenBlock>
         <FullScreenRow>
@@ -184,7 +192,7 @@ const AnimeRating = ({ slug }) => {
           <Avatar source={avatarUrl ? { uri: avatarUrl } : require('../../assets/image/welcome-login.webp')} />
           <Stars>{stars}</Stars>
 
-          {score > 0 && (
+          {currentScore > 0 && (
             <DeleteButton onPress={onDelete} disabled={deleting}>
               <RowDelete>
                 <DeleteButtonText>{deleting ? 'Видаляємо...' : 'Видалити'}</DeleteButtonText>

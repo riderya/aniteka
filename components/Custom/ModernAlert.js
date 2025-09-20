@@ -21,38 +21,21 @@ const ModernAlert = ({
   onClose,
   theme,
 }) => {
-  const scaleAnim = React.useRef(new Animated.Value(0)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
     if (visible) {
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 100,
-          friction: 8,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     } else {
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 100,
-          friction: 8,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
     }
   }, [visible]);
 
@@ -89,7 +72,7 @@ const ModernAlert = ({
           style={[
             styles.alertContainer,
             {
-              transform: [{ scale: scaleAnim }],
+              opacity: opacityAnim,
               backgroundColor: theme?.colors?.card,
               borderColor: theme?.colors?.border,
             },
@@ -117,20 +100,20 @@ const ModernAlert = ({
                     styles.button,
                     {
                       backgroundColor: button.style === 'destructive' 
-                        ? theme?.colors?.error
+                        ? `${theme?.colors?.error}20`
                         : button.style === 'cancel'
                         ? 'transparent'
                         : theme?.colors?.primary,
                       borderColor: button.style === 'cancel' 
                         ? theme?.colors?.border
-                        : 'transparent',
+                        : `${theme?.colors?.error}40`,
                     },
                   ]}
                 >
                   <ButtonText
                     style={{
                       color: button.style === 'destructive' 
-                        ? theme?.colors?.text
+                        ? theme?.colors?.error
                         : button.style === 'cancel'
                         ? theme?.colors?.text
                         : theme?.colors?.text,

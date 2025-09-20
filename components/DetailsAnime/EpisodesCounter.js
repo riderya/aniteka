@@ -2,13 +2,17 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components/native';
 import { Text } from 'react-native';
 import { useWatchStatus } from '../../context/WatchStatusContext';
+import DetailedEpisodesModal from './DetailedEpisodesModal';
+import { Ionicons } from '@expo/vector-icons';
 
-const EpisodesCounter = ({ slug, episodes_total }) => {
+const EpisodesCounter = ({ slug, episodes_total, animeTitle }) => {
   const { 
     status, 
     authToken,
     isAuthChecked,
-    fetchAnimeStatus
+    fetchAnimeStatus,
+    getAnimeScore,
+    getAnimeStatus
   } = useWatchStatus();
 
   // Локальний стан для episodes конкретного аніме
@@ -16,9 +20,21 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
   const [duration, setDuration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingUpdate, setLoadingUpdate] = useState(false);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   
   // Кеш для збереження даних між рендерами
   const [cachedData, setCachedData] = useState({});
+
+  // Отримуємо статус з глобального стану
+  const currentStatus = getAnimeStatus(slug);
+  const statusMapping = {
+    'watching': 'Дивлюсь',
+    'planned': 'В планах',
+    'completed': 'Переглянуто',
+    'on_hold': 'Відкладено',
+    'dropped': 'Закинуто',
+  };
+  const globalStatus = currentStatus ? statusMapping[currentStatus] || 'Не дивлюсь' : 'Не дивлюсь';
 
   const allowedStatuses = [
     'Дивлюсь',
@@ -45,7 +61,7 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
   useEffect(() => {
     if (!isAuthChecked || !authToken) return;
 
-    if (!allowedStatuses.includes(status)) {
+    if (!allowedStatuses.includes(globalStatus)) {
       // Не виконуємо запит і не обнуляємо episodes, просто ховаємо компонент
       setLoading(false);
       return;
@@ -101,7 +117,7 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
     };
 
     fetchWatch();
-  }, [authToken, status, slug, isAuthChecked, cachedData]);
+  }, [authToken, globalStatus, slug, isAuthChecked, cachedData]);
 
   const statusApiMapping = {
     Дивлюсь: 'watching',
@@ -115,6 +131,9 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
   const updateEpisodes = async (newEpisodes) => {
     setLoadingUpdate(true);
     try {
+      // Отримуємо поточну оцінку з контексту
+      const currentScore = getAnimeScore(slug);
+      
       const res = await fetch(`https://api.hikka.io/watch/${slug}`, {
         method: 'PUT',
         headers: { 
@@ -124,8 +143,8 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
         body: JSON.stringify({
           episodes: newEpisodes,
           rewatches: 0,
-          score: 0,
-          status: statusApiMapping[status],
+          score: currentScore, // Використовуємо поточну оцінку
+          status: statusApiMapping[globalStatus],
           note: null,
         }),
       });
@@ -165,9 +184,22 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
     updateEpisodes(newCount);
   };
 
+  const handleDetailModalUpdate = (newEpisodes) => {
+    setEpisodes(newEpisodes);
+    
+    // Оновлюємо кеш
+    setCachedData(prev => ({
+      ...prev,
+      [slug]: {
+        ...prev[slug],
+        episodes: newEpisodes
+      }
+    }));
+  };
+
   if (!authToken) return null;
 
-  if (!allowedStatuses.includes(status)) {
+  if (!allowedStatuses.includes(globalStatus)) {
     return null;
   }
 
@@ -185,7 +217,12 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
 
   return (
     <Container>
-      <Title>Епізоди</Title>
+      <TitleRow>
+        <Title>Епізоди</Title>
+        <MoreButton onPress={() => setIsDetailModalVisible(true)}>
+          <Ionicons name="ellipsis-horizontal" size={20} color="#888888" />
+        </MoreButton>
+      </TitleRow>
       <EpisodesInfo>
         <Current>{episodes}</Current>
         <Separator>/</Separator>
@@ -210,6 +247,17 @@ const EpisodesCounter = ({ slug, episodes_total }) => {
           <BtnText>−</BtnText>
         </Btn>
       </ButtonsRow>
+
+      <DetailedEpisodesModal
+        isVisible={isDetailModalVisible}
+        onClose={() => setIsDetailModalVisible(false)}
+        slug={slug}
+        episodes_total={episodes_total}
+        currentEpisodes={episodes}
+        currentStatus={globalStatus}
+        animeTitle={animeTitle}
+        onUpdate={handleDetailModalUpdate}
+      />
     </Container>
   );
 };
@@ -229,7 +277,21 @@ const Title = styled.Text`
   font-size: 18px;
   font-weight: bold;
   color: ${({ theme }) => theme.colors.text};
+`;
+
+const TitleRow = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
+`;
+
+const MoreButton = styled.TouchableOpacity`
+  width: 24px;
+  height: 24px;
+  border-radius: 16px;
+  justify-content: center;
+  align-items: center;
 `;
 
 const EpisodesInfo = styled.View`

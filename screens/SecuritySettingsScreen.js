@@ -179,7 +179,7 @@ const ModalButtonCancel = styled(ModalButton)`
 const ModalButtonSave = styled(ModalButton)`
   background-color: ${({ theme }) => `${theme.colors.primary}20`};
   border-width: 1px;
-  border-color: ${({ theme }) => theme.colors.primary};
+  border-color: ${({ theme }) => `${theme.colors.primary}40`};
 `;
 
 const ModalButtonText = styled.Text`

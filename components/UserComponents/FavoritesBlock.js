@@ -361,14 +361,6 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
       );
     }
 
-    if (item.isEndMessage) {
-      return (
-        <View style={styles.loadingMoreContainer}>
-          <Text style={styles.loadingMoreText}>Всі {getContentTypeLabel(selectedContentType).toLowerCase()} завантажені</Text>
-        </View>
-      );
-    }
-
     if (selectedContentType === 'collection') {
       return (
         <View style={{ 
@@ -435,14 +427,6 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
       );
     }
 
-    if (item.isEndMessage) {
-      return (
-        <View style={styles.loadingMoreContainer}>
-          <Text style={styles.loadingMoreText}>Всі {getContentTypeLabel(selectedContentType).toLowerCase()} завантажені</Text>
-        </View>
-      );
-    }
-
     switch (selectedContentType) {
       case 'anime':
         return (
@@ -480,12 +464,10 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
     }
   }, [selectedContentType, navigation]);
 
-  // Функція для створення масиву з лоадером або повідомленням про завершення
+  // Функція для створення масиву з лоадером
   const getDataWithLoader = useCallback(() => {
     if (hasMore && favorites.length > 0) {
       return [...favorites, { isLoader: true, slug: 'loader' }];
-    } else if (!hasMore && favorites.length > 0) {
-      return [...favorites, { isEndMessage: true, slug: 'end-message' }];
     }
     return favorites;
   }, [favorites, hasMore]);
@@ -521,8 +503,8 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
   const numColumns = useMemo(() => computedNumColumns, [computedNumColumns]);
 
   const columnWrapperStyle = useMemo(() => (
-    isGridView ? styles.gridContainer : undefined
-  ), [isGridView, styles.gridContainer]);
+    isGridView && computedNumColumns > 1 ? styles.gridContainer : undefined
+  ), [isGridView, computedNumColumns, styles.gridContainer]);
 
   const contentContainerStyle = useMemo(() => ({
     paddingVertical: 8,
@@ -666,7 +648,7 @@ const fetchFavorites = async (contentType = selectedContentType, page = 1, appen
       ) : (
         <FlatList
           data={getDataWithLoader()}
-          keyExtractor={(item, index) => item.isLoader ? 'loader' : item.isEndMessage ? 'end-message' : keyExtractor(item, index)}
+          keyExtractor={(item, index) => item.isLoader ? 'loader' : keyExtractor(item, index)}
           renderItem={isGridView ? renderGridItem : renderListItem}
           key={flatListKey}
           numColumns={numColumns}

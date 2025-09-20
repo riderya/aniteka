@@ -685,6 +685,7 @@ const SettingsItem = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 `;
 
 const SettingsItemLeft = styled.View`

@@ -373,15 +373,7 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
     }
   }, [loadingMore, hasMore, loading, currentPage]);
 
-  // Функція для створення масиву з лоадером або повідомленням про завершення
-  const getDataWithLoader = useCallback(() => {
-    if (hasMore && animeList.length > 0) {
-      return [...animeList, { isLoader: true, anime: { slug: 'loader' } }];
-    } else if (!hasMore && animeList.length > 0) {
-      return [...animeList, { isEndMessage: true, anime: { slug: 'end-message' } }];
-    }
-    return animeList;
-  }, [animeList, hasMore]);
+
 
 
 
@@ -390,23 +382,6 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
   }, [fetchWatchList]);
 
   const renderGridItem = useCallback(({ item }) => {
-    if (item.isLoader) {
-      return (
-        <View style={styles.loadingMoreContainer}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text style={styles.loadingMoreText}>Завантаження...</Text>
-        </View>
-      );
-    }
-
-    if (item.isEndMessage) {
-      return (
-        <View style={styles.loadingMoreContainer}>
-          <Text style={styles.loadingMoreText}>Всі аніме завантажені</Text>
-        </View>
-      );
-    }
-
     const cardWidth = ((windowWidth - (CONTAINER_HORIZONTAL_PADDING * 2) - (CONTENT_HORIZONTAL_PADDING * 2)) - (computedNumColumns * GRID_ITEM_MARGIN_HORIZONTAL * 2)) / computedNumColumns;
     const posterAspect = 1.4; // трохи нижчий за 2:3
     const imageHeight = Math.round(cardWidth * posterAspect);
@@ -440,23 +415,6 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
   }, [navigation, windowWidth, computedNumColumns]);
 
   const renderListItem = useCallback(({ item }) => {
-    if (item.isLoader) {
-      return (
-        <View style={styles.loadingMoreContainer}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text style={styles.loadingMoreText}>Завантаження...</Text>
-        </View>
-      );
-    }
-
-    if (item.isEndMessage) {
-      return (
-        <View style={styles.loadingMoreContainer}>
-          <Text style={styles.loadingMoreText}>Всі аніме завантажені</Text>
-        </View>
-      );
-    }
-
     return (
       <AnimeRowCard
         anime={{
@@ -476,7 +434,7 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
         onPress={() => navigation.navigate('AnimeDetails', { slug: item.anime.slug })}
       />
     );
-  }, [navigation, styles, theme.colors.primary]);
+  }, [navigation]);
 
   const renderFooter = useCallback(() => {
     if (loadingMore) {
@@ -668,8 +626,8 @@ const UserWatchList = ({ username, watchStatus = 'completed', limit = 21, onStat
       )}
 
         <FlatList
-          data={getDataWithLoader()}
-          keyExtractor={(item, index) => item.isLoader ? 'loader' : item.isEndMessage ? 'end-message' : keyExtractor(item, index)}
+          data={animeList}
+          keyExtractor={keyExtractor}
           renderItem={isGridView ? renderGridItem : renderListItem}
           key={flatListKey}
           numColumns={computedNumColumns}

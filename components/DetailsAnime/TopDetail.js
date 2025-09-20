@@ -46,6 +46,7 @@ const TopDetail = ({ anime, isLoading = false }) => {
   const [galleryImages, setGalleryImages] = useState([]);
   const [bannerUrls, setBannerUrls] = useState([]);
   const previousImagesRef = useRef([]);
+  const [isNativeScore, setIsNativeScore] = useState(false);
 
   // Скидаємо стани банерів при зміні аніме (напр. швидкий перехід між сезонами)
   useEffect(() => {
@@ -294,11 +295,14 @@ const TopDetail = ({ anime, isLoading = false }) => {
             <MoreButton slug={anime.slug}/>
           </ButtonsRow>
 
-          <EpisodesCounter slug={anime.slug} episodes_total={anime.episodes_total}/>
+          <EpisodesCounter 
+            slug={anime.slug} 
+            episodes_total={anime.episodes_total}
+            animeTitle={anime.title_ua || anime.title_en || anime.title_ja || 'Аніме'}
+          />
 
           <InfoContent>
             <InfoTitle>Інформація</InfoTitle>
-            <Score>{`${anime.score}`}<StyledStar name="star" /></Score>
             <InfoRow>
               <InfoIcon name="tv" />
               <InfoBold>Тип:</InfoBold>
@@ -647,32 +651,20 @@ const InfoTitle = styled.Text`
   font-size: 18px;
   font-weight: bold;
   color: ${({ theme }) => theme.colors.text};
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 `;
 
 const InfoContent = styled.View`
   flex-direction: column;
   gap: 12px;
-  padding: 12px;
+  padding: 0px 12px;
+  padding-top: 12px;
+  padding-bottom: 12px;
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
   background-color: ${({ theme }) => theme.colors.card};
   border-radius: 16px;
   margin-top: 15px;
-`;
-
-const Score = styled.Text`
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  font-weight: bold;
-  font-size: 28px;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const StyledStar = styled(AntDesign)`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 28px;
 `;
 
 const InfoRow = styled.View`

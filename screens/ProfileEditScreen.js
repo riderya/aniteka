@@ -234,7 +234,8 @@ const ImageButtonText = styled.Text`
 `;
 
 const RemoveButton = styled.TouchableOpacity`
-  background-color: #ff4444;
+  background-color: ${({ theme }) => theme.colors.error}20;
+  border: 1px solid ${({ theme }) => theme.colors.error}40;
   border-radius: 999px;
   padding: 12px;
   align-items: center;
@@ -242,7 +243,7 @@ const RemoveButton = styled.TouchableOpacity`
 `;
 
 const RemoveButtonText = styled.Text`
-  color: #ffffff;
+  color: ${({ theme }) => theme.colors.error};
   font-weight: 600;
   font-size: 14px;
 `;
@@ -318,7 +319,7 @@ const ModalButtonCancel = styled(ModalButton)`
 const ModalButtonSave = styled(ModalButton)`
   background-color: ${({ theme }) => `${theme.colors.primary}20`};
   border-width: 1px;
-  border-color: ${({ theme }) => theme.colors.primary};
+  border-color: ${({ theme }) => theme.colors.primary}40;
 `;
 
 const ModalButtonText = styled.Text`

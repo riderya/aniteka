@@ -33,6 +33,7 @@ const StatusDropdown = ({ slug, episodes_total }) => {
     episodes,
     setEpisodes,
     updateAnimeStatus,
+    removeAnimeFromList,
     getAnimeStatus,
     fetchAnimeStatus,
     authToken,
@@ -188,10 +189,13 @@ const StatusDropdown = ({ slug, episodes_total }) => {
 
       if (newStatus === 'Не дивлюсь') {
         setEpisodes(null);
+        // Видаляємо аніме з усіх глобальних станів
+        removeAnimeFromList(slug);
+      } else {
+        setSelectedStatus(newStatus);
+        updateAnimeStatus(slug, statusApiMapping[newStatus]);
       }
-
-      setSelectedStatus(newStatus);
-      updateAnimeStatus(slug, newStatus === 'Не дивлюсь' ? null : statusApiMapping[newStatus]);
+      
       setModalVisible(false);
 
       Toast.show({

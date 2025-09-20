@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Text, Image, TouchableOpacity } from 'react-native';
+import { Text, Image, TouchableOpacity, View } from 'react-native';
 import styled from 'styled-components/native';
 import { FontAwesome } from '@expo/vector-icons';
 import RowLineHeader from './RowLineHeader';
 import AnimeRating from './AnimeRating';
+import { useTheme } from 'styled-components';
 
 const Container = styled.View`
 `;
@@ -79,10 +80,17 @@ const CountLabel = styled.Text`
 `;
 
 
-const AnimeRatingStats = ({ stats, score, slug }) => {
+const AnimeRatingStats = ({ stats, score, native_score, native_scored_by, slug }) => {
   const [activeScore, setActiveScore] = useState(null);
+  const [showNative, setShowNative] = useState(true);
+  const theme = useTheme();
 
   if (!stats) return null;
+
+  // Ensure we have valid scores, fallback to regular score if native isn't available
+  const displayScore = showNative 
+    ? (native_score || score || 0)
+    : (score || 0);
 
   const scores = Array.from({ length: 10 }, (_, i) => i + 1);
   const totalVotes = scores.reduce((sum, score) => sum + (stats[`score_${score}`] || 0), 0);
@@ -100,11 +108,51 @@ const AnimeRatingStats = ({ stats, score, slug }) => {
     <Container>
       <RowLineHeader
         title="Оцінки"
+        rightContent={
+          <View style={{ flexDirection: 'row', backgroundColor: theme.colors.inputBackground, borderRadius: 8, padding: 2 }}>
+            <TouchableOpacity
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                backgroundColor: showNative ? theme.colors.primary : 'transparent',
+                borderRadius: 8,
+              }}
+              onPress={() => setShowNative(true)}
+            >
+              <Text style={{ 
+                color: showNative ? theme.colors.background : theme.colors.text,
+                fontSize: 12,
+                fontWeight: '500'
+              }}>
+                Aniteka
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                backgroundColor: !showNative ? theme.colors.primary : 'transparent',
+                borderRadius: 8,
+              }}
+              onPress={() => setShowNative(false)}
+            >
+              <Text style={{ 
+                color: !showNative ? theme.colors.background : theme.colors.text,
+                fontSize: 12,
+                fontWeight: '500'
+              }}>
+                MAL
+              </Text>
+            </TouchableOpacity>
+          </View>
+        }
       />
       <MainRow>
         <LeftCol>
-        <Average>{(Math.floor(score * 10) / 10).toFixed(1)}</Average>
-          <TotalVotes>{totalVotes.toLocaleString()} голосів</TotalVotes>
+        <Average>{(Math.floor(displayScore * 10) / 10).toFixed(1)}</Average>
+          <TotalVotes>
+            {(showNative ? (native_scored_by || totalVotes) : totalVotes).toLocaleString()} {showNative ? 'голосів' : 'голосів'}
+          </TotalVotes>
         </LeftCol>
 
         <RightCol>

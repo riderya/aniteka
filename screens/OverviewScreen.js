@@ -91,7 +91,7 @@ const OverviewScreen = React.memo(() => {
           <Divider />
           <SocialLinks 
             telegramUrl="https://t.me/anitekalib"
-            // discordUrl="https://discord.gg/5truHDdzEq"
+            discordUrl="https://discord.gg/BHSxd2avUn"
           />
           <Divider />
           <AnimeScheduleSlider onRefresh={addRefreshFunction} />
