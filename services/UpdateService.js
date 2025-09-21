@@ -126,7 +126,7 @@ class UpdateService {
             try {
               Alert.alert(
                 'Завантаження оновлення',
-                'Оновлення завантажується. Додаток перезапуститься автоматично.',
+                'Оновлення завантажується. Застосунок перезапуститься автоматично.',
                 [{ text: 'OK' }]
               );
               
@@ -151,9 +151,6 @@ class UpdateService {
 
   // Start automatic update checking (disabled)
   startAutomaticChecking() {
-    // Automatic checking is disabled
-    // Users can manually check for updates in Settings
-    console.log('📱 Automatic update checking is disabled. Use manual check in Settings.');
   }
 
   // Get current app version info

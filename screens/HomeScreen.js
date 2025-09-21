@@ -102,7 +102,8 @@ export default function HomeScreen() {
       requestBody: {
         status: ['ongoing'],
         media_type: ['tv'],
-        season: [currentSeason],
+        years: [currentYear, currentYear],
+        score: [7, 10],
       },
       titleLineText: "Онґоінґи",
       descriptionText: "Аніме, які зараз виходять та оновлюються щотижня.",
@@ -110,7 +111,7 @@ export default function HomeScreen() {
         initialFilters: {
           status: ['ongoing'],
           media_type: ['tv'],
-          season: [currentSeason],
+          years: [currentYear, currentYear],
         }
       })
     }},

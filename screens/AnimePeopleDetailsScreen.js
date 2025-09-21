@@ -20,6 +20,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import avatarFallback from '../assets/image/image404.png';
 import BackButton from '../components/DetailsAnime/BackButton';
 import { Ionicons } from '@expo/vector-icons';
+import AnimeColumnCard from '../components/Cards/AnimeColumnCard';
 
 const Container = styled.View`
   flex: 1;
@@ -133,48 +134,9 @@ const Column = styled.View`
   gap: 20px;
 `;
 
-const AnimeCard = styled.View`
-  width: 115px;
-`;
-
-const AnimeImage = styled.Image`
-  width: 100%;
-  height: 150px;
-  border-radius: 16px;
-  background-color: ${({ theme }) => theme.colors.card};
-`;
-
-const AnimeInfo = styled.View`
-  margin-top: 8px;
-`;
-
-const AnimeTitle = styled.Text`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const AnimeScore = styled.Text`
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.placeholder};
-`;
-
-const Row = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-`;
-
-const StyledIconDot = styled(FontAwesome)`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 6px;
-`;
-
 const RowBetween = styled.View`
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   margin-top: 6px;
 `;
@@ -194,9 +156,7 @@ const Label = styled.Text`
 const Value = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: 15px;
-  text-align: right;
   font-weight: 600;
-  flex: 1;
 `;
 
 const GrayIcon = styled(Ionicons)`
@@ -417,22 +377,6 @@ const AnimePeopleDetailsScreen = () => {
       </RowLeft>
       <Value>{people.anime_count}</Value>
     </RowBetween>
-
-    <RowBetween>
-      <RowLeft>
-        <GrayIcon name="book" />
-        <Label>Манґа:</Label>
-      </RowLeft>
-      <Value>{people.manga_count}</Value>
-    </RowBetween>
-
-    <RowBetween>
-      <RowLeft>
-        <GrayIcon name="library" />
-        <Label>Ранобе:</Label>
-      </RowLeft>
-      <Value>{people.novel_count}</Value>
-    </RowBetween>
   </BlockBorder>
 
 
@@ -452,118 +396,15 @@ const AnimePeopleDetailsScreen = () => {
         const { anime, roles = [] } = item;
       
         return (
-          <TouchableOpacity onPress={() => navigation.navigate('AnimeDetails', { slug: anime.slug })}>
-            <AnimeCard>
-              <AnimeImage source={{ uri: anime.image }} />
-              <AnimeInfo>
-              {roles.some(role => role.name_ua) && (
-                  <AnimeScore numberOfLines={1}>
-                    {roles.map(role => role.name_ua || role.name_en).filter(Boolean).join(', ')}
-                  </AnimeScore>
-                )}
-                <AnimeTitle numberOfLines={2}>
-                  {anime.title_ua || anime.title_en || anime.title_ja || '?'}
-                </AnimeTitle>
-                <Row>
-                  <AnimeScore>{anime.year}</AnimeScore>
-                  <StyledIconDot name="circle" />
-                  <AnimeScore>{anime.media_type}</AnimeScore>
-                </Row>
-              </AnimeInfo>
-            </AnimeCard>
-          </TouchableOpacity>
-        );
-      }}
-    />
-  </View>
-)}
-
-
-{mangaList.length > 0 && (
-  <View>
-    <TitleLineSlider>Манґа</TitleLineSlider>
-    <FlatList
-      data={mangaList}
-      keyExtractor={(_, index) => `manga-${index}`}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      ListHeaderComponent={<Spacer />}
-      ListFooterComponent={<Spacer />}
-      ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-      renderItem={({ item }) => {
-        const { manga, roles = [] } = item;
-
-        return (
-          <TouchableOpacity
-          onPress={() => WebBrowser.openBrowserAsync(`https://hikka.io/manga/${manga.slug}`)}
-        >
-          <AnimeCard>
-            <AnimeImage source={{ uri: manga.image }} />
-            <AnimeInfo>
-            {roles.length > 0 && (
-  <AnimeScore numberOfLines={1}>
-    {(roles[0].name_ua || roles[0].name_en)?.split(' ')[0]}
-  </AnimeScore>
-)}
-
-              <AnimeTitle numberOfLines={2}>
-                {manga.title_ua || manga.title_en || manga.title_ja || '?'}
-              </AnimeTitle>
-              <Row>
-                  <AnimeScore>{manga.year}</AnimeScore>
-                  <StyledIconDot name="circle" />
-                  <AnimeScore>{manga.media_type}</AnimeScore>
-                </Row>
-            </AnimeInfo>
-          </AnimeCard>
-        </TouchableOpacity>
-        );
-      }}
-    />
-  </View>
-)}
-
-
-
-{novelList.length > 0 && (
-  <View>
-    <TitleLineSlider>Ранобе</TitleLineSlider>
-    <FlatList
-      data={novelList}
-      keyExtractor={(_, index) => `novel-${index}`}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      ListHeaderComponent={<Spacer />}
-      ListFooterComponent={<Spacer />}
-      ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-      renderItem={({ item }) => {
-        const { novel, roles = [] } = item;
-
-        return (
-          <TouchableOpacity
-          onPress={() => WebBrowser.openBrowserAsync(`https://hikka.io/novel/${novel.slug}`)}
-        >
-          <AnimeCard>
-            <AnimeImage source={{ uri: novel.image }} />
-            <AnimeInfo>
-            {roles.length > 0 && (
-  <AnimeScore numberOfLines={1}>
-    {(roles[0].name_ua || roles[0].name_en)?.split(' ')[0]}
-  </AnimeScore>
-)}
-
-
-              <AnimeTitle numberOfLines={2}>
-                {novel.title_ua || novel.title_en || novel.title_ja || '?  '}
-              </AnimeTitle>
-              <Row>
-                  <AnimeScore>{novel.year}</AnimeScore>
-                  <StyledIconDot name="circle" />
-                  <AnimeScore>{novel.media_type}</AnimeScore>
-                </Row>
-            </AnimeInfo>
-          </AnimeCard>
-          </TouchableOpacity>
+          <AnimeColumnCard
+            anime={anime}
+            roles={roles}
+            cardWidth={115}
+            imageWidth={115}
+            imageHeight={150}
+            badgeFontSize={12}
+            onPress={() => navigation.navigate('AnimeDetails', { slug: anime.slug })}
+          />
         );
       }}
     />

@@ -4,7 +4,6 @@ import { Text, TouchableOpacity, View, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import ExternalLinkWarningModal from './ExternalLinkWarningModal';
-
 const MarkdownText = ({ 
   children, 
   style = {}, 
@@ -28,14 +27,12 @@ const MarkdownText = ({
     fontStyle: style.body?.fontStyle || 'normal',
     ...style.text
   };
-
   // Стиль для посилань
   const linkStyle = {
     color: theme.colors.primary,
     textDecorationLine: 'underline',
     ...style.link
   };
-
   // Стиль для коду
   const codeStyle = {
     backgroundColor: theme.colors.inputBackground,
@@ -45,22 +42,17 @@ const MarkdownText = ({
     borderRadius: 4,
     ...style.code
   };
-
   // Обробник посилань: відкриваємо внутрішні екрани для посилань Хікки на персонажів
   const handleLinkPress = async (url, text) => {
     if (!url) return;
-
     try {
       // Уніфікований розбір URL
       const isAbsolute = /^https?:\/\//i.test(url);
       const normalized = isAbsolute ? url : `https://hikka.io${url.startsWith('/') ? '' : '/'}${url}`;
-
       // Витягуємо шлях без параметрів
       const path = normalized.replace(/^https?:\/\/(?:www\.)?hikka\.io/i, '');
-      
       // Перевіряємо, чи це внутрішнє посилання Hikka
       const isHikkaLink = /^https?:\/\/(?:www\.)?hikka\.io/i.test(normalized);
-      
       if (isHikkaLink) {
         // Підтримка /characters/ та /character/
         const charMatch = path.match(/^\/char(?:acter|acters)\/([^/?#]+)\/?/i);
@@ -69,7 +61,6 @@ const MarkdownText = ({
           navigation.navigate('AnimeCharacterDetailsScreen', { slug, name_ua: text });
           return;
         }
-
         // Додатково: люди, аніме — відкриваємо відповідні екрани, якщо потрібно
         const peopleMatch = path.match(/^\/(people|person)\/([^/?#]+)\/?/i);
         if (peopleMatch && peopleMatch[2]) {
@@ -85,7 +76,6 @@ const MarkdownText = ({
         }
       }
     } catch (e) {}
-
     // Для зовнішніх посилань показуємо модалку попередження
     setWarningModal({
       visible: true,
@@ -97,11 +87,9 @@ const MarkdownText = ({
         if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
           finalUrl = 'https://' + finalUrl;
         }
-        
         // Спочатку перевіряємо, чи можемо відкрити через Linking (більш надійний на мобільних)
         try {
           const supported = await Linking.canOpenURL(finalUrl);
-          
           if (supported) {
             await Linking.openURL(finalUrl);
             return;
@@ -109,7 +97,6 @@ const MarkdownText = ({
         } catch (linkingError) {
           // Якщо Linking не спрацював, пробуємо WebBrowser
         }
-        
         // Якщо Linking не спрацював, пробуємо WebBrowser
         try {
           await WebBrowser.openBrowserAsync(finalUrl);
@@ -124,39 +111,32 @@ const MarkdownText = ({
       }
     });
   };
-
   // Функція для рендерингу тексту з маркдауном
   const renderMarkdownText = (text) => {
     if (!text) return null;
-
     // Очищаємо зайві відступи після спойлерів та дублікати порожніх рядків
     let cleanedText = text;
-    
     // Видаляємо зайві переноси рядків та пробіли після спойлерів
     cleanedText = cleanedText.replace(/:::\s*spoiler\s*\n?([\s\S]*?)\n?:::\s*\n+/g, (match, content) => {
       // Видаляємо зайві переноси рядків після закриваючого :::
       return `:::spoiler\n${content.trim()}\n:::`;
     });
-    
     // Нормалізуємо переноси рядків (CRLF -> LF)
     cleanedText = cleanedText.replace(/\r\n/g, '\n');
     // Повністю прибираємо порожні рядки (рядки з одними пробілами/табами)
     cleanedText = cleanedText
       .split('\n')
       .filter(line => line.trim().length > 0)
-      .join('\n');
+      .join('');
     // Обрізаємо краї
     cleanedText = cleanedText.trim();
-
     const parts = [];
     let currentIndex = 0;
     let textContent = cleanedText;
-
     // Обробка спойлерів :::spoiler ... :::
     const spoilerRegex = /:::spoiler\s*\n?([\s\S]*?)\n?:::/g;
     let spoilerMatch;
     const spoilerMatches = [];
-    
     while ((spoilerMatch = spoilerRegex.exec(cleanedText)) !== null) {
       // Очищаємо вміст спойлера від зайвих відступів
       const spoilerContent = spoilerMatch[1].trim();
@@ -167,12 +147,10 @@ const MarkdownText = ({
         end: spoilerMatch.index + spoilerMatch[0].length
       });
     }
-
     // Обробка посилань [текст](url "title") — титл необов'язковий
     const linkRegex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)/g;
     let linkMatch;
     const linkMatches = [];
-    
     while ((linkMatch = linkRegex.exec(cleanedText)) !== null) {
       linkMatches.push({
         type: 'link',
@@ -182,12 +160,10 @@ const MarkdownText = ({
         end: linkMatch.index + linkMatch[0].length
       });
     }
-
     // Обробка жирного тексту **текст** (спочатку обробляємо жирний, щоб уникнути конфліктів)
     const boldRegex = /\*\*([^*]+?)\*\*/g;
     let boldMatch;
     const boldMatches = [];
-    
     while ((boldMatch = boldRegex.exec(cleanedText)) !== null) {
       boldMatches.push({
         type: 'bold',
@@ -196,12 +172,10 @@ const MarkdownText = ({
         end: boldMatch.index + boldMatch[0].length
       });
     }
-
     // Обробка курсиву *текст* (виключаємо ділянки, які вже є жирним текстом)
     const italicRegex = /(?<!\*)\*([^*]+?)\*(?!\*)/g;
     let italicMatch;
     const italicMatches = [];
-    
     while ((italicMatch = italicRegex.exec(cleanedText)) !== null) {
       // Перевіряємо, чи не перекривається з жирним текстом
       let isInsideBold = false;
@@ -211,7 +185,6 @@ const MarkdownText = ({
           break;
         }
       }
-      
       if (!isInsideBold) {
         italicMatches.push({
           type: 'italic',
@@ -221,12 +194,10 @@ const MarkdownText = ({
         });
       }
     }
-
     // Обробка коду `код`
     const codeRegex = /`([^`]+)`/g;
     let codeMatch;
     const codeMatches = [];
-    
     while ((codeMatch = codeRegex.exec(cleanedText)) !== null) {
       codeMatches.push({
         type: 'code',
@@ -235,17 +206,13 @@ const MarkdownText = ({
         end: codeMatch.index + codeMatch[0].length
       });
     }
-
     // Спочатку обробляємо спойлери, щоб виключити їх вміст з подальшої обробки
     const processedText = cleanedText;
     const allMatches = [];
-    
     // Додаємо спойлери першими
     allMatches.push(...spoilerMatches);
-    
     // Для інших матчів перевіряємо, чи вони не знаходяться всередині спойлера
     const otherMatches = [...linkMatches, ...boldMatches, ...italicMatches, ...codeMatches];
-    
     for (const match of otherMatches) {
       let isInsideSpoiler = false;
       for (const spoiler of spoilerMatches) {
@@ -258,13 +225,10 @@ const MarkdownText = ({
         allMatches.push(match);
       }
     }
-    
     // Сортуємо за позицією
     allMatches.sort((a, b) => a.start - b.start);
-
     // Рендеримо текст частинами
     let lastIndex = 0;
-    
     for (const match of allMatches) {
       // Додаємо текст перед матчем
       if (match.start > lastIndex) {
@@ -277,13 +241,12 @@ const MarkdownText = ({
           );
         }
       }
-
-             // Рендеримо матч
-       switch (match.type) {
-         case 'spoiler':
-            parts.push({
-             type: 'spoiler',
-             element: (
+      // Рендеримо матч
+      switch (match.type) {
+        case 'spoiler':
+          parts.push({
+            type: 'spoiler',
+            element: (
               <InlineSpoiler
                 key={`spoiler-${match.start}`}
                 text={match.text}
@@ -292,8 +255,8 @@ const MarkdownText = ({
                 handleLinkPress={handleLinkPress}
               />
             )
-           });
-            break;
+          });
+          break;
         case 'link':
           if (disableLinks) {
             parts.push(
@@ -347,10 +310,8 @@ const MarkdownText = ({
           );
           break;
       }
-
       lastIndex = match.end;
     }
-
     // Додаємо залишок тексту
     if (lastIndex < cleanedText.length) {
       const remainingText = cleanedText.slice(lastIndex);
@@ -362,12 +323,9 @@ const MarkdownText = ({
         );
       }
     }
-
     return parts.length > 0 ? parts : text;
   };
-
   const markdownContent = renderMarkdownText(children);
-  
   // Якщо це масив елементів (є маркдаун), рендеримо їх у одному Text компоненті
   if (Array.isArray(markdownContent)) {
     // Якщо потрібно обрізати текст, рендеримо простий текст без маркдауну
@@ -382,11 +340,9 @@ const MarkdownText = ({
         </Text>
       );
     }
-    
     // Розділяємо елементи на групи: інлайн та блочні
     const result = [];
     let currentInlineGroup = [];
-    
     markdownContent.forEach((part, index) => {
       if (part.type === 'spoiler') {
         // Якщо є накопичені інлайн елементи, додаємо їх як групу
@@ -405,7 +361,6 @@ const MarkdownText = ({
         currentInlineGroup.push(part);
       }
     });
-    
     // Додаємо останню групу інлайн елементів, якщо вона є
     if (currentInlineGroup.length > 0) {
       result.push(
@@ -414,13 +369,11 @@ const MarkdownText = ({
         </Text>
       );
     }
-    
     return (
       <>
         <View>
           {result}
         </View>
-        
         <ExternalLinkWarningModal
           visible={warningModal.visible}
           url={warningModal.url}
@@ -431,7 +384,6 @@ const MarkdownText = ({
       </>
     );
   }
-  
   // Інакше повертаємо простий текст в обгортці
   return (
     <>
@@ -442,7 +394,6 @@ const MarkdownText = ({
       >
         {markdownContent}
       </Text>
-      
       <ExternalLinkWarningModal
         visible={warningModal.visible}
         url={warningModal.url}
@@ -453,29 +404,23 @@ const MarkdownText = ({
     </>
   );
 };
-
 // Inline Spoiler Component to avoid circular dependency
 const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress }) => {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const [revealed, setRevealed] = useState(false);
-
   const toggleSpoiler = () => {
     setRevealed(prev => !prev);
   };
-
   // Функція для рендерингу маркдауну в спойлері
   const renderSpoilerMarkdown = (text) => {
     if (!text) return null;
-
     const parts = [];
     let lastIndex = 0;
-
     // Обробка посилань [текст](url)
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
     let linkMatch;
     const linkMatches = [];
-    
     while ((linkMatch = linkRegex.exec(text)) !== null) {
       linkMatches.push({
         type: 'link',
@@ -485,12 +430,10 @@ const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress 
         end: linkMatch.index + linkMatch[0].length
       });
     }
-
     // Обробка жирного тексту **текст** (спочатку обробляємо жирний, щоб уникнути конфліктів)
     const boldRegex = /\*\*([^*]+?)\*\*/g;
     let boldMatch;
     const boldMatches = [];
-    
     while ((boldMatch = boldRegex.exec(text)) !== null) {
       boldMatches.push({
         type: 'bold',
@@ -499,12 +442,10 @@ const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress 
         end: boldMatch.index + boldMatch[0].length
       });
     }
-
     // Обробка курсиву *текст* (виключаємо ділянки, які вже є жирним текстом)
     const italicRegex = /(?<!\*)\*([^*]+?)\*(?!\*)/g;
     let italicMatch;
     const italicMatches = [];
-    
     while ((italicMatch = italicRegex.exec(text)) !== null) {
       // Перевіряємо, чи не перекривається з жирним текстом
       let isInsideBold = false;
@@ -514,7 +455,6 @@ const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress 
           break;
         }
       }
-      
       if (!isInsideBold) {
         italicMatches.push({
           type: 'italic',
@@ -524,12 +464,10 @@ const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress 
         });
       }
     }
-
     // Обробка коду `код`
     const codeRegex = /`([^`]+)`/g;
     let codeMatch;
     const codeMatches = [];
-    
     while ((codeMatch = codeRegex.exec(text)) !== null) {
       codeMatches.push({
         type: 'code',
@@ -538,11 +476,9 @@ const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress 
         end: codeMatch.index + codeMatch[0].length
       });
     }
-
     // Об'єднуємо всі матчі та сортуємо за позицією
     const allMatches = [...linkMatches, ...boldMatches, ...italicMatches, ...codeMatches]
       .sort((a, b) => a.start - b.start);
-
     // Рендеримо текст частинами
     for (const match of allMatches) {
       // Додаємо текст перед матчем
@@ -556,7 +492,6 @@ const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress 
           );
         }
       }
-
       // Рендеримо матч
       switch (match.type) {
         case 'link':
@@ -618,10 +553,8 @@ const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress 
           );
           break;
       }
-
       lastIndex = match.end;
     }
-
     // Додаємо залишок тексту
     if (lastIndex < text.length) {
       const remainingText = text.slice(lastIndex);
@@ -633,15 +566,13 @@ const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress 
         );
       }
     }
-
     return parts.length > 0 ? parts : <Text style={textStyle}>{text}</Text>;
   };
-
   return (
     <TouchableOpacity 
       activeOpacity={0.8} 
       onPress={toggleSpoiler}
-      style={{ width: '100%', marginVertical: 4, zIndex: 10 }}
+      style={{ width: '100%', marginVertical: 4 }}
     >
       {revealed ? (
         <View style={{ 
@@ -653,7 +584,9 @@ const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress 
           borderColor: theme.colors.border,
           marginVertical: 2
         }}>
-          {renderSpoilerMarkdown(text)}
+          <Text style={textStyle}>
+            {renderSpoilerMarkdown(text)}
+          </Text>
         </View>
       ) : (
         <View style={{ 
@@ -680,5 +613,4 @@ const InlineSpoiler = ({ text, textStyle, disableLinks = false, handleLinkPress 
     </TouchableOpacity>
   );
 };
-
 export default MarkdownText;

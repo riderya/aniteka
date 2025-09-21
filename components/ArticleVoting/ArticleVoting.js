@@ -215,7 +215,7 @@ const ArticleVoting = ({
         activeOpacity={0.7}
       >
         <Ionicons 
-          name="chatbubble-ellipses" 
+          name="chatbubble-ellipses-outline" 
           size={18} 
           color={theme.colors.gray}
         />

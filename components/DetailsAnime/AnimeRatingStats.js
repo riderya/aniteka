@@ -124,7 +124,7 @@ const AnimeRatingStats = ({ stats, score, native_score, native_scored_by, slug }
                 fontSize: 12,
                 fontWeight: '500'
               }}>
-                Aniteka
+                Aniteka/Hikka
               </Text>
             </TouchableOpacity>
             <TouchableOpacity

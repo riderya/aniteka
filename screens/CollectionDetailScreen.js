@@ -743,7 +743,7 @@ useFocusEffect(
                 })}
                 activeOpacity={0.7}
               >
-                <Ionicons name="chatbox-outline" size={16} color={theme.colors.gray}/>
+                <Ionicons name="chatbubble-ellipses-outline" size={16} color={theme.colors.gray}/>
                 <CommentsCountText 
                   style={{ marginLeft: 8 }}>
                   {collection.comments_count}

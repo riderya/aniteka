@@ -136,7 +136,7 @@ const UpdateModal = ({
             </View>
             
             <Text style={styles.description}>
-              Оновлення завантажується. Додаток перезапуститься автоматично після завершення.
+              Оновлення завантажується. Застосунок перезапуститься автоматично після завершення.
             </Text>
 
             <View style={[styles.button, styles.primaryButton]}>

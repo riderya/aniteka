@@ -2,7 +2,7 @@
   "expo": {
     "name": "Aniteka",
     "slug": "aniteka",
-    "version": "1.0.2",
+    "version": "1.0.43",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -30,6 +30,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.osu_tenef.aniteka",
+      "softwareKeyboardLayoutMode": "pan",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -50,7 +51,7 @@
         "android.permission.VIBRATE",
         "android.permission.WAKE_LOCK"
       ],
-      "runtimeVersion": "1.0.2",
+      "runtimeVersion": "1.0.43",
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
       "buildToolsVersion": "35.0.0",

@@ -715,7 +715,7 @@ export default function AnimeFilters({
 
         {/* Рейтинг */}
         <Column>
-          <LabelName>Рейтинг</LabelName>
+          <LabelName>Віковий рейтинг</LabelName>
           <FilterButton
             selected={hasSelection(selectedRatings)}
             onPress={() => setDropdownStates((prev) => ({ ...prev, dropdownRatingVisible: true }))}

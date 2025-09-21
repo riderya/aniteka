@@ -98,8 +98,8 @@ const RuleText = styled.Text`
 `;
 
 const WarningCard = styled.View`
-  background-color: ${({ theme }) => theme.colors.warning || '#FFF3CD'};
-  border: 1px solid ${({ theme }) => theme.colors.warningBorder || '#FFEAA7'};
+  background-color: ${({ theme }) => theme.colors.warning}20;
+  border: 1px solid ${({ theme }) => theme.colors.warning}40;
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
@@ -115,7 +115,7 @@ const WarningIcon = styled.View`
 const WarningText = styled.Text`
   font-size: 14px;
   line-height: 20px;
-  color: ${({ theme }) => theme.colors.warningText || '#856404'};
+  color: ${({ theme }) => theme.colors.warning};
   flex: 1;
 `;
 

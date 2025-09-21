@@ -214,7 +214,7 @@ export default function NotificationsSettingsScreen() {
                 </SettingsIcon>
                 <SettingsText>
                   <SettingsTitle>Push-сповіщення</SettingsTitle>
-                  <SettingsDescription>Отримувати сповіщення навіть коли додаток неактивний</SettingsDescription>
+                  <SettingsDescription>Отримувати сповіщення навіть коли застосунок неактивний</SettingsDescription>
                 </SettingsText>
               </SettingsItemLeft>
               <Switch

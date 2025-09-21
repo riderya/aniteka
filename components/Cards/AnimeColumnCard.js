@@ -105,7 +105,8 @@ const AnimeColumnCard = React.memo(({
   historyData = null, // Новий опціональний проп для історії
   imageBorderRadius = 24, // Новий проп для border radius картинки
   titleNumberOfLines = 2, // Новий проп для кількості рядків заголовка
-  starIconSize = 12 // Новий проп для розміру іконки зірки
+  starIconSize = 12, // Новий проп для розміру іконки зірки
+  roles = null // Новий проп для ролей
 }) => {
   const navigation = useNavigation();
   const { theme } = useTheme();
@@ -297,7 +298,14 @@ const AnimeColumnCard = React.memo(({
           )}
         </View>
 
-                 <Text numberOfLines={titleNumberOfLines} style={[
+        {/* Показуємо ролі, якщо вони є */}
+        {roles && roles.length > 0 && (
+          <Text style={styles.roleText} numberOfLines={1}>
+            {roles.map(role => role.name_ua || role.name_en).filter(Boolean).join(', ')}
+          </Text>
+        )}
+
+        <Text numberOfLines={titleNumberOfLines} style={[
            styles.title,
            typeof cardWidth === 'string' && { width: cardWidth }
          ]}>
@@ -369,7 +377,7 @@ const createStyles = (theme, props) => StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: theme.colors.favourite + '60',
+    backgroundColor: theme.colors.favourite + '50',
     padding: 6,
     borderRadius: 10,
   },
@@ -380,11 +388,17 @@ const createStyles = (theme, props) => StyleSheet.create({
     marginTop: 4,
     marginBottom: 4,
   },
+  roleText: {
+    fontSize: props.footerFontSize,
+    color: theme.colors.placeholder,
+    marginTop: 4,
+    marginBottom: -8,
+  },
   rowFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 8,
+    marginTop: 4,
   },
   textFooter: {
     fontSize: props.footerFontSize,

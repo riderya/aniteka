@@ -16,6 +16,10 @@ import { Ionicons } from '@expo/vector-icons';
 import avatarFallback from '../assets/image/image404.png';
 import BackButton from '../components/DetailsAnime/BackButton';
 import LikeCharacterButton from '../components/DetailsAnime/LikeCharacterButton';
+import CommentCharacterButton from '../components/DetailsAnime/CommentCharacterButton';
+import AnimeColumnCard from '../components/Cards/AnimeColumnCard';
+
+
 
 const Container = styled.View`
   flex: 1;
@@ -131,7 +135,6 @@ const StyledIconRole = styled(MaterialIcons)`
 const RowBetween = styled.View`
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
 `;
@@ -151,9 +154,7 @@ const Label = styled.Text`
 const Value = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: 15px;
-  text-align: right;
   font-weight: 600;
-  flex: 1;
 `;
 
 const GrayIcon = styled(Ionicons)`
@@ -167,6 +168,7 @@ const Column = styled.View`
   margin-top: 8px;
 `;
 
+// Залишаємо ці компоненти для секції сейю
 const AnimeCard = styled.View`
   width: 115px;
 `;
@@ -174,7 +176,7 @@ const AnimeCard = styled.View`
 const AnimeImage = styled.Image`
   width: 100%;
   height: 150px;
-  border-radius: 16px;
+  border-radius: 24px;
   background-color: ${({ theme }) => theme.colors.card};
 `;
 
@@ -271,8 +273,6 @@ const AnimeCharacterDetailsScreen = () => {
   const [spoilerOpen, setSpoilerOpen] = useState({});
    const headerHeight = insets.top + 30;
   const [animeList, setAnimeList] = useState([]);
-  const [mangaList, setMangaList] = useState([]);
-  const [novelList, setNovelList] = useState([]);
   const [voicesList, setVoicesList] = useState([]);
   const [isUpdatingLike, setIsUpdatingLike] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -301,23 +301,7 @@ const AnimeCharacterDetailsScreen = () => {
       }
     };
   
-    const fetchCharacterManga = async () => {
-      try {
-        const response = await axios.get(`https://api.hikka.io/characters/${slug}/manga?page=1&size=100`);
-        setMangaList(response.data.list || []);
-      } catch (error) {
-        
-      }
-    };
 
-    const fetchCharacterNovel = async () => {
-        try {
-          const response = await axios.get(`https://api.hikka.io/characters/${slug}/novel?page=1&size=100`);
-          setNovelList(response.data.list || []);
-        } catch (error) {
-          
-        }
-      };
 
     const fetchCharacterVoices = async () => {
         try {
@@ -330,8 +314,6 @@ const AnimeCharacterDetailsScreen = () => {
   
     fetchCharacter();
     fetchCharacterAnime();
-    fetchCharacterManga();
-    fetchCharacterNovel();
     fetchCharacterVoices();
   }, [slug]);
 
@@ -437,6 +419,18 @@ const AnimeCharacterDetailsScreen = () => {
     <Container>
         <BackButton top={12}/>
         <LikeCharacterButton slug={slug} top={12} isVisible={isScrolled}/>
+        <CommentCharacterButton 
+          top={69} 
+          commentsCount={character.comments_count || 0}
+          onPress={() =>
+            navigation.navigate('CommentsDetailsScreen', {
+              slug: character.slug,
+              title: character.name_ua || character.name_en || character.name_ja || '?',
+              commentsCount: character.comments_count || 0,
+              contentType: 'character'
+            })
+          }
+        />
 
       <Content 
         contentContainerStyle={{
@@ -467,7 +461,7 @@ const AnimeCharacterDetailsScreen = () => {
               })
             }
           >
-            <Ionicons name="chatbubble-ellipses" size={24} color="#fff" />
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color="#fff" />
             <Text style={{ color: '#fff', fontSize: 14, fontWeight: 'bold' }}>{character.comments_count}</Text>
           </CommentButtonOnPoster>
           {/* Кнопка вподобання справа */}
@@ -621,20 +615,6 @@ const AnimeCharacterDetailsScreen = () => {
             </RowLeft>
             <Value>{character.anime_count}</Value>
           </RowBetween>
-          <RowBetween>
-            <RowLeft>
-              <GrayIcon name="book" />
-              <Label>Манґа:</Label>
-            </RowLeft>
-            <Value>{character.manga_count}</Value>
-          </RowBetween>
-          <RowBetween>
-            <RowLeft>
-              <GrayIcon name="library" />
-              <Label>Ранобе:</Label>
-            </RowLeft>
-            <Value>{character.novel_count}</Value>
-          </RowBetween>
         </BlockBorder>
 
 
@@ -653,107 +633,27 @@ const AnimeCharacterDetailsScreen = () => {
       ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
       renderItem={({ item }) => {
         const { anime, main } = item;
+        
+        // Форматуємо роль для передачі в AnimeColumnCard
+        const roles = main ? [{ name_ua: 'Головна роль', name_en: 'Main role' }] : [];
 
         return (
-<TouchableOpacity
-  onPress={() => navigation.navigate('AnimeDetails', { slug: anime.slug })}
->
-  <AnimeCard>
-    <AnimeImage source={{ uri: anime.image }} />
-    <AnimeInfo>
-      <AnimeTitle numberOfLines={2}>
-        {anime.title_ua || anime.title_en || anime.title_ja || '?'}
-      </AnimeTitle>
-      {main && (
-        <AnimeScore>
-          <StyledIconRole name="verified-user" /> Головна роль
-        </AnimeScore>
-      )}
-    </AnimeInfo>
-  </AnimeCard>
-</TouchableOpacity>
-
+          <AnimeColumnCard
+            anime={anime}
+            roles={roles}
+            cardWidth={115}
+            imageWidth={115}
+            imageHeight={150}
+            titleFontSize={14}
+            imageBorderRadius={24}
+            badgeFontSize={12}
+            onPress={() => navigation.navigate('AnimeDetails', { slug: anime.slug })}
+          />
         );
       }}
     />
   </View>
 )}
-
-
-{mangaList.length > 0 && (
-  <View>
-    <TitleLineSlider>Манґа</TitleLineSlider>
-    <FlatList
-      data={mangaList}
-      keyExtractor={(_, index) => `manga-${index}`}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      ListHeaderComponent={<Spacer />}
-      ListFooterComponent={<Spacer />}
-      ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-      renderItem={({ item }) => {
-        const { manga, main } = item;
-
-        return (
-          <TouchableOpacity
-          onPress={() => WebBrowser.openBrowserAsync(`https://hikka.io/manga/${manga.slug}`)}
-        >
-          <AnimeCard>
-            <AnimeImage source={{ uri: manga.image }} />
-            <AnimeInfo>
-              <AnimeTitle numberOfLines={2}>
-                {manga.title_ua || manga.title_en || manga.title_ja || '?'}
-              </AnimeTitle>
-              {main && (
-                <AnimeScore>
-                  <StyledIconRole name="verified-user" /> Головна роль
-                </AnimeScore>
-              )}
-            </AnimeInfo>
-          </AnimeCard>
-        </TouchableOpacity>
-        );
-      }}
-    />
-  </View>
-)}
-
-
-
-{novelList.length > 0 && (
-  <View>
-    <TitleLineSlider>Ранобе</TitleLineSlider>
-    <FlatList
-      data={novelList}
-      keyExtractor={(_, index) => `novel-${index}`}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      ListHeaderComponent={<Spacer />}
-      ListFooterComponent={<Spacer />}
-      ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-      renderItem={({ item }) => {
-        const { novel, main } = item;
-
-        return (
-          <TouchableOpacity
-          onPress={() => WebBrowser.openBrowserAsync(`https://hikka.io/novel/${novel.slug}`)}
-        >
-          <AnimeCard>
-            <AnimeImage source={{ uri: novel.image }} />
-            <AnimeInfo>
-              <AnimeTitle numberOfLines={2}>
-                {novel.title_ua || novel.title_en || novel.title_ja || '?  '}
-              </AnimeTitle>
-              {main && <AnimeScore><StyledIconRole name="verified-user" /> Головна роль</AnimeScore>}
-            </AnimeInfo>
-          </AnimeCard>
-          </TouchableOpacity>
-        );
-      }}
-    />
-  </View>
-)}
-
 
 
 {voicesList.length > 0 && (
@@ -803,59 +703,3 @@ const AnimeCharacterDetailsScreen = () => {
 };
 
 export default AnimeCharacterDetailsScreen;
-
-const InfoTitle = styled.Text`
-  font-size: 18px;
-  font-weight: bold;
-  color: ${({ theme }) => theme.colors.text};
-  margin-bottom: 12px;
-  margin-top: 15px;
-`;
-
-const InfoRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
-`;
-
-const InfoText = styled.Text`
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 15px;
-  text-align: right;
-  font-weight: 600;
-  flex: 1;
-`;
-
-const InfoBold = styled.Text`
-  font-weight: bold;
-  color: ${({ theme }) => theme.colors.gray};
-`;
-
-const InfoIcon = styled(Ionicons)`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 16px;
-  margin-right: 4px;
-`;
-
-const NameContainer = styled.View`
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: 8px;
-  justify-content: space-between;
-`;
-
-const NameType = styled.View`
-  min-width: 100px;
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
-`;
-
-const NameTypeText = styled.Text`
-  color: ${({ theme }) => theme.colors.gray};
-  font-size: 15px;
-  font-weight: bold;
-`;
-

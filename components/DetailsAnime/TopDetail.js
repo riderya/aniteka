@@ -91,8 +91,24 @@ const TopDetail = ({ anime, isLoading = false }) => {
 
   const toggleExpanded = () => setExpanded(prev => !prev);
 
+  // Функція для очищення опису від "Джерело" і посилань
+  const cleanDescription = (text) => {
+    if (!text) return 'Опис відсутній.';
+    
+    // Видаляємо "Джерело:" і все що після нього
+    let cleaned = text.replace(/\s*джерело:?.*$/i, '');
+    
+    // Видаляємо посилання на кінці тексту
+    cleaned = cleaned.replace(/\s*https?:\/\/[^\s]*$/i, '');
+    
+    // Видаляємо зайві пробіли і переноси рядків в кінці
+    cleaned = cleaned.trim();
+    
+    return cleaned || 'Опис відсутній.';
+  };
+
   // Перевіряємо, чи текст довший за 5 рядків
-  const description = anime.synopsis_ua || anime.synopsis_en || 'Опис відсутній.';
+  const description = cleanDescription(anime.synopsis_ua || anime.synopsis_en);
   // Приблизна оцінка: 5 рядків * ~40 символів на рядок = ~200 символів
   const shouldShowToggle = description.length > 200 && !expanded;
 
@@ -281,7 +297,7 @@ const TopDetail = ({ anime, isLoading = false }) => {
                 })
               }
             >
-              <StyledIconSaveComment name="chatbubble-outline" size={20} color="#fff" />
+              <StyledIconSaveComment name="chatbubble-ellipses-outline" size={20} color="#fff" />
               <ButtonTextSaveComment>{anime.comments_count}</ButtonTextSaveComment>
             </TouchableOpacityStyled>
           </ButtonsRow>

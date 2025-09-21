@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import Markdown from '../Custom/MarkdownText';
 import * as WebBrowser from 'expo-web-browser';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
   const navigation = useNavigation();
@@ -98,39 +99,64 @@ const LatestCommentCard = React.memo(({ item, index, showIndex = false }) => {
     return (
       <>
         <View style={{ 
-          maxHeight: isExpanded ? undefined : maxLines * 18, // maxLines * lineHeight
-          overflow: isExpanded ? 'visible' : 'hidden',
           position: 'relative',
           zIndex: 1,
         }}>
-          <Markdown
-            style={{
-              body: {
-                color: theme.colors.text,
-                fontSize: 14,
-                lineHeight: 18,
-              },
-              link: { color: theme.colors.primary },
-              paragraph: {
-                marginVertical: 0,
-              },
-            }}
-            hideSpoilers={!isExpanded}
-          >
-            {displayText}
-          </Markdown>
+          <View style={{
+            maxHeight: isExpanded ? undefined : maxLines * 18, // maxLines * lineHeight
+            overflow: isExpanded ? 'visible' : 'hidden',
+          }}>
+            <Markdown
+              style={{
+                body: {
+                  color: theme.colors.text,
+                  fontSize: 14,
+                  lineHeight: 18,
+                },
+                link: { color: theme.colors.primary },
+                paragraph: {
+                  marginVertical: 0,
+                },
+              }}
+              hideSpoilers={!isExpanded}
+            >
+              {displayText}
+            </Markdown>
+          </View>
+          
+          {/* Градієнт для плавного переходу при обрізанні */}
+          {!isExpanded && shouldShowToggle && (
+            <LinearGradient
+              colors={[`${theme.colors.card}00`, theme.colors.card]} // Прозорий до непрозорого
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 20,
+                pointerEvents: 'none',
+                zIndex: 2,
+              }}
+            />
+          )}
         </View>
 
         {(shouldShowToggle || isExpanded) && (
-          <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
-            <ShowText style={{ marginTop: 8 }}>
+          <TouchableOpacity 
+            onPress={() => setIsExpanded(!isExpanded)}
+            style={{ 
+              marginTop: shouldShowToggle && !isExpanded ? 4 : 8,
+              zIndex: 3 
+            }}
+          >
+            <ShowText>
               {isExpanded ? 'Згорнути' : 'Показати більше...'}
             </ShowText>
           </TouchableOpacity>
         )}
       </>
     );
-  }, [fullText, item.parentInfo, isExpanded, maxLines, theme.colors.text, theme.colors.primary, shouldShowToggle]);
+  }, [fullText, item.parentInfo, isExpanded, maxLines, theme.colors.text, theme.colors.primary, shouldShowToggle, theme.colors.card]);
 
   const avatar = useMemo(() => item.author?.avatar || 'https://ui-avatars.com/api/?name=?', [item.author?.avatar]);
   const username = useMemo(() => item.author?.username || 'Користувач', [item.author?.username]);
