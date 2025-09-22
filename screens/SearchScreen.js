@@ -21,7 +21,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import avatarFallback from '../assets/image/image404.png';
-import noSearchImage from '../assets/image/noSearchImage.png';
+import notFound from '../assets/image/not-found.webp';
 import AnimeRowCard from '../components/Cards/AnimeRowCard';
 import CharacterCardItem from '../components/Cards/CharacterCardItem';
 import StaffCardRow from '../components/Cards/StaffCardRow';
@@ -275,7 +275,7 @@ export default function SearchScreen() {
           ListEmptyComponent={
             !loading && query.length >= 3 && (
               <View style={{ alignItems: 'center' }}>
-                <SearchImage source={noSearchImage} />
+                <SearchImage source={notFound} />
                 <EmptyText>Нічого не знайдено</EmptyText>
               </View>
             )

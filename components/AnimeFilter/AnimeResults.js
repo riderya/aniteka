@@ -57,7 +57,7 @@ export default function AnimeResults({ animeList, loadingAnime, onEndReached }) 
   if (!loadingAnime && animeList.length === 0) {
     return (
       <EmptyContainer>
-        <EmptyImage source={require('../../assets/image/noSearchImage.png')} resizeMode="contain" />
+        <EmptyImage source={require('../../assets/image/not-found.webp')} resizeMode="contain" />
         <EmptyText>На жаль, аніме не знайдено</EmptyText>
       </EmptyContainer>
     );

@@ -14,9 +14,9 @@ const LikeButtonWrapper = styled(TouchableOpacity)`
   right: ${({ right }) => right || 12}px;
   bottom: ${({ bottom }) => bottom || 'auto'};
   z-index: 10;
-  width: 45px;
-  height: 45px;
-  border-radius: 16px;
+  width: 50px;
+  height: 50px;
+  border-radius: 999px;
   background-color: ${({ theme }) => theme.colors.background};
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};

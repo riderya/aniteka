@@ -80,10 +80,36 @@ const CountLabel = styled.Text`
 `;
 
 
-const AnimeRatingStats = ({ stats, score, native_score, native_scored_by, slug }) => {
+const AnimeRatingStats = ({ stats, score, native_score, native_scored_by, slug, onVoteCountChange }) => {
   const [activeScore, setActiveScore] = useState(null);
   const [showNative, setShowNative] = useState(true);
+  const [localNativeScoredBy, setLocalNativeScoredBy] = useState(native_scored_by || 0);
   const theme = useTheme();
+
+  // Update local state when prop changes
+  React.useEffect(() => {
+    setLocalNativeScoredBy(native_scored_by || 0);
+  }, [native_scored_by]);
+
+  const handleNewVote = () => {
+    // Increment the local vote count
+    setLocalNativeScoredBy(prev => prev + 1);
+    
+    // Notify parent component about the change
+    if (onVoteCountChange) {
+      onVoteCountChange(1);
+    }
+  };
+
+  const handleVoteRemoved = () => {
+    // Decrement the local vote count, but not below 0
+    setLocalNativeScoredBy(prev => Math.max(0, prev - 1));
+    
+    // Notify parent component about the change
+    if (onVoteCountChange) {
+      onVoteCountChange(-1);
+    }
+  };
 
   if (!stats) return null;
 
@@ -109,18 +135,18 @@ const AnimeRatingStats = ({ stats, score, native_score, native_scored_by, slug }
       <RowLineHeader
         title="Оцінки"
         rightContent={
-          <View style={{ flexDirection: 'row', backgroundColor: theme.colors.inputBackground, borderRadius: 8, padding: 2 }}>
+          <View style={{ flexDirection: 'row', backgroundColor: theme.colors.inputBackground, borderRadius: 10, padding: 2 }}>
             <TouchableOpacity
               style={{
                 paddingHorizontal: 8,
                 paddingVertical: 4,
-                backgroundColor: showNative ? theme.colors.primary : 'transparent',
+                backgroundColor: showNative ? `${theme.colors.primary}40` : 'transparent',
                 borderRadius: 8,
               }}
               onPress={() => setShowNative(true)}
             >
               <Text style={{ 
-                color: showNative ? theme.colors.background : theme.colors.text,
+                color: showNative ? theme.colors.primary : theme.colors.text,
                 fontSize: 12,
                 fontWeight: '500'
               }}>
@@ -131,13 +157,13 @@ const AnimeRatingStats = ({ stats, score, native_score, native_scored_by, slug }
               style={{
                 paddingHorizontal: 8,
                 paddingVertical: 4,
-                backgroundColor: !showNative ? theme.colors.primary : 'transparent',
+                backgroundColor: !showNative ? `${theme.colors.primary}40` : 'transparent',
                 borderRadius: 8,
               }}
               onPress={() => setShowNative(false)}
             >
               <Text style={{ 
-                color: !showNative ? theme.colors.background : theme.colors.text,
+                color: !showNative ? theme.colors.primary : theme.colors.text,
                 fontSize: 12,
                 fontWeight: '500'
               }}>
@@ -151,7 +177,7 @@ const AnimeRatingStats = ({ stats, score, native_score, native_scored_by, slug }
         <LeftCol>
         <Average>{(Math.floor(displayScore * 10) / 10).toFixed(1)}</Average>
           <TotalVotes>
-            {(showNative ? (native_scored_by || totalVotes) : totalVotes).toLocaleString()} {showNative ? 'голосів' : 'голосів'}
+            {(showNative ? localNativeScoredBy : totalVotes).toLocaleString()} {showNative ? 'голосів' : 'голосів'}
           </TotalVotes>
         </LeftCol>
 
@@ -174,7 +200,7 @@ const AnimeRatingStats = ({ stats, score, native_score, native_scored_by, slug }
         </RightCol>
       </MainRow>
 
-      <AnimeRating slug={slug} />
+      {showNative && <AnimeRating slug={slug} onNewVote={handleNewVote} onVoteRemoved={handleVoteRemoved} />}
     </Container>
   );
 };

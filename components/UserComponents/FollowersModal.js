@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components/native';
-import { Modal, FlatList, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { Modal, FlatList, ActivityIndicator, TouchableOpacity, Image, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
@@ -13,7 +13,7 @@ const ModalOverlay = styled.View`
   align-items: center;
 `;
 
-const ModalContent = styled.View`
+const ModalContent = styled(Animated.View)`
   background-color: ${({ theme }) => theme.colors.card};
   border-radius: 32px;
   width: 90%;
@@ -145,6 +145,7 @@ export default function FollowersModal({
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ total: 0, pages: 0, page: 1 });
   const [loadingMore, setLoadingMore] = useState(false);
+  const slideAnimation = useState(new Animated.Value(300))[0]; // Початкова позиція внизу
 
   const fetchUsers = async (page = 1, append = false) => {
     if (page === 1) {
@@ -194,6 +195,22 @@ export default function FollowersModal({
     }
   }, [visible, username, type]);
 
+  useEffect(() => {
+    if (visible) {
+      Animated.timing(slideAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnimation, {
+        toValue: 300,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
   const handleUserPress = (user) => {
     onClose(); // Закриваємо модальне вікно
     navigation.navigate('UserProfileScreen', { username: user.username });
@@ -205,13 +222,11 @@ export default function FollowersModal({
     fetchUsers(pagination.page + 1, true);
   };
 
-  // Функція для створення масиву з лоадером або повідомленням про завершення
+  // Функція для створення масиву з лоадером
   const getDataWithLoader = () => {
     const hasMore = pagination.page < pagination.pages;
     if (hasMore && users.length > 0) {
       return [...users, { isLoader: true, username: 'loader' }];
-    } else if (!hasMore && users.length > 0) {
-      return [...users, { isEndMessage: true, username: 'end-message' }];
     }
     return users;
   };
@@ -228,15 +243,6 @@ export default function FollowersModal({
       );
     }
 
-    // Якщо це повідомлення про завершення
-    if (item.isEndMessage) {
-      return (
-        <LoadingContainer>
-          <EmptyText>Всі {type === 'followers' ? 'підписники' : 'підписки'} завантажені</EmptyText>
-        </LoadingContainer>
-      );
-    }
-
     return (
       <UserItem>
         <UserItemTouchable onPress={() => handleUserPress(item)}>
@@ -248,7 +254,7 @@ export default function FollowersModal({
             }
           />
           <UserInfo>
-            <Username>{item.username}</Username>
+            <Username numberOfLines={1}>{item.username}</Username>
             {item.description && (
               <UserStatus>
                 <MarkdownText 
@@ -313,7 +319,7 @@ export default function FollowersModal({
     return (
       <FlatList
         data={getDataWithLoader()}
-        keyExtractor={(item) => item.isLoader ? 'loader' : item.isEndMessage ? 'end-message' : item.username}
+        keyExtractor={(item) => item.isLoader ? 'loader' : item.username}
         renderItem={renderUser}
         showsVerticalScrollIndicator={false}
         onEndReached={loadMoreUsers}
@@ -334,11 +340,15 @@ export default function FollowersModal({
     <Modal
       visible={visible}
       transparent={true}
-      animationType="slide"
+      animationType="none"
       onRequestClose={onClose}
     >
       <ModalOverlay>
-        <ModalContent>
+        <ModalContent
+          style={{
+            transform: [{ translateY: slideAnimation }]
+          }}
+        >
           <ModalHeader>
             <ModalTitle>{getTitle()}</ModalTitle>
             <CloseButton onPress={onClose}>

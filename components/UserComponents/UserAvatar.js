@@ -227,7 +227,7 @@ export default function UserAvatar({ userData, showEmailButton = true, showUserB
           source={
             userData.avatar
               ? { uri: userData.avatar }
-              : require('../../assets/image/noSearchImage.png')
+              : require('../../assets/image/not-found.webp')
           }
           resizeMode="cover"
         />

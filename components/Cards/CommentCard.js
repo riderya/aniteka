@@ -11,6 +11,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import CommentForm from '../CommentForm/CommentForm';
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 dayjs.extend(isToday);
@@ -481,11 +482,33 @@ const CommentCard = ({
           >
             {displayText}
           </Markdown>
+          
+          {/* Градієнт для плавного переходу при обрізанні */}
+          {!isExpanded && shouldShowToggle && (
+            <LinearGradient
+              colors={[`${theme.colors.background}00`, theme.colors.background]} // Прозорий до непрозорого
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 20,
+                pointerEvents: 'none',
+                zIndex: 2,
+              }}
+            />
+          )}
         </View>
 
         {(shouldShowToggle || isExpanded) && (
-          <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
-            <ShowText style={{ marginTop: 8 }}>
+          <TouchableOpacity 
+            onPress={() => setIsExpanded(!isExpanded)}
+            style={{ 
+              marginTop: shouldShowToggle && !isExpanded ? 4 : 8,
+              zIndex: 3 
+            }}
+          >
+            <ShowText>
               {isExpanded ? 'Згорнути' : 'Показати більше...'}
             </ShowText>
           </TouchableOpacity>

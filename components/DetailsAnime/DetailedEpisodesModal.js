@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components/native';
-import { Modal, TouchableWithoutFeedback, ScrollView, Keyboard, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { Modal, TouchableWithoutFeedback, ScrollView, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { useWatchStatus } from '../../context/WatchStatusContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import ModernAlert from '../Custom/ModernAlert';
 
 const DetailedEpisodesModal = ({ 
   isVisible, 
@@ -28,6 +29,28 @@ const DetailedEpisodesModal = ({
   });
   
   const [loading, setLoading] = useState(false);
+
+  // Стан для ModernAlert
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    buttons: []
+  });
+
+  // Функція для показу кастомного alert'у
+  const showAlert = (title, message, buttons = [{ text: 'OK', onPress: () => {} }]) => {
+    setAlertConfig({
+      visible: true,
+      title,
+      message,
+      buttons
+    });
+  };
+
+  const hideAlert = () => {
+    setAlertConfig(prev => ({ ...prev, visible: false }));
+  };
 
   // Мепінг статусів
   const statusMapping = {
@@ -120,52 +143,69 @@ const DetailedEpisodesModal = ({
         }
         onClose();
       } else {
-        Alert.alert('Помилка', 'Не вдалося зберегти зміни');
+        showAlert('Помилка', 'Не вдалося зберегти зміни');
       }
     } catch (error) {
       console.error('Error saving watch data:', error);
-      Alert.alert('Помилка', 'Сталася помилка при збереженні');
+      showAlert('Помилка', 'Сталася помилка при збереженні');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    Alert.alert(
-      'Підтвердження',
-      'Ви впевнені, що хочете видалити це аніме зі свого списку?',
-      [
-        { text: 'Скасувати', style: 'cancel' },
-        {
-          text: 'Видалити',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const res = await fetch(`https://api.hikka.io/watch/${slug}`, {
-                method: 'DELETE',
-                headers: { auth: authToken },
-              });
+    const resetProgress = async () => {
+      setLoading(true);
+      try {
+        // Оновлюємо аніме, скидаючи епізоди та оцінку до 0
+        const res = await fetch(`https://api.hikka.io/watch/${slug}`, {
+          method: 'PUT',
+          headers: { 
+            auth: authToken,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            episodes: 0,
+            rewatches: 0,
+            score: 0,
+            status: statusMapping[currentStatus],
+            note: '',
+          }),
+        });
 
-              if (res.ok) {
-                await fetchAnimeStatus(slug);
-                // Видаляємо аніме з усіх глобальних станів
-                removeAnimeFromList(slug);
-                if (onUpdate) {
-                  onUpdate(0);
-                }
-                onClose();
-              } else {
-                Alert.alert('Помилка', 'Не вдалося видалити аніме зі списку');
-              }
-            } catch (error) {
-              console.error('Error deleting watch data:', error);
-              Alert.alert('Помилка', 'Сталася помилка при видаленні');
-            } finally {
-              setLoading(false);
-            }
+        if (res.ok) {
+          await fetchAnimeStatus(slug);
+          // Оновлюємо оцінку в контексті
+          updateAnimeScore(slug, 0);
+          // Оновлюємо локальні дані
+          setFormData(prev => ({ 
+            ...prev, 
+            episodes: 0, 
+            score: 0, 
+            rewatches: 0, 
+            note: '' 
+          }));
+          if (onUpdate) {
+            onUpdate(0);
           }
+          onClose();
+        } else {
+          showAlert('Помилка', 'Не вдалося скинути прогрес перегляду');
         }
+      } catch (error) {
+        console.error('Error resetting watch progress:', error);
+        showAlert('Помилка', 'Сталася помилка при скиданні прогресу');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    showAlert(
+      'Підтвердження',
+      'Ви впевнені, що хочете скинути весь прогрес (епізоди, оцінку, нотатки)?',
+      [
+        { text: 'Скасувати', style: 'cancel', onPress: () => {} },
+        { text: 'Скинути', style: 'destructive', onPress: resetProgress }
       ]
     );
   };
@@ -210,13 +250,13 @@ const DetailedEpisodesModal = ({
                     <FieldContainerHalf>
                       <FieldLabel>Оцінка</FieldLabel>
                       <ScoreInput
-                        value={String(formData.score)}
+                        value={formData.score > 0 ? String(formData.score) : ''}
                         onChangeText={(text) => {
                           const value = parseInt(text) || 0;
                           updateFormField('score', Math.max(0, Math.min(10, value)));
                         }}
                         keyboardType="numeric"
-                        placeholder="10"
+                        placeholder="0"
                         placeholderTextColor="#888888"
                       />
                     </FieldContainerHalf>
@@ -224,7 +264,7 @@ const DetailedEpisodesModal = ({
                     <FieldContainerHalf>
                       <FieldLabel>Епізоди</FieldLabel>
                       <EpisodesInput
-                        value={String(formData.episodes)}
+                        value={formData.episodes > 0 ? String(formData.episodes) : ''}
                         onChangeText={(text) => {
                           const value = parseInt(text) || 0;
                           const maxValue = episodes_total || 999;
@@ -241,7 +281,7 @@ const DetailedEpisodesModal = ({
                   <FieldContainer>
                     <FieldLabel>Повторні перегляди</FieldLabel>
                     <RewatchesInput
-                      value={String(formData.rewatches)}
+                      value={formData.rewatches > 0 ? String(formData.rewatches) : ''}
                       onChangeText={(text) => {
                         const value = parseInt(text) || 0;
                         updateFormField('rewatches', Math.max(0, value));
@@ -271,13 +311,11 @@ const DetailedEpisodesModal = ({
                 <ButtonsContainer>
                   <DeleteButton onPress={handleDelete} disabled={loading}>
                     <DeleteButtonContent>
-                      <Ionicons name="trash" size={16} color={theme.colors.error} />
-                      <DeleteButtonText>Видалити</DeleteButtonText>
+                      <DeleteButtonText>Скинути</DeleteButtonText>
                     </DeleteButtonContent>
                   </DeleteButton>
                   <SaveButton onPress={handleSave} disabled={loading}>
                     <SaveButtonContent>
-                      {!loading && <Ionicons name="checkmark" size={16} color={theme.colors.success} />}
                       <SaveButtonText>
                         {loading ? 'Збереження...' : 'Зберегти'}
                       </SaveButtonText>
@@ -289,6 +327,15 @@ const DetailedEpisodesModal = ({
           </Overlay>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
+
+      <ModernAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={hideAlert}
+        theme={theme}
+      />
     </Modal>
   );
 };
@@ -330,7 +377,7 @@ const ModalTitle = styled.Text`
 `;
 
 const CloseButton = styled.TouchableOpacity`
-  width: 23px;
+  width: 24px;
   height: 24px;
   border-radius: 16px;
   justify-content: center;
@@ -363,7 +410,7 @@ const FieldLabel = styled.Text`
 `;
 
 const RewatchesInput = styled.TextInput`
-  background-color: ${({ theme }) => theme.colors.inputBackground};
+  background-color: ${({ theme }) => theme.colors.card};
   border-radius: 12px;
   padding: 12px;
   color: ${({ theme }) => theme.colors.text};
@@ -373,29 +420,29 @@ const RewatchesInput = styled.TextInput`
 `;
 
 const ScoreInput = styled.TextInput`
-  background-color: ${({ theme }) => theme.colors.inputBackground};
+  background-color: ${({ theme }) => theme.colors.card};
   border-radius: 12px;
   padding: 12px;
   color: ${({ theme }) => theme.colors.text};
   font-size: 16px;
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
-  text-align: center;
+  text-align: left;
 `;
 
 const EpisodesInput = styled.TextInput`
-  background-color: ${({ theme }) => theme.colors.inputBackground};
+  background-color: ${({ theme }) => theme.colors.card};
   border-radius: 12px;
   padding: 12px;
   color: ${({ theme }) => theme.colors.text};
   font-size: 16px;
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
-  text-align: center;
+  text-align: left;
 `;
 
 const NotesInput = styled.TextInput`
-  background-color: ${({ theme }) => theme.colors.inputBackground};
+  background-color: ${({ theme }) => theme.colors.card};
   border-radius: 12px;
   padding: 12px;
   color: ${({ theme }) => theme.colors.text};
@@ -415,7 +462,7 @@ const DeleteButton = styled.TouchableOpacity`
   flex: 1;
   background-color: ${({ theme }) => `${theme.colors.error}20`};
   border: 1px solid ${({ theme }) => theme.colors.error}40;
-  padding: 16px;
+  padding: 14px;
   border-radius: 12px;
   justify-content: center;
   align-items: center;
@@ -439,7 +486,7 @@ const SaveButton = styled.TouchableOpacity`
   flex: 1;
   background-color: ${({ theme }) => `${theme.colors.success}20`};
   border: 1px solid ${({ theme }) => theme.colors.success}40;
-  padding: 16px;
+  padding: 14px;
   border-radius: 12px;
   justify-content: center;
   align-items: center;

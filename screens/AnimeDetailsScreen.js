@@ -24,6 +24,7 @@ const AnimeDetailsScreen = ({ route, navigation }) => {
   const { slug } = route.params;
   const [anime, setAnime] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [voteCountDelta, setVoteCountDelta] = useState(0); // Track vote count changes
   const [showFranchiseDivider, setShowFranchiseDivider] = useState(false);
   const [showRecommendationsDivider, setShowRecommendationsDivider] = useState(false);
   const [showCharactersDivider, setShowCharactersDivider] = useState(false);

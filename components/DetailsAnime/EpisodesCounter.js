@@ -287,11 +287,12 @@ const TitleRow = styled.View`
 `;
 
 const MoreButton = styled.TouchableOpacity`
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 16px;
   justify-content: center;
   align-items: center;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
 `;
 
 const EpisodesInfo = styled.View`

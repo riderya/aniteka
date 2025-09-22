@@ -12,9 +12,9 @@ const BackButtonWrapper = styled(TouchableOpacity)`
   right: ${({ right }) => right || 'auto'};
   bottom: ${({ bottom }) => bottom || 'auto'};
   z-index: 10;
-  width: 45px;
-  height: 45px;
-  border-radius: 16px;
+  width: 50px;
+  height: 50px;
+  border-radius: 999px;
   background-color: ${({ theme }) => theme.colors.background};
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
@@ -24,7 +24,7 @@ const BackButtonWrapper = styled(TouchableOpacity)`
 
 const StyledIcon = styled(Ionicons)`
   color: ${({ theme }) => theme.colors.gray};
-  font-size: 24px;
+  font-size: 30px;
 `;
 
 const BackButton = ({ top, left, right, bottom }) => {

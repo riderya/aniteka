@@ -410,7 +410,7 @@ const UserScreen = () => {
               <UserAvatar 
                 key={`avatar-${currentUserData?.username || 'unknown'}-${currentUserData?.avatar || 'no-avatar'}`}
                 userData={currentUserData} 
-                showEmailButton={true} 
+                showEmailButton={false} 
                 showUserBadge={true} 
               />
             </UserInfoContainer>

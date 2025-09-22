@@ -23,7 +23,7 @@ const STAR_GAP = 4;
 const STAR_COLOR_ACTIVE = '#FFD700';
 const STAR_COLOR_INACTIVE = '#666';
 
-const AnimeRating = ({ slug }) => {
+const AnimeRating = ({ slug, onNewVote, onVoteRemoved }) => {
   const { status, setStatus, score, setScore, getAnimeScore, updateAnimeScore, removeAnimeFromList } = useWatchStatus();
   const { theme } = useTheme();
   const [auth, setAuth] = useState(null);
@@ -98,8 +98,19 @@ const AnimeRating = ({ slug }) => {
 
   const onPress = async (starIdx, half) => {
     const newScore = half ? starIdx * 2 - 1 : starIdx * 2;
+    const previousScore = currentScore;
+    
     setScore(newScore);
     await sendScore(newScore);
+    
+    // Якщо це новий голос (попередня оцінка була 0, а нова > 0), викликаємо callback
+    if (previousScore === 0 && newScore > 0 && onNewVote) {
+      onNewVote();
+    }
+    // Якщо користувач видаляє голос (попередня оцінка > 0, а нова = 0), викликаємо callback для видалення
+    else if (previousScore > 0 && newScore === 0 && onVoteRemoved) {
+      onVoteRemoved();
+    }
   };
 
   const onDelete = async () => {
@@ -110,19 +121,50 @@ const AnimeRating = ({ slug }) => {
   const handleDeleteConfirm = async () => {
     try {
       setDeleting(true);
-      const response = await axios.delete(`https://api.hikka.io/watch/${slug}`, {
+      
+      // Спочатку отримуємо поточні дані аніме
+      const currentData = await axios.get(`https://api.hikka.io/watch/${slug}`, {
         headers: { auth },
       });
-      if (response.status === 200 && response.data.success) {
-        // Видаляємо аніме з усіх глобальних станів
-        removeAnimeFromList(slug);
+      
+      // Оновлюємо тільки оцінку на 0, зберігаючи всі інші дані
+      const response = await axios.put(`https://api.hikka.io/watch/${slug}`, {
+        status: currentData.data.status,
+        score: 0,
+        episodes: currentData.data.episodes || 0,
+        rewatches: currentData.data.rewatches || 0,
+        note: currentData.data.note || null,
+      }, {
+        headers: { auth },
+      });
+      
+      if (response.status === 200) {
+        // Оновлюємо тільки оцінку в глобальному стані
+        updateAnimeScore(slug, 0);
+        setScore(0);
+        
+        // Викликаємо callback для зменшення кількості голосів
+        if (onVoteRemoved) {
+          onVoteRemoved();
+        }
       } else {
         setErrorMessage('Не вдалося видалити оцінку');
         setShowErrorAlert(true);
       }
     } catch (e) {
-      setErrorMessage('Не вдалося видалити оцінку');
-      setShowErrorAlert(true);
+      // Якщо аніме не було в списку користувача (404), просто обнуляємо локальну оцінку
+      if (e.response?.status === 404) {
+        updateAnimeScore(slug, 0);
+        setScore(0);
+        
+        // Викликаємо callback для зменшення кількості голосів
+        if (onVoteRemoved) {
+          onVoteRemoved();
+        }
+      } else {
+        setErrorMessage('Не вдалося видалити оцінку');
+        setShowErrorAlert(true);
+      }
     } finally {
       setDeleting(false);
     }

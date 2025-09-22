@@ -12,9 +12,9 @@ const CommentButtonWrapper = styled(TouchableOpacity)`
   right: ${({ right }) => right || 12}px;
   bottom: ${({ bottom }) => bottom || 'auto'};
   z-index: 10;
-  width: 45px;
-  height: 45px;
-  border-radius: 16px;
+  width: 50px;
+  height: 50px;
+  border-radius: 999px;
   background-color: ${({ theme }) => theme.colors.background};
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
@@ -29,8 +29,8 @@ const StyledIcon = styled(Ionicons)`
 
 const CommentCount = styled(Text)`
   position: absolute;
-  bottom: -4px;
-  right: -4px;
+  bottom: 0px;
+  right: 0px;
   background-color: ${({ theme }) => theme.colors.border};
   color: white;
   font-size: 11px;

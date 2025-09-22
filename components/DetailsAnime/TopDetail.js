@@ -91,15 +91,17 @@ const TopDetail = ({ anime, isLoading = false }) => {
 
   const toggleExpanded = () => setExpanded(prev => !prev);
 
-  // Функція для очищення опису від "Джерело" і посилань
+  // Функція для очищення опису від "Джерело" і посилань в кінці тексту
   const cleanDescription = (text) => {
     if (!text) return 'Опис відсутній.';
     
-    // Видаляємо "Джерело:" і все що після нього
-    let cleaned = text.replace(/\s*джерело:?.*$/i, '');
+    let cleaned = text;
     
-    // Видаляємо посилання на кінці тексту
-    cleaned = cleaned.replace(/\s*https?:\/\/[^\s]*$/i, '');
+    // Видаляємо "Джерело:" і все що після нього в кінці тексту
+    cleaned = cleaned.replace(/\s*(джерело|источник|source)[:\s].*$/gim, '');
+    
+    // Видаляємо посилання тільки в кінці тексту
+    cleaned = cleaned.replace(/\s*https?:\/\/[^\s]*$/gi, '');
     
     // Видаляємо зайві пробіли і переноси рядків в кінці
     cleaned = cleaned.trim();

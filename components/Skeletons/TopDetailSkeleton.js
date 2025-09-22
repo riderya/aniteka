@@ -71,7 +71,6 @@ const TopDetailSkeleton = () => {
       <Animated.View style={{ opacity: fadeAnim }}>
         <InfoContentSkeleton>
           <InfoTitleSkeleton />
-          <ScoreSkeleton />
           
           {/* Рядки інформації */}
           <InfoRowSkeleton>
@@ -177,7 +176,7 @@ const IconInfoSkeleton = styled.View`
   width: 20px;
   height: 20px;
   background-color: ${({ theme }) => theme.colors.skeletonBackground};
-  border-radius: 4px;
+  border-radius: 999px;
   margin-top: 6px;
 `;
 
@@ -269,16 +268,6 @@ const InfoContentSkeleton = styled.View`
 const InfoTitleSkeleton = styled.View`
   width: 120px;
   height: 22px;
-  background-color: ${({ theme }) => theme.colors.skeletonBackground};
-  border-radius: 6px;
-`;
-
-const ScoreSkeleton = styled.View`
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 80px;
-  height: 28px;
   background-color: ${({ theme }) => theme.colors.skeletonBackground};
   border-radius: 6px;
 `;
